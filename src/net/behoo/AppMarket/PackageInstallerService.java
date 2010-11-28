@@ -26,6 +26,31 @@ public class PackageInstallerService extends Service {
         }
     }
 	
+	private Thread mInstallThread = new Thread(new Runnable() {
+
+		@Override
+		public void run() {
+			
+			PackageManager pm = PackageInstallerService.this.getPackageManager();
+			Context c = PackageInstallerService.this.getApplicationContext();
+			while( !mThreadExit ) {
+				try {
+					Thread.sleep( 2000 );
+					
+					PackageInstaller pi = new PackageInstaller(c, pm);
+					boolean ret = pi.installPackage( Uri.parse("file://" + "/sdcard/ScreenTests.apk") );
+					
+					//Intent intent = new Intent( TEST_BROADCAST );
+					//PackageInstallerService.this.sendBroadcast(intent);
+				}
+				catch ( Throwable tr ) {
+					Log.e(TAG, tr.getMessage());
+				}
+			}
+			Log.i(TAG, "the installation thread exit!");
+		}
+	});
+	
 	@Override
 	public IBinder onBind( Intent intent ) {
 		Log.i(TAG, "onBind");
@@ -70,26 +95,5 @@ public class PackageInstallerService extends Service {
 	    return START_STICKY;
 	}
 	
-	Thread mInstallThread = new Thread(new Runnable() {
-
-		@Override
-		public void run() {
-			
-			PackageManager pm = PackageInstallerService.this.getPackageManager();
-			Context c = PackageInstallerService.this.getApplicationContext();
-			while( !mThreadExit ) {
-				try {
-					Thread.sleep( 2000 );
-					
-					PackageInstaller pi = new PackageInstaller(c, pm);
-					pi.installPackage( Uri.parse("file://" + "/sdcard/ScreenTests.apk") );
-					//Intent intent = new Intent( TEST_BROADCAST );
-					//PackageInstallerService.this.sendBroadcast(intent);
-				}
-				catch ( Throwable tr ) {
-					Log.e(TAG, tr.getMessage());
-				}
-			}
-		}
-	});
+	
 }

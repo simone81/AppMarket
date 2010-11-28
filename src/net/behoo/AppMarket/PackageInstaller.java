@@ -35,37 +35,23 @@ public class PackageInstaller {
 	private Context mContext = null;
 	private PackageManager mPkgMgr = null;
 	private PackageParser.Package mPkgInfo = null;
+	
 	// ApplicationInfo object primarily used for already existing applications
     private ApplicationInfo mAppInfo = null;
     private boolean mInstallingFinished = false;
-    private boolean mFreeingStorageFinished = false;
+    private Object mInstallingSyncObject = new Object();
+    private boolean mInstallingSuccess = false;
     
-    private Handler mHandler = new Handler() {
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case INSTALL_COMPLETE:
-                	mInstallingFinished = true;
-                    if(msg.arg1 == SUCCEEDED) {
-                    	
-                    }
-                    else{
-                    	
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
+    private boolean mFreeingStorageFinished = false;
+    private Object mFreeingStorageSyncObject = new Object();
     
 	public PackageInstaller(Context c, PackageManager pm) {
 		mContext = c;
 		mPkgMgr = pm;
 	}
 	
-	public void installPackage( Uri pkgURI ) {
+	public boolean installPackage( Uri pkgURI ) {
 		mPkgInfo = PackageUtil.getPackageInfo( pkgURI );
-		
 		if(mPkgInfo == null) {
 			IllegalArgumentException e = new IllegalArgumentException();
             throw e;
@@ -80,26 +66,37 @@ public class PackageInstaller {
 //        }
 		
 		//compute the size of the application. just an estimate
-        long size;
-        String apkPath = pkgURI.getPath();
-        File apkFile = new File( apkPath );
-        size = 4*apkFile.length();
-        checkOutOfSpace(size);
+        checkOutOfSpace( pkgURI.getPath() );
 		
-		makeTempCopyAndInstall( pkgURI.getPath() );
+		return makeTempCopyAndInstall( pkgURI.getPath() );
 	}
 	
-	private void checkOutOfSpace(long size) {
+	private void checkOutOfSpace( String apkPath ) {
+		File apkFile = new File( apkPath );
+		long size = 4*apkFile.length();
         Log.i(TAG, "Checking for "+size+" number of bytes");  
         
         FreeStorageObserver observer = new FreeStorageObserver();
         mPkgMgr.freeStorageAndNotify( size, observer );
-        // need better way to wait on finishing
-        while( !mFreeingStorageFinished )
-        	Thread.sleep( 1000 );
+        
+        // wait unitl the freeing process finished
+        boolean bWait = true;
+        while( bWait ){
+        	try {
+        		synchronized ( mFreeingStorageSyncObject ) {
+                	if( !mFreeingStorageFinished ) {
+                		mFreeingStorageSyncObject.wait();
+                	}
+                	bWait = false;
+                } 
+    		} catch ( InterruptedException e ) {
+    		}
+        }
+
+        Log.i(TAG, "checkOutOfSpace procedure has finished!");
     }
 	
-	private void makeTempCopyAndInstall(String filePath) {
+	private boolean makeTempCopyAndInstall(String filePath) {
         // Check if package is already installed. display confirmation dialog if replacing pkg
         try {
             mAppInfo = mPkgMgr.getApplicationInfo( mPkgInfo.packageName,
@@ -109,7 +106,7 @@ public class PackageInstaller {
         }
         
         if (mAppInfo == null) {
-        	Log.i(TAG, "start install:" + mPkgInfo.applicationInfo.packageName);
+        	Log.i(TAG, "start install: " + mPkgInfo.applicationInfo.packageName);
         	// 
         	File tmpPackageFile  = mContext.getFileStreamPath( TMP_INSTALL_FILE_NAME );
         	if (tmpPackageFile == null) {
@@ -125,31 +122,50 @@ public class PackageInstaller {
                 fos = mContext.openFileOutput( TMP_INSTALL_FILE_NAME, Context.MODE_WORLD_READABLE );
             } catch (FileNotFoundException e1) {
                 Log.e(TAG, "Error opening file " + TMP_INSTALL_FILE_NAME);
-                return;
+                throw new Exception();/// tbd self-defined exception
             }
             
             try {
                 fos.close();
             } catch (IOException e) {
-                Log.e(TAG, "Error opening file " + TMP_INSTALL_FILE_NAME);
-                return;
+                Log.e(TAG, "Error close file " + TMP_INSTALL_FILE_NAME);
+                throw new Exception();/// tbd self-defined exception
             }
 
             File srcPackageFile = new File( filePath );
             if (!FileUtils.copyFile(srcPackageFile, tmpPackageFile)) {
                 Log.w(TAG, "Failed to make copy of file: " + srcPackageFile);
-                return;
+                throw new Exception();/// tbd self-defined exception
             }
             
             Uri pkgURI = Uri.parse("file://" + tmpPackageFile.getPath());
             PackageInstallObserver observer = new PackageInstallObserver();
             mPkgMgr.installPackage(pkgURI, observer, 0, "my_test_app");
-            // bad ! tbd some other methods
-            while( !mInstallingFinished ) {
-            	Thread.sleep( 1000 );
-            }           
+            
+            // wait until the installing process finished
+            boolean bWait = true;
+            while( bWait ){
+            	try {
+            		synchronized ( mInstallingSyncObject ) {
+                    	if ( !mInstallingFinished ){
+                    		mInstallingSyncObject.wait();
+                    	}
+                    	bWait = false;
+                    }
+            	} catch ( InterruptedException e ) {
+        		}
+            }
+            
+            Log.i(TAG, "end install: "+mPkgInfo.applicationInfo.packageName);
+            
+            if( tmpPackageFile.exists() ) {
+            	tmpPackageFile.delete();
+            }
+            
+            return mInstallingSuccess;
         } else {
             Log.i(TAG, "Replacing existing package:"+mPkgInfo.applicationInfo.packageName);
+            return false;
         }
     }
 	
@@ -161,15 +177,20 @@ public class PackageInstaller {
 	class FreeStorageObserver extends IPackageDataObserver.Stub {
 		@Override
 		public void onRemoveCompleted(String pkgname, boolean success){
-			mFreeingStorageFinished = true;
+			synchronized ( mFreeingStorageSyncObject ) {
+				mFreeingStorageFinished = true;
+	        	mFreeingStorageSyncObject.notify();
+			}
 		}
 	}
 	
 	class PackageInstallObserver extends IPackageInstallObserver.Stub {
         public void packageInstalled(String packageName, int returnCode) {
-            Message msg = mHandler.obtainMessage(INSTALL_COMPLETE);
-            msg.arg1 = returnCode;
-            mHandler.sendMessage(msg);
+        	synchronized ( mInstallingSyncObject ) {
+        		mInstallingFinished = true;
+        		mInstallingSuccess = ( returnCode == SUCCEEDED );
+            	mInstallingSyncObject.notify();
+            }
         }
     }
 }
