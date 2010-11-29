@@ -1,6 +1,8 @@
 package net.behoo.AppMarket;
 
 
+import java.net.URI;
+
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +12,10 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.content.ContentValues;
+import android.webkit.URLUtil;
+import android.net.WebAddress;
+import android.provider.Downloads;
 
 public class PackageInstallerService extends Service {
 	
@@ -95,5 +101,65 @@ public class PackageInstallerService extends Service {
 	    return START_STICKY;
 	}
 	
-	
+	public boolean downloadAndInstall(String url, String mimetype,
+            String contentDisposition, long contentLength ) {
+		
+		mimetype = "application/vnd.android.package-archive";
+		
+		URI uri = null;
+        try {
+            // Undo the percent-encoding that KURL may have done.
+            String newUrl = new String(URLUtil.decode(url.getBytes()));
+            // Parse the url into pieces
+            WebAddress w = new WebAddress(newUrl);
+            String frag = null;
+            String query = null;
+            String path = w.mPath;
+            // Break the path into path, query, and fragment
+            if (path.length() > 0) {
+                // Strip the fragment
+                int idx = path.lastIndexOf('#');
+                if (idx != -1) {
+                    frag = path.substring(idx + 1);
+                    path = path.substring(0, idx);
+                }
+                idx = path.lastIndexOf('?');
+                if (idx != -1) {
+                    query = path.substring(idx + 1);
+                    path = path.substring(0, idx);
+                }
+            }
+            uri = new URI(w.mScheme, w.mAuthInfo, w.mHost, w.mPort, path,
+                    query, frag);
+        } catch (Exception e) {
+            Log.e(TAG, "Could not parse url for download: " + url, e);
+            return false;
+        }
+        
+        // XXX: Have to use the old url since the cookies were stored using the
+        // old percent-encoded url.
+        ContentValues values = new ContentValues();
+        values.put(Downloads.COLUMN_URI, uri.toString() );
+        values.put(Downloads.COLUMN_USER_AGENT, userAgent);
+        values.put(Downloads.COLUMN_NOTIFICATION_PACKAGE,
+                this.getPackageName());
+        values.put(Downloads.COLUMN_NOTIFICATION_CLASS,
+                BrowserDownloadPage.class.getCanonicalName());
+        values.put(Downloads.COLUMN_VISIBILITY, Downloads.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);// the flag could show UI ? tbd
+        values.put(Downloads.COLUMN_MIME_TYPE, mimetype);
+        values.put(Downloads.COLUMN_FILE_NAME_HINT, filename);
+        values.put(Downloads.COLUMN_DESCRIPTION, uri.getHost());
+        if (contentLength > 0) {
+            values.put(Downloads.COLUMN_TOTAL_BYTES, contentLength);
+        }
+        if (mimetype == null) {
+            // We must have long pressed on a link or image to download it. We
+            // are not sure of the mimetype in this case, so do a head request
+            new FetchUrlMimeType(this).execute(values);
+        } else {
+            final Uri contentUri =
+                    getContentResolver().insert(Downloads.CONTENT_URI, values);
+            viewDownloads(contentUri);
+        }
+	}
 }
