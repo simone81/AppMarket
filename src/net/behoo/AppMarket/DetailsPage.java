@@ -1,5 +1,7 @@
 package net.behoo.AppMarket;
 
+import net.behoo.DownloadInstall.Constants;
+import net.behoo.DownloadInstall.DownloadInstallService;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -16,7 +18,7 @@ public class DetailsPage extends Activity {
 	private static final String TAG = "DetailsPage";
 	
 	private boolean mServiceBound = false;
-	private PackageInstallerService mInstallService = null;
+	private DownloadInstallService mInstallService = null;
 	
     /** Called when the activity is first created. */
     @Override
@@ -29,8 +31,8 @@ public class DetailsPage extends Activity {
     public void onResume() {
     	super.onResume();
     	
-    	bindService( new Intent( this, PackageInstallerService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
-    	registerReceiver( mReceiver, new IntentFilter( PackageInstallerService.TEST_BROADCAST ) );
+    	bindService( new Intent( this, DownloadInstallService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
+    	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_STATE ) );
     }
     
     @Override
@@ -44,7 +46,7 @@ public class DetailsPage extends Activity {
     private ServiceConnection mServiceConn = new ServiceConnection() {
     	@Override
     	public void onServiceConnected(ComponentName cname, IBinder binder){
-    		mInstallService = ((PackageInstallerService.LocalServiceBinder)binder).getService();
+    		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		mServiceBound = true;
     		Log.i(TAG, "onServiceConnected cname: " + cname.toShortString());
     	}

@@ -1,4 +1,4 @@
-package net.behoo.AppMarket;
+package net.behoo.DownloadInstall;
 
 import PackageParser;
 

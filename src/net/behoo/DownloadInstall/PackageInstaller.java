@@ -1,4 +1,4 @@
-package net.behoo.AppMarket;
+package net.behoo.DownloadInstall;
 
 import InstallAppProgress;
 
@@ -45,9 +45,9 @@ public class PackageInstaller {
     private boolean mFreeingStorageFinished = false;
     private Object mFreeingStorageSyncObject = new Object();
     
-	public PackageInstaller(Context c, PackageManager pm) {
+	public PackageInstaller(Context c) {
 		mContext = c;
-		mPkgMgr = pm;
+		mPkgMgr = c.getPackageManager();
 	}
 	
 	public boolean installPackage( Uri pkgURI ) {
@@ -56,14 +56,6 @@ public class PackageInstaller {
 			IllegalArgumentException e = new IllegalArgumentException();
             throw e;
         }
-		
-		//check setting. how to decide the source of the app. from behoo or ? 
-		// check permissions tbd
-//        if(!isInstallingUnknownAppsAllowed()) {
-//            //ask user to enable setting first
-//            // 
-//            return;
-//        }
 		
 		//compute the size of the application. just an estimate
         checkOutOfSpace( pkgURI.getPath() );

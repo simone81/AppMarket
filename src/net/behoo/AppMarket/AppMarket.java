@@ -1,7 +1,8 @@
 package net.behoo.AppMarket;
 
 
-import net.behoo.AppMarket.PackageInstallerService.LocalServiceBinder;
+import net.behoo.DownloadInstall.Constants;
+import net.behoo.DownloadInstall.DownloadInstallService;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -10,7 +11,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -24,7 +24,7 @@ public class AppMarket extends Activity implements OnClickListener {
 	private static final String TAG = "AppMarket";
 	
 	private boolean mServiceBound = false;
-	private PackageInstallerService mInstallService = null;
+	private DownloadInstallService mInstallService = null;
 	
     /** Called when the activity is first created. */
     @Override
@@ -35,15 +35,24 @@ public class AppMarket extends Activity implements OnClickListener {
         Button button = ( Button )findViewById( R.id.call_pkg_installer );
         button.setOnClickListener( this );  
         
-        startService( new Intent(this, PackageInstallerService.class) );
+        button = ( Button )findViewById( R.id.install_from_sdcard );
+        button.setOnClickListener( this );
+        
+        TextView tv = ( TextView )findViewById( R.id.main_input );
+        tv.setText( "http://192.168.1.50/ScreenTests.apk" );
+        
+        tv = ( TextView )findViewById( R.id.main_input_sdcard );
+        tv.setText( "file:///sdcard/ScreenTests.apk" );
+        
+        startService( new Intent(this, DownloadInstallService.class) );
     }
     
     @Override
     public void onResume() {
     	super.onResume();
     	
-    	bindService( new Intent( this, PackageInstallerService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
-    	registerReceiver( mReceiver, new IntentFilter( PackageInstallerService.TEST_BROADCAST ) );
+    	bindService( new Intent( this, DownloadInstallService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
+    	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_STATE ) );
     }
     
     @Override
@@ -58,12 +67,37 @@ public class AppMarket extends Activity implements OnClickListener {
     public void onDestroy() {
     	super.onDestroy();
     	
-    	this.stopService( new Intent(this, PackageInstallerService.class) );
+    	this.stopService( new Intent(this, DownloadInstallService.class) );
     }
     
     @Override
 	public void onClick(View v) {
-    	this.startActivity( new Intent( this, DetailsPage.class ) );
+    	//this.startActivity( new Intent( this, DetailsPage.class ) );
+    	if( v.getId() == R.id.call_pkg_installer ) {
+    		// download and install
+    		if( mServiceBound ) {
+        		TextView ev = ( TextView )findViewById( R.id.main_input );
+        		updateStatusUI( "begin downloading!" );
+        		mInstallService.downloadAndInstall(ev.getText().toString(), 
+        				"application/vnd.android.package-archive", null, -1);
+        	}
+        	else {
+        		updateStatusUI( "service unbound!" );
+        	}
+    	}
+    	else {
+    		// install from sdcard
+    		if( mServiceBound ) {
+        		TextView ev = ( TextView )findViewById( R.id.main_input_sdcard );
+        		updateStatusUI( "begin installing!" );
+        		mInstallService.install( ev.getText().toString() );
+        	}
+        	else {
+        		updateStatusUI( "service unbound!" );
+        	}
+    	}
+    	
+    	
 //    	Intent intent = new Intent();
 //    	intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 //    	intent.setAction(android.content.Intent.ACTION_VIEW);
@@ -93,10 +127,15 @@ public class AppMarket extends Activity implements OnClickListener {
     	*/ 	
     }
     
+    private void updateStatusUI( String status ) {
+    	TextView tv = ( TextView )findViewById( R.id.main_state );
+    	tv.setText( status );
+    }
+    
     private ServiceConnection mServiceConn = new ServiceConnection() {
     	@Override
     	public void onServiceConnected(ComponentName cname, IBinder binder){
-    		mInstallService = ((PackageInstallerService.LocalServiceBinder)binder).getService();
+    		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		mServiceBound = true;
     		Log.i(TAG, "onServiceConnected cname: " + cname.toShortString());
     	}

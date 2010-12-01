@@ -10,8 +10,21 @@
     	android:layout_height="wrap_content" 
     	android:text="@string/hello"/>
     
+    <EditText android:layout_width="wrap_content"
+    	android:layout_height="20dip"
+    	android:id="@+id/main_input"/>
+    
     <Button android:id="@+id/call_pkg_installer"
-    	android:text="call pkg installer"
+    	android:text="downloadAndInstall"
+    	android:layout_width="wrap_content"
+    	android:layout_height="wrap_content"/>
+    
+    <EditText android:layout_width="wrap_content"
+    	android:layout_height="20dip"
+    	android:id="@+id/main_input_sdcard"/>
+    		
+    <Button android:id="@+id/install_from_sdcard"
+    	android:text="installFromSdcard"
     	android:layout_width="wrap_content"
     	android:layout_height="wrap_content"/>
     	
