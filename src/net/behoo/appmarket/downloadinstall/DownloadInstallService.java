@@ -1,9 +1,10 @@
-package net.behoo.DownloadInstall;
+package net.behoo.appmarket.downloadinstall;
 
 
 import java.net.URI;
 import java.util.ArrayList;
 
+import junit.framework.Assert;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -43,33 +44,33 @@ public class DownloadInstallService extends Service {
         }
     }
 	
-	@Override
+	
 	public IBinder onBind( Intent intent ) {
 		Log.i(TAG, "onBind");
 		return mBinder;
 	}
 	
-	@Override
+	
 	public boolean onUnbind( Intent intent ) {
 		Log.i(TAG, "onUnbind");
 		return super.onUnbind( intent );
 	}
 	
-	@Override
+	
 	public void onCreate() {
 		super.onCreate();
 		mPackageInfo = new ArrayList<PackageInfo>();
 		this.registerReceiver( mBroadcastReceiver, new IntentFilter(Downloads.ACTION_DOWNLOAD_COMPLETED) );
 	}
 	
-	@Override
+	
 	public void onDestroy() {
 		super.onDestroy();
 		this.unregisterReceiver( mBroadcastReceiver );
 		Log.i(TAG, "onDestroy");
 	}
 	
-	@Override
+	
 	public int onStartCommand(Intent intent, int flags, int startId) {
 	    // We want this service to continue running until it is explicitly
 	    // stopped, so return sticky.
@@ -109,42 +110,29 @@ public class DownloadInstallService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Could not parse url for download: " + url, e);
             throw new IllegalArgumentException();// tbd
-            return false;
         }
         
         // XXX: Have to use the old url since the cookies were stored using the
         // old percent-encoded url.
+        Uri theUri = Uri.parse( uri.toString() );
         Log.i(TAG, "downloadAndInstall the uri: "+uri.toString());
         ContentValues values = new ContentValues();
         values.put(Downloads.COLUMN_URI, uri.toString() );
-        values.put(Downloads.COLUMN_USER_AGENT, "");
         values.put(Downloads.COLUMN_NOTIFICATION_PACKAGE, this.getPackageName());
         values.put(Downloads.COLUMN_NOTIFICATION_CLASS, DownloadInstallService.class.getCanonicalName());
         values.put(Downloads.COLUMN_VISIBILITY, Downloads.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         values.put(Downloads.COLUMN_MIME_TYPE, mimetype);
         values.put(Downloads.COLUMN_FILE_NAME_HINT, filename);
         values.put(Downloads.COLUMN_DESCRIPTION, uri.getHost());
-        values.put(Downloads.COLUMN_NOTIFICATION_EXTRAS, url);
+        values.put(Downloads.COLUMN_NOTIFICATION_EXTRAS, theUri.toString());
         if (contentLength > 0) {
             values.put(Downloads.COLUMN_TOTAL_BYTES, contentLength);
         }
         if (mimetype != null) {
-        	PackageInfo info = new PackageInfo( url, 0, Constants.PackageState.downloading );
+        	PackageInfo info = new PackageInfo( theUri, null, 0, Constants.PackageState.downloading );
             mPackageInfo.add( info );
-            
-            final Uri contentUri = getContentResolver().insert(Downloads.CONTENT_URI, values);
-            
-//            DownloadAndInstallInfo info = new DownloadAndInstallInfo();
-//        	info.mCursor = getContentResolver().query(Downloads.CONTENT_URI, 
-//                new String [] {"_id", Downloads.COLUMN_TITLE, Downloads.COLUMN_STATUS,
-//                Downloads.COLUMN_TOTAL_BYTES, Downloads.COLUMN_CURRENT_BYTES, 
-//                Downloads._DATA, Downloads.COLUMN_DESCRIPTION, 
-//                Downloads.COLUMN_MIME_TYPE, Downloads.COLUMN_LAST_MODIFICATION,
-//                Downloads.COLUMN_VISIBILITY}, 
-//                null, null, null );
-//        	info.mObserver = new DownloadObserver( mDownloadAndInstall.size() );
-//        	info.mCursor.registerContentObserver( info.mObserver );
-//        	mDownloadAndInstall.add( info );
+            info.sendPackageStateBroadcast(this);
+            getContentResolver().insert(Downloads.CONTENT_URI, values);
         	return true;
         } else {
         	Log.e(TAG, "you must supply mimetype.");
@@ -152,64 +140,51 @@ public class DownloadInstallService extends Service {
         }
 	}
 	
+	
 	public boolean install( String uri ) {
-		Uri u = Uri.parse( uri );
-		// fetch the package information from content provider
-		PackageInfo pkgInfo = new PackageInfo( u.toString(), 0, Constants.PackageState.unknown );
-		InstallingThread thrd = new InstallingThread(
-				this, 
-				mSyncObject, 
-				pkgInfo);
+		PackageInfo pkgInfo = new PackageInfo( Uri.parse("local"), Uri.parse( uri ), 
+				0, Constants.PackageState.unknown );
+		InstallingThread thrd = new InstallingThread(this, mSyncObject, pkgInfo);
 		thrd.start();
+		return true;
 	}
-/*	
-	private class DownloadObserver extends ContentObserver {
-		private int mCursorIndex = -1;
-		public DownloadObserver( int cursorIndex ) {
-			super( new Handler() );
-			
-			mCursorIndex = cursorIndex;
-		}
-		@Override
-		public boolean deliverSelfNotifications() {
-			return true;
-		}
-		
-		@Override
-		public void onChange( boolean selfChange ) {
-			
-		}
-	}
-*/	
-
+	
 	private class DownloadBroadcastReceiver extends BroadcastReceiver {
 		public void onReceive(Context context, Intent intent) {
 			// update the local database
-			Uri uri = intent.getData();
 			Bundle bundle = intent.getExtras();
 			String url = bundle.getCharSequence( Downloads.COLUMN_NOTIFICATION_EXTRAS ).toString();
 			PackageInfo info = null;
 			for( int i = 0; i < mPackageInfo.size(); ++i ) {
 				info = mPackageInfo.get( i );
-				if( info.mUrl.compareTo( url ) == 0 ) {
-					info.mState = Constants.PackageState.installing;
+				if( info.mDownloadUri.toString().compareTo( url ) == 0 ) {
+					info.mState = Constants.PackageState.download_succeeded;
+					info.sendPackageStateBroadcast(DownloadInstallService.this);
+					// get the file name from database
+					Cursor c = getContentResolver().query(Downloads.CONTENT_URI, 
+							new String [] { Downloads.COLUMN_URI, Downloads._DATA }, 
+							null, null, null);
+					Assert.assertNotNull(c);
+					Uri uri = intent.getData();
+					int uriId = c.getColumnIndexOrThrow(Downloads.COLUMN_URI);
+					int filenameId = c.getColumnIndexOrThrow(Downloads._DATA);
+					for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+						if (0 == c.getString(uriId).compareTo(uri.toString())) {
+							String filename = c.getString(filenameId);
+							info.mInstallUri = Uri.parse("file:///cache/"+filename);
+							Log.i(TAG, "The downloaded file: "+info.mInstallUri.toString());
+							break;
+						}
+					}
+					c.close();
 					break;
 				}
 			}
 			Log.i(TAG, "DownloadBroadcastReceiver, finished of "+url);
-			
-			// broadcast
-			Intent i = new Intent(Constants.ACTION_STATE);
-			i.putExtra(Constants.PKG_ID, 123);
-			i.putExtra(Constants.PAK_URI, uri);
-			i.putExtra(Constants.DOWNLOAD_STAGE, true);
-			DownloadInstallService.this.sendBroadcast(i);
-			
+			Assert.assertNotNull(info);
+			Assert.assertNotNull(info.mInstallUri);
 			// fetch the package information from content provider
-			InstallingThread thrd = new InstallingThread(
-					(Context)DownloadInstallService.this, 
-					mSyncObject, 
-					info);
+			InstallingThread thrd = new InstallingThread(DownloadInstallService.this, mSyncObject, info);
 			thrd.start();
 		}
 	}

@@ -7,9 +7,7 @@ LOCAL_STATIC_JAVA_LIBRARIES := google-framework
 
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 
-LOCAL_PACKAGE_NAME := Browser
+LOCAL_PACKAGE_NAME := AppMarket
+LOCAL_CERTIFICATE := platform
 
 include $(BUILD_PACKAGE)
-
-# additionally, build tests in sub-folders in a separate .apk
-include $(call all-makefiles-under,$(LOCAL_PATH))

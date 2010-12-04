@@ -1,18 +1,18 @@
-package net.behoo.DownloadInstall;
+package net.behoo.appmarket.downloadinstall;
 
-import InstallAppProgress;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import PackageInstallerActivity.ClearCacheReceiver;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.IPackageInstallObserver;
+import android.content.pm.IPackageDataObserver;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageParser;
@@ -26,12 +26,15 @@ import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.os.FileUtils;
 
 public class PackageInstaller {
 	
 	private static final String TAG = "PackageInstaller";
 	private static final String TMP_INSTALL_FILE_NAME="tmpInstallCopy.apk";
-	
+	private static final int SUCCEEDED = 1;
+    private static final int FAILED = 0;
+    
 	private Context mContext = null;
 	private PackageManager mPkgMgr = null;
 	private PackageParser.Package mPkgInfo = null;
@@ -51,10 +54,9 @@ public class PackageInstaller {
 	}
 	
 	public boolean installPackage( Uri pkgURI ) {
-		mPkgInfo = PackageUtil.getPackageInfo( pkgURI );
+		mPkgInfo = PackageUtils.getPackageInfo( pkgURI );
 		if(mPkgInfo == null) {
-			IllegalArgumentException e = new IllegalArgumentException();
-            throw e;
+            throw new IllegalArgumentException();
         }
 		
 		//compute the size of the application. just an estimate
@@ -103,7 +105,8 @@ public class PackageInstaller {
         	File tmpPackageFile  = mContext.getFileStreamPath( TMP_INSTALL_FILE_NAME );
         	if (tmpPackageFile == null) {
                 Log.w(TAG, "Failed to create temp file");
-                throw new Exception();/// tbd self-defined exception
+                //throw new NameNotFoundException();/// tbd self-defined exception
+                return false;
             }
         	if (tmpPackageFile.exists()) {
                 tmpPackageFile.delete();
@@ -114,20 +117,23 @@ public class PackageInstaller {
                 fos = mContext.openFileOutput( TMP_INSTALL_FILE_NAME, Context.MODE_WORLD_READABLE );
             } catch (FileNotFoundException e1) {
                 Log.e(TAG, "Error opening file " + TMP_INSTALL_FILE_NAME);
-                throw new Exception();/// tbd self-defined exception
+                //throw e1;/// tbd self-defined exception
+                return false;
             }
             
             try {
                 fos.close();
             } catch (IOException e) {
                 Log.e(TAG, "Error close file " + TMP_INSTALL_FILE_NAME);
-                throw new Exception();/// tbd self-defined exception
+                //throw e;/// tbd self-defined exception
+                return false;
             }
 
             File srcPackageFile = new File( filePath );
             if (!FileUtils.copyFile(srcPackageFile, tmpPackageFile)) {
                 Log.w(TAG, "Failed to make copy of file: " + srcPackageFile);
-                throw new Exception();/// tbd self-defined exception
+                //throw new NullPointerException();/// tbd self-defined exception
+                return false;
             }
             
             Uri pkgURI = Uri.parse("file://" + tmpPackageFile.getPath());
@@ -167,7 +173,7 @@ public class PackageInstaller {
     }
 	
 	class FreeStorageObserver extends IPackageDataObserver.Stub {
-		@Override
+		
 		public void onRemoveCompleted(String pkgname, boolean success){
 			synchronized ( mFreeingStorageSyncObject ) {
 				mFreeingStorageFinished = true;

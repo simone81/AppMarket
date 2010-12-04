@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="net.behoo.AppMarket"
+      package="net.behoo.appmarket"
       android:versionCode="1"
       android:versionName="1.0">
       
@@ -27,8 +27,7 @@
 
 		<activity android:name=".DetailsPage"/>
 		
-		<service android:name="PackageInstallerService"/>
+		<service android:name=".downloadinstall.DownloadInstallService"/>
     </application>
-
 
 </manifest> 

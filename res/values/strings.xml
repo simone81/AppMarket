@@ -2,4 +2,7 @@
 <resources>
     <string name="hello">Hello World, AppMarket!</string>
     <string name="app_name">AppMarket</string>
+    <string name="details_page">tests</string>
+    <string name="appmarket_download_install">download install</string>
+    <string name="appmarket_install">install</string>
 </resources>

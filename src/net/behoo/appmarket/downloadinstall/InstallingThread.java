@@ -1,9 +1,6 @@
-package net.behoo.DownloadInstall;
+package net.behoo.appmarket.downloadinstall;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.util.Log;
 
 public class InstallingThread extends Thread {
@@ -24,18 +21,15 @@ public class InstallingThread extends Thread {
 		synchronized( mSyncObject ) {
 			boolean ret = false;
 			try {
+				mPkgInfo.mState = Constants.PackageState.installing;
+				mPkgInfo.sendPackageStateBroadcast(mContext);
 				PackageInstaller pi = new PackageInstaller(mContext);
-				ret = pi.installPackage( Uri.parse("file://" + "/sdcard/ScreenTests.apk") );
+				ret = pi.installPackage( mPkgInfo.mInstallUri );
 			} catch ( Throwable tr ) {
 				ret = false;
 			}
 			mPkgInfo.mState = ( ret ? Constants.PackageState.install_succeeded : Constants.PackageState.install_failed );
-			// broadcast
-			Intent i = new Intent(Constants.ACTION_STATE);
-			i.putExtra(Constants.PKG_ID, 123);
-			i.putExtra(Constants.PAK_URI, mPkgInfo.mUrl);
-			i.putExtra(Constants.DOWNLOAD_STAGE, ret);
-			mContext.sendBroadcast(i);
+			mPkgInfo.sendPackageStateBroadcast(mContext);
 			Log.i(TAG, "InstallingThread exit");
 		}
 	}
