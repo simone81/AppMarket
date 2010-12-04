@@ -17,10 +17,11 @@ public class InstallingThread extends Thread {
 		mPkgInfo = info;
 	}
 	
-	public void Run() {
-		synchronized( mSyncObject ) {
+	public void run() {
+		//synchronized( mSyncObject ) {
 			boolean ret = false;
 			try {
+				Log.i(TAG, "run file: "+mPkgInfo.mInstallUri.toString());
 				mPkgInfo.mState = Constants.PackageState.installing;
 				mPkgInfo.sendPackageStateBroadcast(mContext);
 				PackageInstaller pi = new PackageInstaller(mContext);
@@ -30,7 +31,7 @@ public class InstallingThread extends Thread {
 			}
 			mPkgInfo.mState = ( ret ? Constants.PackageState.install_succeeded : Constants.PackageState.install_failed );
 			mPkgInfo.sendPackageStateBroadcast(mContext);
-			Log.i(TAG, "InstallingThread exit");
-		}
+			Log.i(TAG, "InstallingThread exit ret: "+(ret?"success":"fail"));
+		//}
 	}
 }

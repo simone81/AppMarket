@@ -5,7 +5,7 @@ public class Constants {
 	/*
 	 * The broadcast intent filter
 	 */
-	public static final String ACTION_STATE = "net.behoo.AppMarket.DownloadAndInstall";
+	public static final String ACTION_STATE = "net.behoo.appmarket.downloadinstall.DownloadAndInstall";
 	
 	/*
 	 * Params for broadcast extra data. 

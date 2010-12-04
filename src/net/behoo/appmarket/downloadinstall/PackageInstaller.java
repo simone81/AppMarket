@@ -56,9 +56,10 @@ public class PackageInstaller {
 	public boolean installPackage( Uri pkgURI ) {
 		mPkgInfo = PackageUtils.getPackageInfo( pkgURI );
 		if(mPkgInfo == null) {
-            throw new IllegalArgumentException();
+			Log.i(TAG, "installPackage invalid package");
+            return false;
         }
-		
+		Log.i(TAG, "installPackage pkg info: "+mPkgInfo.mPath);
 		//compute the size of the application. just an estimate
         checkOutOfSpace( pkgURI.getPath() );
 		
@@ -84,6 +85,7 @@ public class PackageInstaller {
                 	bWait = false;
                 } 
     		} catch ( InterruptedException e ) {
+    			bWait = true;
     		}
         }
 
@@ -100,14 +102,15 @@ public class PackageInstaller {
         }
         
         if (mAppInfo == null) {
-        	Log.i(TAG, "start install: " + mPkgInfo.applicationInfo.packageName);
-        	// 
+        	Log.i(TAG, "install package: "+mPkgInfo.applicationInfo.packageName);
+        	
+        	// create the temp file
         	File tmpPackageFile  = mContext.getFileStreamPath( TMP_INSTALL_FILE_NAME );
         	if (tmpPackageFile == null) {
                 Log.w(TAG, "Failed to create temp file");
-                //throw new NameNotFoundException();/// tbd self-defined exception
                 return false;
             }
+        	Log.i(TAG, "makeTempCopyAndInstall tmp file: "+tmpPackageFile.getAbsolutePath());
         	if (tmpPackageFile.exists()) {
                 tmpPackageFile.delete();
             }
@@ -129,7 +132,9 @@ public class PackageInstaller {
                 return false;
             }
 
+            // copy the file from source to temp
             File srcPackageFile = new File( filePath );
+            Log.i(TAG, "makeTempCopyAndInstall the source file: "+srcPackageFile.getAbsolutePath());
             if (!FileUtils.copyFile(srcPackageFile, tmpPackageFile)) {
                 Log.w(TAG, "Failed to make copy of file: " + srcPackageFile);
                 //throw new NullPointerException();/// tbd self-defined exception
@@ -138,8 +143,8 @@ public class PackageInstaller {
             
             Uri pkgURI = Uri.parse("file://" + tmpPackageFile.getPath());
             PackageInstallObserver observer = new PackageInstallObserver();
-            mPkgMgr.installPackage(pkgURI, observer, 0, "my_test_app");
-            
+            mPkgMgr.installPackage(pkgURI, observer, 0, "net.behoo.appmarket");
+           
             // wait until the installing process finished
             boolean bWait = true;
             while( bWait ){
@@ -151,11 +156,11 @@ public class PackageInstaller {
                     	bWait = false;
                     }
             	} catch ( InterruptedException e ) {
+            		bWait = true;
         		}
             }
             
-            Log.i(TAG, "end install: "+mPkgInfo.applicationInfo.packageName);
-            
+            // delte the temp file
             if( tmpPackageFile.exists() ) {
             	tmpPackageFile.delete();
             }
@@ -189,6 +194,7 @@ public class PackageInstaller {
         		mInstallingSuccess = ( returnCode == SUCCEEDED );
             	mInstallingSyncObject.notify();
             }
+        	Log.i(TAG, "PackageInstallObserver installed");
         }
     }
 }

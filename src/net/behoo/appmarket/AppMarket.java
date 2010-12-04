@@ -43,7 +43,7 @@ public class AppMarket extends Activity implements OnClickListener {
         tv.setText( "http://192.168.1.50/ScreenTests.apk" );
         
         tv = ( TextView )findViewById( R.id.main_input_sdcard );
-        tv.setText( "file:///sdcard/ScreenTests.apk" );
+        tv.setText( "file:///nfs/ScreenTests.apk" );
         
         startService( new Intent(this, DownloadInstallService.class) );
     }
@@ -68,7 +68,7 @@ public class AppMarket extends Activity implements OnClickListener {
     public void onDestroy() {
     	super.onDestroy();
     	
-    	this.stopService( new Intent(this, DownloadInstallService.class) );
+    	//stopService( new Intent(this, DownloadInstallService.class) );
     }
     
     

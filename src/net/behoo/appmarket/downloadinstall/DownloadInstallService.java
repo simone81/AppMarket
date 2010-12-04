@@ -34,9 +34,7 @@ public class DownloadInstallService extends Service {
 	
 	private Object mSyncObject = new Object();
 	private ArrayList<PackageInfo> mPackageInfo = null;
-	
-	// download completed broadcast receiver
-	private DownloadBroadcastReceiver mBroadcastReceiver = new DownloadBroadcastReceiver();
+	private DownloadReceiver mDownloadReceiver = null;
 	
 	public class LocalServiceBinder extends Binder {
 		public DownloadInstallService getService() {
@@ -60,13 +58,14 @@ public class DownloadInstallService extends Service {
 	public void onCreate() {
 		super.onCreate();
 		mPackageInfo = new ArrayList<PackageInfo>();
-		this.registerReceiver( mBroadcastReceiver, new IntentFilter(Downloads.ACTION_DOWNLOAD_COMPLETED) );
+		mDownloadReceiver = new DownloadReceiver( mPackageInfo );
+		this.registerReceiver( mDownloadReceiver, new IntentFilter(Downloads.ACTION_DOWNLOAD_COMPLETED) );
 	}
 	
 	
 	public void onDestroy() {
 		super.onDestroy();
-		this.unregisterReceiver( mBroadcastReceiver );
+		this.unregisterReceiver( mDownloadReceiver );
 		Log.i(TAG, "onDestroy");
 	}
 	
@@ -81,7 +80,7 @@ public class DownloadInstallService extends Service {
             String contentDisposition, long contentLength ) {
 		
 		String filename = URLUtil.guessFileName(url,contentDisposition, mimetype);
-		Log.i(TAG, "downloadAndInstall file: "+filename);
+		Log.i(TAG, "downloadAndInstall guess file: "+filename);
 		URI uri = null;
         try {
             // Undo the percent-encoding that KURL may have done.
@@ -109,7 +108,7 @@ public class DownloadInstallService extends Service {
                     query, frag);
         } catch (Exception e) {
             Log.e(TAG, "Could not parse url for download: " + url, e);
-            throw new IllegalArgumentException();// tbd
+            throw new IllegalArgumentException();
         }
         
         // XXX: Have to use the old url since the cookies were stored using the
@@ -147,45 +146,5 @@ public class DownloadInstallService extends Service {
 		InstallingThread thrd = new InstallingThread(this, mSyncObject, pkgInfo);
 		thrd.start();
 		return true;
-	}
-	
-	private class DownloadBroadcastReceiver extends BroadcastReceiver {
-		public void onReceive(Context context, Intent intent) {
-			// update the local database
-			Bundle bundle = intent.getExtras();
-			String url = bundle.getCharSequence( Downloads.COLUMN_NOTIFICATION_EXTRAS ).toString();
-			PackageInfo info = null;
-			for( int i = 0; i < mPackageInfo.size(); ++i ) {
-				info = mPackageInfo.get( i );
-				if( info.mDownloadUri.toString().compareTo( url ) == 0 ) {
-					info.mState = Constants.PackageState.download_succeeded;
-					info.sendPackageStateBroadcast(DownloadInstallService.this);
-					// get the file name from database
-					Cursor c = getContentResolver().query(Downloads.CONTENT_URI, 
-							new String [] { Downloads.COLUMN_URI, Downloads._DATA }, 
-							null, null, null);
-					Assert.assertNotNull(c);
-					Uri uri = intent.getData();
-					int uriId = c.getColumnIndexOrThrow(Downloads.COLUMN_URI);
-					int filenameId = c.getColumnIndexOrThrow(Downloads._DATA);
-					for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-						if (0 == c.getString(uriId).compareTo(uri.toString())) {
-							String filename = c.getString(filenameId);
-							info.mInstallUri = Uri.parse("file:///cache/"+filename);
-							Log.i(TAG, "The downloaded file: "+info.mInstallUri.toString());
-							break;
-						}
-					}
-					c.close();
-					break;
-				}
-			}
-			Log.i(TAG, "DownloadBroadcastReceiver, finished of "+url);
-			Assert.assertNotNull(info);
-			Assert.assertNotNull(info.mInstallUri);
-			// fetch the package information from content provider
-			InstallingThread thrd = new InstallingThread(DownloadInstallService.this, mSyncObject, info);
-			thrd.start();
-		}
 	}
 }
