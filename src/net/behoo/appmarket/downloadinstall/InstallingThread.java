@@ -6,19 +6,18 @@ import android.util.Log;
 public class InstallingThread extends Thread {
 	
 	private static final String TAG = "InstallingThread";
+	private static final Object SYNC_OBJ = new Object();
 	
 	private Context mContext = null;
-	private Object mSyncObject = null;
 	private PackageInfo mPkgInfo = null;
 	
-	public InstallingThread(Context context, Object syncObject, PackageInfo info) {
+	public InstallingThread(Context context, PackageInfo info) {
 		mContext = context;
-		mSyncObject = syncObject;
 		mPkgInfo = info;
 	}
 	
 	public void run() {
-		//synchronized( mSyncObject ) {
+		synchronized( SYNC_OBJ ) {
 			boolean ret = false;
 			try {
 				Log.i(TAG, "run file: "+mPkgInfo.mInstallUri.toString());
@@ -32,6 +31,6 @@ public class InstallingThread extends Thread {
 			mPkgInfo.mState = ( ret ? Constants.PackageState.install_succeeded : Constants.PackageState.install_failed );
 			mPkgInfo.sendPackageStateBroadcast(mContext);
 			Log.i(TAG, "InstallingThread exit ret: "+(ret?"success":"fail"));
-		//}
+		}
 	}
 }

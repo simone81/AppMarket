@@ -28,13 +28,53 @@ import android.provider.Downloads;
 
 public class DownloadInstallService extends Service {
 	
-	private static final String TAG = "PackageInstallerService";
+	private static final String TAG = "DownloadInstallService";
 	
 	private final IBinder mBinder = new LocalServiceBinder();
 	
-	private Object mSyncObject = new Object();
 	private ArrayList<PackageInfo> mPackageInfo = null;
-	private DownloadReceiver mDownloadReceiver = null;
+	
+	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			// TODO Auto-generated method stub
+			// update the local database
+			Bundle bundle = intent.getExtras();
+			//String uri = bundle.getCharSequence(DownloadReceiver.DOWNLOAD_DATA_URI).toString();
+			String urlExtra = bundle.getCharSequence(Downloads.COLUMN_NOTIFICATION_EXTRAS).toString();
+			Log.i(TAG, "onReceive uri: "+" "+urlExtra);
+			PackageInfo info = null;
+			for( int i = 0; i < mPackageInfo.size(); ++i ) {
+				info = mPackageInfo.get(i);
+				if( info.mDownloadUri.toString().compareTo(urlExtra) == 0 ) {
+					info.mState = Constants.PackageState.download_succeeded;
+					info.sendPackageStateBroadcast(context);
+					// get the file name from database
+					Cursor c = context.getContentResolver().query(Downloads.CONTENT_URI, 
+							new String [] {Downloads._DATA, Downloads.COLUMN_DESCRIPTION}, 
+							null, null, null);
+					Assert.assertNotNull(c);
+					
+					int filenameId = c.getColumnIndexOrThrow(Downloads._DATA);
+					int descriptionId = c.getColumnIndexOrThrow(Downloads.COLUMN_DESCRIPTION);
+					for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+						if (0 == c.getString(descriptionId).compareTo(urlExtra)) {
+							String filename = c.getString(filenameId);
+							info.mInstallUri = Uri.parse("file://"+filename);
+							Log.i(TAG, "The downloaded file: "+info.mInstallUri.toString());
+							break;
+						}
+					}
+					c.close();
+					break;
+				}
+			}
+			Assert.assertNotNull(info);
+			Assert.assertNotNull(info.mInstallUri);
+			// fetch the package information from content provider
+			InstallingThread thrd = new InstallingThread(context, info);
+			thrd.start();
+		}
+	};
 	
 	public class LocalServiceBinder extends Binder {
 		public DownloadInstallService getService() {
@@ -58,15 +98,14 @@ public class DownloadInstallService extends Service {
 	public void onCreate() {
 		super.onCreate();
 		mPackageInfo = new ArrayList<PackageInfo>();
-		mDownloadReceiver = new DownloadReceiver( mPackageInfo );
-		this.registerReceiver( mDownloadReceiver, new IntentFilter(Downloads.ACTION_DOWNLOAD_COMPLETED) );
+		IntentFilter filter = new IntentFilter(DownloadReceiver.DOWNLOAD_COMPLETED);
+		this.registerReceiver(mReceiver, filter);
 	}
 	
 	
 	public void onDestroy() {
 		super.onDestroy();
-		this.unregisterReceiver( mDownloadReceiver );
-		Log.i(TAG, "onDestroy");
+		this.unregisterReceiver(mReceiver);
 	}
 	
 	
@@ -116,14 +155,15 @@ public class DownloadInstallService extends Service {
         Uri theUri = Uri.parse( uri.toString() );
         Log.i(TAG, "downloadAndInstall the uri: "+uri.toString());
         ContentValues values = new ContentValues();
-        values.put(Downloads.COLUMN_URI, uri.toString() );
+        values.put(Downloads.COLUMN_URI, uri.toString());
         values.put(Downloads.COLUMN_NOTIFICATION_PACKAGE, this.getPackageName());
-        values.put(Downloads.COLUMN_NOTIFICATION_CLASS, DownloadInstallService.class.getCanonicalName());
-        values.put(Downloads.COLUMN_VISIBILITY, Downloads.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        values.put(Downloads.COLUMN_NOTIFICATION_CLASS, DownloadReceiver.class.getCanonicalName());
+        values.put(Downloads.COLUMN_VISIBILITY, Downloads.VISIBILITY_HIDDEN);
         values.put(Downloads.COLUMN_MIME_TYPE, mimetype);
-        values.put(Downloads.COLUMN_FILE_NAME_HINT, filename);
-        values.put(Downloads.COLUMN_DESCRIPTION, uri.getHost());
+        values.put(Downloads.COLUMN_FILE_NAME_HINT, theUri.toString());
+        values.put(Downloads.COLUMN_DESCRIPTION, theUri.toString());
         values.put(Downloads.COLUMN_NOTIFICATION_EXTRAS, theUri.toString());
+        values.put(Downloads.COLUMN_DESTINATION, Downloads.DESTINATION_CACHE_PARTITION_PURGEABLE);
         if (contentLength > 0) {
             values.put(Downloads.COLUMN_TOTAL_BYTES, contentLength);
         }
@@ -143,7 +183,7 @@ public class DownloadInstallService extends Service {
 	public boolean install( String uri ) {
 		PackageInfo pkgInfo = new PackageInfo( Uri.parse("local"), Uri.parse( uri ), 
 				0, Constants.PackageState.unknown );
-		InstallingThread thrd = new InstallingThread(this, mSyncObject, pkgInfo);
+		InstallingThread thrd = new InstallingThread(this, pkgInfo);
 		thrd.start();
 		return true;
 	}
