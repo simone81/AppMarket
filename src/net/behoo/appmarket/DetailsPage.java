@@ -26,14 +26,12 @@ public class DetailsPage extends Activity {
         setContentView(R.layout.details_page); 
     }
     
-    
     public void onResume() {
     	super.onResume();
     	
     	bindService( new Intent( this, DownloadInstallService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
     	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_STATE ) );
     }
-    
     
     public void onPause() {
     	super.onPause();
@@ -58,8 +56,6 @@ public class DetailsPage extends Activity {
     };
     
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-
-		
 		public void onReceive(Context context, Intent intent) {
 			Log.i(TAG, "onReceive");
 		}
