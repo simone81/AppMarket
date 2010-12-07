@@ -26,7 +26,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.TextView;
 
 public class AppMarket extends Activity implements OnClickListener {
 	
@@ -43,15 +42,36 @@ public class AppMarket extends Activity implements OnClickListener {
 	private Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
         	switch (msg.what) {
-        	case DOWNLOAD_SUCCEED:// update all the ui
+        	case DOWNLOAD_SUCCEED:
         		break;
-        	case DOWNLOAD_FAILURE:// popup a dialog ? tbd
+        	case DOWNLOAD_FAILURE:
         		break;
             default:
                 break;
         	}
         	super.handleMessage(msg);
         }
+	};
+	
+	private ServiceConnection mServiceConn = new ServiceConnection() {
+    	
+    	public void onServiceConnected(ComponentName cname, IBinder binder){
+    		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
+    		mServiceBound = true;
+    		Log.i(TAG, "onServiceConnected cname: " + cname.toShortString());
+    	}
+    	
+    	public void onServiceDisconnected(ComponentName cname){
+    		mInstallService = null;
+    		mServiceBound = false;
+    		Log.i(TAG, "onServiceDisconnected");
+    	}
+    };
+    
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			Log.i(TAG, "onReceive");
+		}
 	};
 	
 	private boolean mThreadExit = false;
@@ -78,25 +98,23 @@ public class AppMarket extends Activity implements OnClickListener {
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        setContentView(R.layout.app_market);
         
-        // download and install
-        Button button = ( Button )findViewById( R.id.download_and_install );
-        button.setOnClickListener( this );  
+        Button button = ( Button )findViewById( R.id.main_btn_install );
+        button.setOnClickListener(this);
         
-        button = ( Button )findViewById( R.id.install_from_sdcard );
-        button.setOnClickListener( this );
+        button = ( Button )findViewById( R.id.main_btn_download_page );
+        button.setOnClickListener(this);
         
-        TextView tv = ( TextView )findViewById( R.id.main_input );
-        tv.setText( "http://192.168.1.50/ScreenTests.apk" );
+        button = ( Button )findViewById( R.id.main_btn_update_page );
+        button.setOnClickListener(this);
         
-        tv = ( TextView )findViewById( R.id.main_input_sdcard );
-        tv.setText( "file:///nfs/ScreenTests.apk" );
-        
-        mDownloadThread.start();
+        button = ( Button )findViewById( R.id.main_btn_applist_page );
+        button.setOnClickListener(this);
+       
+        //mDownloadThread.start();
         startService( new Intent(this, DownloadInstallService.class) );
     }
-    
     
     public void onResume() {
     	super.onResume();
@@ -105,7 +123,6 @@ public class AppMarket extends Activity implements OnClickListener {
     	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_STATE ) );
     }
     
-    
     public void onPause() {
     	super.onPause();
     	
@@ -113,72 +130,30 @@ public class AppMarket extends Activity implements OnClickListener {
     	unregisterReceiver( mReceiver );
     }
     
-    
     public void onDestroy() {
     	super.onDestroy();
     	
     	synchronized (this) { 
     		mThreadExit = true;
     	}
-    	//stopService( new Intent(this, DownloadInstallService.class) );
     }
-    
     
 	public void onClick(View v) {
-    	//this.startActivity( new Intent( this, DetailsPage.class ) );
-    	if( v.getId() == R.id.download_and_install ) {
-    		// download and install
-    		if( mServiceBound ) {
-        		TextView ev = ( TextView )findViewById( R.id.main_input );
-        		updateStatusUI( "begin downloading!" );
-        		mInstallService.downloadAndInstall(ev.getText().toString(), 
-        				"application/vnd.android.package-archive", null, -1);
-        	}
-        	else {
-        		updateStatusUI( "service is not bound!" );
-        	}
-    	}
-    	else {
-    		// install from sdcard
-    		if( mServiceBound ) {
-        		TextView ev = ( TextView )findViewById( R.id.main_input_sdcard );
-        		updateStatusUI( "begin installing!" );
-        		mInstallService.install( ev.getText().toString() );
-        	}
-        	else {
-        		updateStatusUI( "service is not bound!" );
-        	}
-    	}
-    }
-    
-    private void updateStatusUI( String status ) {
-    	TextView tv = ( TextView )findViewById( R.id.main_state );
-    	tv.setText( status );
-    }
-    
-    private ServiceConnection mServiceConn = new ServiceConnection() {
-    	
-    	public void onServiceConnected(ComponentName cname, IBinder binder){
-    		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
-    		mServiceBound = true;
-    		Log.i(TAG, "onServiceConnected cname: " + cname.toShortString());
-    	}
-    	
-    	public void onServiceDisconnected(ComponentName cname){
-    		mInstallService = null;
-    		mServiceBound = false;
-    		Log.i(TAG, "onServiceDisconnected");
-    	}
-    };
-    
-    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-
-		public void onReceive(Context context, Intent intent) {
-			Log.i(TAG, "onReceive");
-			Bundle bundle = intent.getExtras();
-			String url = bundle.getCharSequence(Constants.PACKAGE_URI).toString();
-			String state = bundle.getCharSequence(Constants.PACKAGE_STATE).toString();
-			AppMarket.this.updateStatusUI( url + " " + state );
+		Intent intent = new Intent();
+		if (v.getId() == R.id.main_btn_install) {
+			if (mServiceBound) {
+				mInstallService.install("");
+			}
 		}
-	};
+		else if (v.getId() == R.id.main_btn_applist_page ) {
+			intent.setClass(this, AppListPage.class);
+		}
+		else if (v.getId() == R.id.main_btn_update_page) {
+			intent.setClass(this, AppUpdatePage.class);
+		}
+		else if (v.getId() == R.id.main_btn_download_page) {
+			intent.setClass(this, DownloadPage.class);
+		}
+		startActivity( intent );
+    }
 }

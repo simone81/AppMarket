@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+    
+    <!-- summary -->
+    <include layout="@layout/app_summary_layout"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"/>		
+	
+	<!-- the market title -->
+	<include layout="@layout/market_title_layout"
+		android:layout_gravity="top|right"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"/>	
+			 		 
+	<RelativeLayout android:layout_width="fill_parent"
+	    android:layout_height="fill_parent">
+	    
+	    <!-- the anchor -->
+	    <LinearLayout android:id="@+id/app_list_anchor" 
+	    	android:layout_width="1dip"
+	    	android:layout_height="1dip"
+	    	android:layout_centerHorizontal="true"
+	    	android:layout_marginTop="100dip"/>
+	    	
+	    <TextView android:id="@+id/app_list_desc" 
+	    	style="@style/TextStyleSmall"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_marginLeft="30dip"
+	    	android:layout_toLeftOf="@id/app_list_anchor"
+	    	android:layout_marginRight="10dip"
+	    	android:layout_alignTop="@id/app_list_anchor"/>
+	    	
+	    <ListView android:id="@+id/app_list" 
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_toRightOf="@id/app_list_anchor"
+	    	android:layout_marginRight="30dip"
+	    	android:layout_marginLeft="10dip"
+	    	android:layout_alignTop="@id/app_list_anchor"/>	
+	    
+	    <Button android:id="@+id/applist_btn_detail" 
+	    	android:text="@string/applist_detail"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignParentBottom="true"
+	    	android:layout_marginLeft="30dip"
+	    	android:layout_marginBottom="15dip" />	
+	    		
+	</RelativeLayout>
+
+</merge>

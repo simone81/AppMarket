@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+    
+    <!-- summary -->
+    <include layout="@layout/app_summary_layout"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"/>		
+	
+	<!-- the market title -->
+	<include layout="@layout/market_title_layout"
+		android:layout_gravity="top|right"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"/>	
+			 		 
+	<RelativeLayout android:layout_width="fill_parent"
+	    android:layout_height="fill_parent">
+	    
+	    <!-- install button -->
+	    <Button android:id="@+id/main_btn_install" 
+	    	android:text="@string/main_btn_install"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_marginLeft="100dip"
+	    	android:layout_marginTop="50dip"/>
+
+	    <!-- description -->	
+	    <TextView android:id="@+id/main_app_desc"
+	    	style="@style/TextStyleSmall"
+	    	android:layout_width="fill_parent"
+	    	android:layout_height="60dip"
+	    	android:layout_marginLeft="30dip"
+	    	android:layout_marginRight="30dip"/>		
+	    
+	    <!-- grid -->	
+	    <GridView android:id="@+id/main_app_grid"
+	    	android:layout_width="wrap_content" 
+			android:layout_height="wrap_content"  
+			android:layout_below="@id/main_app_desc"
+			android:layout_marginTop="10dip"
+			android:layout_marginLeft="30dip"
+			android:layout_marginRight="30dip"
+			android:horizontalSpacing="5dip"
+			android:numColumns="8"
+			android:focusable="true"
+			android:listSelector="@drawable/focus" />
+	    
+	    <!-- bottom function buttons -->	
+	    <Button android:id="@+id/main_btn_download_page"
+	    	android:text="@string/main_btn_download_page"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_alignParentRight="true"
+			android:layout_marginRight="30dip"
+			android:layout_alignParentBottom="true"
+			android:layout_marginBottom="15dip" />	
+			
+		<Button android:id="@+id/main_btn_update_page"
+			android:text="@string/main_btn_update_page"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_toLeftOf="@id/main_btn_download_page"
+			android:layout_marginRight="10dip"
+			android:layout_alignTop="@id/main_btn_download_page" />
+		
+		<Button android:id="@+id/main_btn_applist_page"
+			android:text="@string/main_btn_applist_page"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_toLeftOf="@id/main_btn_update_page"
+			android:layout_marginRight="10dip"
+			android:layout_alignTop="@id/main_btn_update_page" />			  		
+	</RelativeLayout>
+
+</merge>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/app_summary_layout"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content">
+  
+	<ImageView android:id="@+id/main_app_logo" 
+    	android:src="@drawable/test"
+    	android:layout_width="wrap_content"
+    	android:layout_height="wrap_content"
+    	android:layout_marginLeft="30dip"
+    	android:layout_marginTop="15dip"/>
+	
+    <TextView android:id="@+id/main_app_title"
+    	style="@style/TextStyleNormal"
+    	android:layout_width="wrap_content"
+    	android:layout_height="wrap_content"
+    	android:layout_toRightOf="@id/main_app_logo"
+    	android:layout_marginLeft="10dip"
+    	android:layout_alignTop="@id/main_app_logo"
+    	android:layout_marginTop="5dip"/>
+    
+    <TextView android:id="@+id/main_app_author"
+    	style="@style/TextStyleSmall"
+    	android:layout_width="wrap_content"
+    	android:layout_height="wrap_content"
+    	android:layout_below="@id/main_app_title"
+    	android:layout_marginTop="5dip"
+    	android:layout_alignLeft="@id/main_app_title"/>
+    
+    <TextView android:id="@+id/main_app_version"
+    	style="@style/TextStyleSmall"
+    	android:layout_width="wrap_content"
+    	android:layout_height="wrap_content"
+    	android:layout_below="@id/main_app_author"
+    	android:layout_marginTop="5dip"
+    	android:layout_alignLeft="@id/main_app_author"/>
+	   		  
+</RelativeLayout>

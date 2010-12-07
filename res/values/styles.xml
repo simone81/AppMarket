@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <resources>
+        <style name="TextStyleLarge">
+            <item name="android:textSize">20sp</item>
+            <item name="android:textColor">#F0F0F0</item>
+        </style>
+        
+        <style name="TextStyleNormal">
+            <item name="android:textSize">18sp</item>
+            <item name="android:textColor">#F0F0F0</item>
+        </style>
+        
+        <style name="TextStyleSmall">
+            <item name="android:textSize">16sp</item>
+            <item name="android:textColor">#F0F0F0</item>
+        </style>
+        
+        <style name="AppTheme" parent="@android:style/Theme.NoTitleBar.Fullscreen">
+        	<!-- a solid or transluent color image needed -->
+        	<item name="android:windowBackground">@drawable/theme_background_color</item> 
+        </style>
+    </resources>
+
+

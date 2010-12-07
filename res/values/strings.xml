@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<!-- test -->
     <string name="hello">Hello World, AppMarket!</string>
-    <string name="app_name">AppMarket</string>
     <string name="details_page">tests</string>
     <string name="appmarket_download_install">download install</string>
     <string name="appmarket_install">install</string>
+    
+    <string name="app_name">AppMarket</string>
+    <string name="market_title">应用商店</string>
+    
+    <!-- main page -->
+    <string name="main_btn_install">立即安装</string>
+    <string name="main_btn_download_page">下载管理</string>
+    <string name="main_btn_update_page">升级应用</string>
+    <string name="main_btn_applist_page">所有应用</string>
+    
+    <!-- app list page -->
+    <string name="applist_detail">查看详情</string>
 </resources>
