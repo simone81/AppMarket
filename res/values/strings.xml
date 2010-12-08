@@ -6,8 +6,14 @@
     <string name="appmarket_download_install">download install</string>
     <string name="appmarket_install">install</string>
     
+    <!-- market layout -->
     <string name="app_name">AppMarket</string>
     <string name="market_title">应用商店</string>
+    <string name="market_promotion">推荐应用</string>
+    <string name="market_all_app">所有应用</string>
+    <string name="market_update">应用升级</string>
+    <string name="market_detail">应用详情</string>
+    <string name="market_downloadinstall">下载安装</string>
     
     <!-- main page -->
     <string name="main_btn_install">立即安装</string>
@@ -17,4 +23,27 @@
     
     <!-- app list page -->
     <string name="applist_detail">查看详情</string>
+    
+    <!-- app update page -->
+    <string name="appupdate_update">立即升级</string>
+    
+    <!-- app details page -->
+    <string name="appdetails_screenshot">内容截图</string>
+    <string name="appdetails_remotecntl">遥控器兼容度</string>
+	<string name="appdetails_rc_desc1">基本无法操作</string>
+	<string name="appdetails_rc_desc2">操作不太方便</string>
+	<string name="appdetails_rc_desc3">可以操作</string>
+	<string name="appdetails_rc_desc4">操作比较顺畅</string>
+	<string name="appdetails_rc_desc5">非常适合</string>
+	<string name="appdetails_review_title">壁虎评语</string>
+	
+	<!-- download install page -->
+	<string name="downloadpage_to_install">开始安装</string>
+	<string name="downloadpage_downloading">正在下载</string>
+	<string name="downloadpage_download_failure">下载失败</string>
+	<string name="downloadpage_installing">正在安装</string>
+	<string name="downloadpage_install_success">安装成功</string>
+	<string name="downloadpage_install_failure">安装失败</string>
+	<string name="downloadpage_retry">重试</string>
+	
 </resources>

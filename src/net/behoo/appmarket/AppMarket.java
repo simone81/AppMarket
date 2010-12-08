@@ -24,8 +24,12 @@ import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.GridView;
+import android.widget.ImageView;
 
 public class AppMarket extends Activity implements OnClickListener {
 	
@@ -113,7 +117,10 @@ public class AppMarket extends Activity implements OnClickListener {
         button.setOnClickListener(this);
        
         //mDownloadThread.start();
-        startService( new Intent(this, DownloadInstallService.class) );
+        startService(new Intent(this, DownloadInstallService.class));
+        
+        GridView gv = ( GridView )findViewById( R.id.main_app_grid );
+        gv.setAdapter(new AppAdapter(this));
     }
     
     public void onResume() {
@@ -155,5 +162,39 @@ public class AppMarket extends Activity implements OnClickListener {
 			intent.setClass(this, DownloadPage.class);
 		}
 		startActivity( intent );
+    }
+	
+	public class AppAdapter extends BaseAdapter {
+    	private Context _mContext;
+    	public AppAdapter(Context c) {
+            _mContext = c;
+        }
+
+        public int getCount() {
+        	return 8;
+        }
+
+        public Object getItem(int position) {
+            return position;
+        }
+
+        public long getItemId(int position) {
+            return position;
+        }
+
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ImageView imageView;
+            if (convertView == null) {
+                imageView = new ImageView( _mContext );
+                imageView.setLayoutParams(new GridView.LayoutParams(60, 60));
+                imageView.setAdjustViewBounds(false);
+                imageView.setPadding(8, 8, 8, 8);
+            } else {
+                imageView = (ImageView) convertView;
+            }
+
+            imageView.setImageResource(R.drawable.test);
+            return imageView;
+        }
     }
 }

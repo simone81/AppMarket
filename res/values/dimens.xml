@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<dimen name="screen_horz_margin">30dip</dimen>
+	<dimen name="screen_vert_margin">15dip</dimen>
+</resources>

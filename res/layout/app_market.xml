@@ -5,6 +5,7 @@
     
     <!-- summary -->
     <include layout="@layout/app_summary_layout"
+    	android:id="@+id/the_summary_layout"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"/>		
 	
@@ -22,16 +23,21 @@
 	    	android:text="@string/main_btn_install"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"
-	    	android:layout_marginLeft="100dip"
-	    	android:layout_marginTop="50dip"/>
+	    	android:layout_below="@id/the_summary_layout"
+	    	android:layout_marginLeft="150dip"
+	    	android:layout_marginTop="80dip"/>
 
 	    <!-- description -->	
 	    <TextView android:id="@+id/main_app_desc"
 	    	style="@style/TextStyleSmall"
+	    	android:text="文字简评:出气筒直奔金甲配合龙骑正面硬刚单BB开矿的傻新，傻新为求获胜吃肉坚强全防。优势之下出气筒速转航母，正面双金甲继续痛打落水狗。教主一把雷达撒中神族航母后表面慌慌张张补充对空力量，暗地偷矿悄悄运营。出气筒无视傻新救命恩情，空地强打，互换之后，Flash经济兵力尽湿，打出GG。(PLU_大头)"
 	    	android:layout_width="fill_parent"
-	    	android:layout_height="60dip"
-	    	android:layout_marginLeft="30dip"
-	    	android:layout_marginRight="30dip"/>		
+	    	android:layout_height="wrap_content"
+	    	android:layout_below="@id/main_btn_install"
+	    	android:layout_marginLeft="@dimen/screen_horz_margin"
+	    	android:layout_marginRight="@dimen/screen_horz_margin"
+	    	android:maxHeight="70dip"
+	    	android:ellipsize="end"/>		
 	    
 	    <!-- grid -->	
 	    <GridView android:id="@+id/main_app_grid"

@@ -9,20 +9,21 @@
     	android:src="@drawable/test"
     	android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
-    	android:layout_marginLeft="30dip"
-    	android:layout_marginTop="15dip"/>
+    	android:layout_marginLeft="@dimen/screen_horz_margin"
+    	android:layout_marginTop="@dimen/screen_vert_margin"/>
 	
     <TextView android:id="@+id/main_app_title"
     	style="@style/TextStyleNormal"
+    	android:text="测试效果"
     	android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
     	android:layout_toRightOf="@id/main_app_logo"
     	android:layout_marginLeft="10dip"
-    	android:layout_alignTop="@id/main_app_logo"
-    	android:layout_marginTop="5dip"/>
+    	android:layout_alignTop="@id/main_app_logo"/>
     
     <TextView android:id="@+id/main_app_author"
     	style="@style/TextStyleSmall"
+    	android:text="测试"
     	android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
     	android:layout_below="@id/main_app_title"
@@ -31,10 +32,21 @@
     
     <TextView android:id="@+id/main_app_version"
     	style="@style/TextStyleSmall"
+    	android:text="测试"
     	android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
     	android:layout_below="@id/main_app_author"
     	android:layout_marginTop="5dip"
     	android:layout_alignLeft="@id/main_app_author"/>
-	   		  
+	
+	<TextView android:id="@+id/main_app_size"
+    	style="@style/TextStyleSmall"
+    	android:text="测试"
+    	android:layout_width="wrap_content"
+    	android:layout_height="wrap_content"
+    	android:layout_below="@id/main_app_version"
+    	android:layout_marginTop="5dip"
+    	android:layout_alignLeft="@id/main_app_version"
+    	android:visibility="invisible"/>		
+    	  
 </RelativeLayout>
