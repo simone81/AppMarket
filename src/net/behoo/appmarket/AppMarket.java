@@ -1,8 +1,7 @@
 package net.behoo.appmarket;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
@@ -12,12 +11,15 @@ import net.behoo.appmarket.http.UrlHelpers;
 import net.behoo.appmarket.data.AppInfo;
 
 import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -30,25 +32,33 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
 
 public class AppMarket extends Activity implements OnClickListener {
 	
 	private static final String TAG = "AppMarket";
 	
-	private static final int DOWNLOAD_SUCCEED = 0;
-	private static final int DOWNLOAD_FAILURE = 1;
+	private static final int WAITING_DIALOG = 0;
 	
-	private Map<String, AppInfo> mAppLib = new HashMap<String, AppInfo>();
+	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
 	
 	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
 	
+	private GridView mGridView = null;
+	
 	private Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
         	switch (msg.what) {
-        	case DOWNLOAD_SUCCEED:
+        	case HttpUtil.DOWNLOAD_SUCCEED:
+        		AppMarket.this.mGridView.invalidate();
+        		AppMarket.this.updateUIState();
+        		AppMarket.this.dismissDialog(AppMarket.WAITING_DIALOG);
         		break;
-        	case DOWNLOAD_FAILURE:
+        	case HttpUtil.DOWNLOAD_FAILURE:
+        		AppMarket.this.dismissDialog(AppMarket.WAITING_DIALOG);
+        		// retry ?
         		break;
             default:
                 break;
@@ -81,14 +91,14 @@ public class AppMarket extends Activity implements OnClickListener {
 	private boolean mThreadExit = false;
 	private Thread mDownloadThread = new Thread(new Runnable() {
 		public void run() {
-			int msg = DOWNLOAD_SUCCEED;
+			int msg = HttpUtil.DOWNLOAD_SUCCEED;
 			try {
 				HttpUtil httpUtil = new HttpUtil();
 				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
 				AppListParser.parse(stream, mAppLib);
 			}
 			catch ( Throwable tr ) {
-				msg = DOWNLOAD_FAILURE;
+				msg = HttpUtil.DOWNLOAD_FAILURE;
 			}
 			
 			synchronized (this) { 
@@ -104,6 +114,9 @@ public class AppMarket extends Activity implements OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.app_market);
         
+        TextView tv = (TextView)findViewById(R.id.market_subtitle);
+        tv.setText(R.string.market_promotion);
+        
         Button button = ( Button )findViewById( R.id.main_btn_install );
         button.setOnClickListener(this);
         
@@ -115,12 +128,13 @@ public class AppMarket extends Activity implements OnClickListener {
         
         button = ( Button )findViewById( R.id.main_btn_applist_page );
         button.setOnClickListener(this);
-       
-        //mDownloadThread.start();
-        startService(new Intent(this, DownloadInstallService.class));
         
-        GridView gv = ( GridView )findViewById( R.id.main_app_grid );
-        gv.setAdapter(new AppAdapter(this));
+        mGridView = ( GridView )findViewById( R.id.main_app_grid );
+        mGridView.setAdapter(new AppAdapter(this));
+        
+        mDownloadThread.start();
+        startService(new Intent(this, DownloadInstallService.class));
+        showDialog(WAITING_DIALOG);
     }
     
     public void onResume() {
@@ -164,6 +178,43 @@ public class AppMarket extends Activity implements OnClickListener {
 		startActivity( intent );
     }
 	
+	public Dialog onCreateDialog(int id) {
+		switch (id) {
+        case WAITING_DIALOG:
+        	return ProgressDialog.show((Context)this, 
+        			this.getString(R.string.main_dlginit_title), 
+        			this.getString(R.string.main_dlginit_content),
+        			true );
+       }
+       return null;
+	}
+	
+	private void updateUIState() {
+		if (mGridView.getCount() > 0 ) {
+			int pos = mGridView.getSelectedItemPosition();
+			if (ListView.INVALID_POSITION == pos) {
+				mGridView.setSelection(0);
+				pos = 0;
+			}
+			
+			AppInfo appInfo = mAppLib.get(pos);
+			TextView tv = (TextView)findViewById(R.id.main_app_title);
+			tv.setText(appInfo.mAppName);
+			
+			tv = (TextView)findViewById(R.id.main_app_author);
+			tv.setText(appInfo.mAppAuthor);
+			
+			tv = (TextView)findViewById(R.id.main_app_version);
+			tv.setText(appInfo.mAppVersion);
+			
+			tv = (TextView)findViewById(R.id.main_app_desc);
+			tv.setText(appInfo.mAppShortDesc);
+		}
+		else {
+			
+		}
+	}
+	
 	public class AppAdapter extends BaseAdapter {
     	private Context _mContext;
     	public AppAdapter(Context c) {
@@ -171,7 +222,7 @@ public class AppMarket extends Activity implements OnClickListener {
         }
 
         public int getCount() {
-        	return 8;
+        	return mAppLib.size();
         }
 
         public Object getItem(int position) {
@@ -192,8 +243,14 @@ public class AppMarket extends Activity implements OnClickListener {
             } else {
                 imageView = (ImageView) convertView;
             }
-
-            imageView.setImageResource(R.drawable.test);
+            
+            AppInfo appInfo = AppMarket.this.mAppLib.get(position);
+            if (null != appInfo) {
+            	imageView.setImageURI(Uri.parse(appInfo.mAppImageUrl));
+            }
+            else {
+            	imageView.setImageResource(R.drawable.test);
+            }
             return imageView;
         }
     }

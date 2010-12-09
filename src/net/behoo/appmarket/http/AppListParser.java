@@ -1,7 +1,7 @@
 package net.behoo.appmarket.http;
 
 import java.io.InputStream;
-import java.util.Map;
+import java.util.ArrayList;
 
 import org.xmlpull.v1.XmlPullParser;
 
@@ -10,7 +10,7 @@ import android.util.Xml;
 import net.behoo.appmarket.data.AppInfo;
 
 public class AppListParser {
-	static public void parse(InputStream stream, Map<String, AppInfo> appLib) {
+	static public void parse(InputStream stream, ArrayList<AppInfo> appLib) {
 		if (null == stream || null == appLib)
 			throw new IllegalArgumentException();
 		
@@ -61,8 +61,8 @@ public class AppListParser {
                 	tagName = parser.getName();
                 	if (tagName.equalsIgnoreCase("BH_S_Application") && null != appInfo) {
                 		appInfo.setDetailsInit(true);
-                		if(bAppUpdate || !appLib.containsKey(appInfo.mAppCode)) {
-                			appLib.put(appInfo.mAppCode, appInfo);
+                		if(bAppUpdate || containsApp(appLib, appInfo.mAppCode)) {
+                			appLib.add(appInfo);
                 		}
                 		appInfo = null;
                 	}
@@ -77,5 +77,14 @@ public class AppListParser {
 	        }
     	} catch ( Throwable tr ) {
     	}
+	}
+	
+	static private boolean containsApp(ArrayList<AppInfo> appLib, String appCode) {
+		for (int i = 0; i < appLib.size(); ++i) {
+			if (appCode == appLib.get(i).mAppCode) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -1,7 +1,14 @@
 package net.behoo.appmarket;
 
+import java.io.InputStream;
+
+import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
+import net.behoo.appmarket.http.AppDetailParser;
+import net.behoo.appmarket.http.AppListParser;
+import net.behoo.appmarket.http.HttpUtil;
+import net.behoo.appmarket.http.UrlHelpers;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -13,12 +20,13 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
-public class DetailsPage extends Activity {
+public class DetailsPage extends AsyncTaskActivity {
 	private static final String TAG = "DetailsPage";
 	
 	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
 	
+	private AppInfo mAppInfo = new AppInfo();
     /** Called when the activity is first created. */
     
     public void onCreate(Bundle savedInstanceState) {
@@ -40,6 +48,21 @@ public class DetailsPage extends Activity {
     	unregisterReceiver( mReceiver );
     }
     
+    protected boolean onRunTask() {
+    	try {
+	    	HttpUtil httpUtil = new HttpUtil();
+			InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
+			AppDetailParser.parse(stream, mAppInfo);
+			return true;
+    	} catch (Throwable tr) {
+    		return false;
+    	}
+    }
+	
+	protected void onTaskCompleted(int result) {
+		
+	}
+	
     private ServiceConnection mServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){

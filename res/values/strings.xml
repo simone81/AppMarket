@@ -20,6 +20,8 @@
     <string name="main_btn_download_page">下载管理</string>
     <string name="main_btn_update_page">升级应用</string>
     <string name="main_btn_applist_page">所有应用</string>
+    <string name="main_dlginit_title">壁虎商店</string>
+    <string name="main_dlginit_content">正在加载...</string>
     
     <!-- app list page -->
     <string name="applist_detail">查看详情</string>
