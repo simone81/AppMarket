@@ -10,7 +10,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class DownloadPage extends Activity {
+public class AppDownloadPage extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.download_page);
@@ -48,7 +48,7 @@ public class DownloadPage extends Activity {
             } else {
                 text = (TextView)convertView;
             }
-            text.setText("込込込込込込込込");
+            text.setText("12345678");
             return text;
         }
     }

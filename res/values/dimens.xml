@@ -2,4 +2,7 @@
 <resources>
 	<dimen name="screen_horz_margin">30dip</dimen>
 	<dimen name="screen_vert_margin">15dip</dimen>
+	
+	<dimen name="main_image_spacing">5dip</dimen>
+	<dimen name="main_image_side">55dip</dimen>
 </resources>

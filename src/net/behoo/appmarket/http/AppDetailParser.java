@@ -9,11 +9,12 @@ import android.util.Xml;
 import net.behoo.appmarket.data.AppInfo;
 
 public class AppDetailParser {
-	static public void parse(InputStream stream, AppInfo appInfo) {
-		if(null == stream || null == appInfo) {
+	static public AppInfo parse(InputStream stream) {
+		if(null == stream) {
 			throw new IllegalArgumentException();
 		}
 		
+		AppInfo appInfo = new AppInfo();
 		XmlPullParser parser = Xml.newPullParser();
     	try {
     		parser.setInput(stream, null);
@@ -31,22 +32,22 @@ public class AppDetailParser {
                 	}
                 	else if (bDataValid) {
                 		if (tagName.equalsIgnoreCase("BH_D_App_Name")) {
-                			bDataValid = appInfo.mAppName.equalsIgnoreCase(parser.nextText());
+                			appInfo.mAppName = parser.nextText();
 	                	}
 	                	else if(tagName.equalsIgnoreCase("BH_D_App_Version")) {
-	                		bDataValid = appInfo.mAppVersion.equalsIgnoreCase(parser.nextText());
+	                		appInfo.mAppVersion = parser.nextText();
 	                	}
 	                	else if(tagName.equalsIgnoreCase("BH_D_App_Author")) {
-	                		bDataValid = appInfo.mAppAuthor.equalsIgnoreCase(parser.nextText());
+	                		appInfo.mAppAuthor = parser.nextText();
 	                	}
 	                	else if(tagName.equalsIgnoreCase("BH_D_App_Pic_Url")) {
-	                		bDataValid = appInfo.mAppImageUrl.equalsIgnoreCase(parser.nextText());
+	                		appInfo.mAppImageUrl = parser.nextText();
 	                	}
 	                	else if(tagName.equalsIgnoreCase("BH_D_App_Short_Desc")) {
-	                		bDataValid = appInfo.mAppShortDesc.equalsIgnoreCase(parser.nextText());
+	                		appInfo.mAppShortDesc = parser.nextText();
 	                	}
 	                	else if(tagName.equalsIgnoreCase("BH_D_App_Code")) {
-	                		bDataValid = appInfo.mAppCode.equalsIgnoreCase(parser.nextText());
+	                		appInfo.mAppCode = parser.nextText();
 	                	}
 	                	else if(tagName.equalsIgnoreCase("BH_D_App_Long_Desc")) {
 	                		appInfo.mAppDesc = parser.nextText();
@@ -87,5 +88,6 @@ public class AppDetailParser {
 	        }
     	} catch ( Throwable tr ) {
     	}
+    	return appInfo;
 	}
 }

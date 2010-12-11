@@ -7,96 +7,98 @@ import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.UrlHelpers;
-import android.app.Activity;
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.AdapterView.OnItemSelectedListener;
 
-public class AppListPage extends Activity implements OnClickListener {
-	
-	private static final int WAITING_DIALOG = 0;
+public class AppListPage extends AsyncTaskActivity 
+						 implements OnClickListener, OnItemSelectedListener {
+	private static final String TAG = "AppListPage";
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
-	
-	private Handler mHandler = new Handler() {
-		public void handleMessage(Message msg) {
-        	switch (msg.what) {
-        	case HttpUtil.DOWNLOAD_SUCCEED:
-        		AppListPage.this.dismissDialog(AppListPage.WAITING_DIALOG);
-        		break;
-        	case HttpUtil.DOWNLOAD_FAILURE:
-        		AppListPage.this.dismissDialog(AppListPage.WAITING_DIALOG);
-        		// retry ?
-        		break;
-            default:
-                break;
-        	}
-        	super.handleMessage(msg);
-        }
-	};
-	
-	private boolean mThreadExit = false;
-	private Thread mDownloadThread = new Thread(new Runnable() {
-		public void run() {
-			int msg = HttpUtil.DOWNLOAD_SUCCEED;
-			try {
-				HttpUtil httpUtil = new HttpUtil();
-				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
-				AppListParser.parse(stream, mAppList);
-			}
-			catch ( Throwable tr ) {
-				msg = HttpUtil.DOWNLOAD_FAILURE;
-			}
-			
-			synchronized (this) { 
-				if(!mThreadExit) {
-					mHandler.sendEmptyMessageDelayed(msg, 0);
-				}
-			}
-		}
-	});
+	private ListView mListView = null;
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.app_list_page);
 		
-		ListView lv = (ListView)findViewById(R.id.app_list);
-		lv.setAdapter(new AppListAdapter(this));
+		mListView = (ListView)findViewById(R.id.app_list);
+		mListView.setAdapter(new AppListAdapter(this));
+		mListView.setOnItemSelectedListener(this);
 		
 		Button button = ( Button )findViewById( R.id.applist_btn_detail );
 		button.setOnClickListener(this);
 		
-		mDownloadThread.start();
-		showDialog(WAITING_DIALOG);
+		startTaskAndShowDialog();
 	}
 	
 	public void onClick(View v) {
-		Intent intent = new Intent();
-		intent.setClass(AppListPage.this, DetailsPage.class);
-		startActivity( intent );
+		//int pos = mListView.getSelectedItemPosition();
+		//if (ListView.INVALID_POSITION != pos) {
+			Intent intent = new Intent();
+			intent.setClass(AppListPage.this, AppDetailsPage.class);
+			intent.putExtra(AppDetailsPage.APP_CODE, "");
+			//intent.putExtra(DetailsPage.APP_CODE, mAppList.get(pos).mAppCode);
+			startActivity( intent );
+		//}
 	}
 	
-	public Dialog onCreateDialog(int id) {
-		switch (id) {
-        case WAITING_DIALOG:
-        	return ProgressDialog.show((Context)this, 
-        			this.getString(R.string.main_dlginit_title), 
-        			this.getString(R.string.main_dlginit_content),
-        			true );
-       }
-       return null;
+	public void onItemSelected(AdapterView parent, View view, int position, long id) {
+		updateUIState();
+	}
+	
+	public void onNothingSelected(AdapterView view) {
+		
+	}
+	 
+	protected boolean onRunTask() {
+    	try {
+    		HttpUtil httpUtil = new HttpUtil();
+			InputStream stream = httpUtil.httpGet(UrlHelpers.getAppListUrl("", 0, 0));
+			mAppList = AppListParser.parse(stream);
+			return true;
+    	} catch (Throwable tr) {
+    		return false;
+    	}
+    }
+	
+	protected void onTaskCompleted(int result) {
+		Log.i(TAG, String.format("onTaskComplete %d", mAppList.size()));
+		mListView.invalidate();
+		if (mListView.getCount() > 0)
+			mListView.setSelection(0);
+		updateUIState();
+	}
+	
+	private void updateUIState() {
+		assert(mListView.getCount() == mAppList.size());
+		int pos = mListView.getSelectedItemPosition();
+		if (ListView.INVALID_POSITION != pos && mListView.getCount() > 0) {
+			AppInfo appInfo = mAppList.get(pos);
+			
+			TextView tv = (TextView)findViewById(R.id.main_app_title);
+			tv.setText(appInfo.mAppName);
+			
+			tv = (TextView)findViewById(R.id.main_app_author);
+			tv.setText(appInfo.mAppAuthor);
+			
+			tv = (TextView)findViewById(R.id.main_app_version);
+			tv.setText(appInfo.mAppVersion);
+			
+			tv = (TextView)findViewById(R.id.app_list_desc);
+			tv.setText(appInfo.mAppShortDesc);
+		}
 	}
 	
 	private class AppListAdapter extends BaseAdapter {
@@ -109,7 +111,7 @@ public class AppListPage extends Activity implements OnClickListener {
         }
 
         public int getCount() {
-            return 10;
+            return mAppList.size();
         }
 
         public Object getItem(int position) {
@@ -121,15 +123,14 @@ public class AppListPage extends Activity implements OnClickListener {
         }
 
         public View getView(int position, View convertView, ViewGroup parent) {
-            TextView text;
+            View view = mInflater.inflate(R.layout.applist_item_layout, parent, false);
+            view.setFocusable(true);
             
-            if (convertView == null) {
-                text = (TextView)mInflater.inflate(android.R.layout.simple_list_item_1, parent, false);
-            } else {
-                text = (TextView)convertView;
-            }
-            text.setText("込込込込込込込込");
-            return text;
+            AppInfo appInfo = mAppList.get(position);
+            TextView tv = (TextView)view.findViewById(R.id.applist_item_title);
+            tv.setText(appInfo.mAppName);
+            
+            return view;
         }
-    }
+    }   
 }

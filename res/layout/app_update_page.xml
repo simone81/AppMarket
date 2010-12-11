@@ -26,7 +26,6 @@
 	    	
 	    <TextView android:id="@+id/app_update_desc" 
 	    	style="@style/TextStyleSmall"
-	    	android:text="文字简评:出气筒直奔金甲配合龙骑正面硬刚单BB开矿的傻新，傻新为求获胜吃肉坚强全防。优势之下出气筒速转航母，正面双金甲继续痛打落水狗。教主一把雷达撒中神族航母后表面慌慌张张补充对空力量，暗地偷矿悄悄运营。出气筒无视傻新救命恩情，空地强打，互换之后，Flash经济兵力尽湿，打出GG。(PLU_大头)"
 	    	android:layout_width="250dip"
 	    	android:layout_height="120dip"
 	    	android:layout_marginLeft="@dimen/screen_horz_margin"

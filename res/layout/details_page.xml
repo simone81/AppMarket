@@ -72,7 +72,6 @@
 	    	
 	    <TextView android:id="@+id/detail_review_desc" 
 	    	style="@style/TextStyleSmall"
-	    	android:text="护法SKT1开局后开2矿，石头的空投影刀战术所得有限。护法的一波推进赶走石头的兵后开出3矿，石头速出VA后也开出3矿。神族第一波传送稍稍打乱护法节奏，之后石头憋出大部队配合2把冰冻把优势继续扩大。经过几番缠绵护法抵抗无力，被A进主家后GG"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"
 	    	android:layout_alignLeft="@id/detail_review_title"
@@ -82,7 +81,7 @@
 	    	android:ellipsize="end"/>
 	    		
 	    <!-- install button -->	
-	    <Button android:id="@+id/applist_btn_detail" 
+	    <Button android:id="@+id/detail_btn_install" 
 	    	android:text="@string/market_downloadinstall"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"

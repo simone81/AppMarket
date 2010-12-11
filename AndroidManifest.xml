@@ -34,9 +34,9 @@
 		
 		<activity android:name=".AppUpdatePage"/>
 		
-		<activity android:name=".DownloadPage"/>
+		<activity android:name=".AppDownloadPage"/>
 		
-		<activity android:name=".DetailsPage"/>
+		<activity android:name=".AppDetailsPage"/>
 		
 		<service android:name=".downloadinstall.DownloadInstallService"/>
 		

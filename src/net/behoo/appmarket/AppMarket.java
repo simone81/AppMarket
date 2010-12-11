@@ -10,62 +10,37 @@ import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.UrlHelpers;
 import net.behoo.appmarket.data.AppInfo;
 
-import android.app.Activity;
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
-import android.widget.BaseAdapter;
+import android.view.View.OnFocusChangeListener;
 import android.widget.Button;
-import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 
-public class AppMarket extends Activity implements OnClickListener {
+public class AppMarket extends AsyncTaskActivity 
+					   implements OnClickListener, OnFocusChangeListener {
 	
 	private static final String TAG = "AppMarket";
 	
-	private static final int WAITING_DIALOG = 0;
+	private Button mButtonInstall = null;
+	private Button mButtonAppList = null;
+	private Button mButtonUpdate = null;
+	private Button mButtonDownloadMgr = null;
 	
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
+	private Integer mCurrentSelection = -1;
 	
 	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
-	
-	private GridView mGridView = null;
-	
-	private Handler mHandler = new Handler() {
-		public void handleMessage(Message msg) {
-        	switch (msg.what) {
-        	case HttpUtil.DOWNLOAD_SUCCEED:
-        		AppMarket.this.mGridView.invalidate();
-        		AppMarket.this.updateUIState();
-        		AppMarket.this.dismissDialog(AppMarket.WAITING_DIALOG);
-        		break;
-        	case HttpUtil.DOWNLOAD_FAILURE:
-        		AppMarket.this.dismissDialog(AppMarket.WAITING_DIALOG);
-        		// retry ?
-        		break;
-            default:
-                break;
-        	}
-        	super.handleMessage(msg);
-        }
-	};
 	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
@@ -88,27 +63,6 @@ public class AppMarket extends Activity implements OnClickListener {
 		}
 	};
 	
-	private boolean mThreadExit = false;
-	private Thread mDownloadThread = new Thread(new Runnable() {
-		public void run() {
-			int msg = HttpUtil.DOWNLOAD_SUCCEED;
-			try {
-				HttpUtil httpUtil = new HttpUtil();
-				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
-				AppListParser.parse(stream, mAppLib);
-			}
-			catch ( Throwable tr ) {
-				msg = HttpUtil.DOWNLOAD_FAILURE;
-			}
-			
-			synchronized (this) { 
-				if(!mThreadExit) {
-					mHandler.sendEmptyMessageDelayed(msg, 0);
-				}
-			}
-		}
-	});
-	
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -117,24 +71,20 @@ public class AppMarket extends Activity implements OnClickListener {
         TextView tv = (TextView)findViewById(R.id.market_subtitle);
         tv.setText(R.string.market_promotion);
         
-        Button button = ( Button )findViewById( R.id.main_btn_install );
-        button.setOnClickListener(this);
+        mButtonInstall = ( Button )findViewById(R.id.main_btn_install);
+        mButtonInstall.setOnClickListener(this);
         
-        button = ( Button )findViewById( R.id.main_btn_download_page );
-        button.setOnClickListener(this);
+        mButtonUpdate = ( Button )findViewById(R.id.main_btn_download_page);
+        mButtonUpdate.setOnClickListener(this);
         
-        button = ( Button )findViewById( R.id.main_btn_update_page );
-        button.setOnClickListener(this);
+        mButtonDownloadMgr = ( Button )findViewById(R.id.main_btn_update_page);
+        mButtonDownloadMgr.setOnClickListener(this);
         
-        button = ( Button )findViewById( R.id.main_btn_applist_page );
-        button.setOnClickListener(this);
+        mButtonAppList = ( Button )findViewById(R.id.main_btn_applist_page);
+        mButtonAppList.setOnClickListener(this);
         
-        mGridView = ( GridView )findViewById( R.id.main_app_grid );
-        mGridView.setAdapter(new AppAdapter(this));
-        
-        mDownloadThread.start();
         startService(new Intent(this, DownloadInstallService.class));
-        showDialog(WAITING_DIALOG);
+        super.startTaskAndShowDialog();
     }
     
     public void onResume() {
@@ -151,14 +101,6 @@ public class AppMarket extends Activity implements OnClickListener {
     	unregisterReceiver( mReceiver );
     }
     
-    public void onDestroy() {
-    	super.onDestroy();
-    	
-    	synchronized (this) { 
-    		mThreadExit = true;
-    	}
-    }
-    
 	public void onClick(View v) {
 		Intent intent = new Intent();
 		if (v.getId() == R.id.main_btn_install) {
@@ -173,31 +115,74 @@ public class AppMarket extends Activity implements OnClickListener {
 			intent.setClass(this, AppUpdatePage.class);
 		}
 		else if (v.getId() == R.id.main_btn_download_page) {
-			intent.setClass(this, DownloadPage.class);
+			intent.setClass(this, AppDownloadPage.class);
 		}
 		startActivity( intent );
     }
 	
-	public Dialog onCreateDialog(int id) {
-		switch (id) {
-        case WAITING_DIALOG:
-        	return ProgressDialog.show((Context)this, 
-        			this.getString(R.string.main_dlginit_title), 
-        			this.getString(R.string.main_dlginit_content),
-        			true );
-       }
-       return null;
+	public void onFocusChange(View v, boolean hasFocus) {
+		Integer index = -1;
+		int min = mImageViewIds[0];
+		int max = mImageViewIds[mImageViewIds.length-1];
+		if (v.getId() <= max && v.getId() >= min) {
+			index = (Integer)v.getTag();
+			mCurrentSelection = index;
+			// redraw
+			if (hasFocus) {
+				updateUIState();
+				v.setBackgroundResource(R.drawable.focus);
+				mButtonInstall.setNextFocusDownId(v.getId());
+				mButtonAppList.setNextFocusUpId(v.getId());
+				mButtonUpdate.setNextFocusUpId(v.getId());
+				mButtonDownloadMgr.setNextFocusUpId(v.getId());
+			}
+			else {
+				v.setBackgroundResource(0);
+			}
+		}
+	}
+	
+	protected boolean onRunTask() {
+    	try {
+    		HttpUtil httpUtil = new HttpUtil();
+			InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
+			mAppLib = AppListParser.parse(stream);
+			return true;
+    	} catch (Throwable tr) {
+    		return false;
+    	}
+    }
+	
+	protected void onTaskCompleted(int result) {
+		if (mAppLib.size() > 0) {
+			mCurrentSelection = 0;
+		}
+		
+		for (int i = 0; i < mImageViewIds.length; ++i) {
+			ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
+			if (i < mAppLib.size()) {
+				iv.setImageResource(R.drawable.test);
+				iv.setFocusable(true);
+				iv.setOnFocusChangeListener(this);
+				iv.setTag(new Integer(i));
+				iv.setPadding(5, 5, 5, 5);
+				if (i == mCurrentSelection) {
+					iv.requestFocus();
+				}
+			}
+			else {
+				iv.setVisibility(View.INVISIBLE);
+			}
+		}
+		
+		updateUIState();
 	}
 	
 	private void updateUIState() {
-		if (mGridView.getCount() > 0 ) {
-			int pos = mGridView.getSelectedItemPosition();
-			if (ListView.INVALID_POSITION == pos) {
-				mGridView.setSelection(0);
-				pos = 0;
-			}
+		if (mAppLib.size() > 0) {
+			assert(mCurrentSelection >= 0 && mCurrentSelection < mAppLib.size());
 			
-			AppInfo appInfo = mAppLib.get(pos);
+			AppInfo appInfo = mAppLib.get(mCurrentSelection);
 			TextView tv = (TextView)findViewById(R.id.main_app_title);
 			tv.setText(appInfo.mAppName);
 			
@@ -211,47 +196,13 @@ public class AppMarket extends Activity implements OnClickListener {
 			tv.setText(appInfo.mAppShortDesc);
 		}
 		else {
-			
 		}
 	}
 	
-	public class AppAdapter extends BaseAdapter {
-    	private Context _mContext;
-    	public AppAdapter(Context c) {
-            _mContext = c;
-        }
-
-        public int getCount() {
-        	return mAppLib.size();
-        }
-
-        public Object getItem(int position) {
-            return position;
-        }
-
-        public long getItemId(int position) {
-            return position;
-        }
-
-        public View getView(int position, View convertView, ViewGroup parent) {
-            ImageView imageView;
-            if (convertView == null) {
-                imageView = new ImageView( _mContext );
-                imageView.setLayoutParams(new GridView.LayoutParams(60, 60));
-                imageView.setAdjustViewBounds(false);
-                imageView.setPadding(8, 8, 8, 8);
-            } else {
-                imageView = (ImageView) convertView;
-            }
-            
-            AppInfo appInfo = AppMarket.this.mAppLib.get(position);
-            if (null != appInfo) {
-            	imageView.setImageURI(Uri.parse(appInfo.mAppImageUrl));
-            }
-            else {
-            	imageView.setImageResource(R.drawable.test);
-            }
-            return imageView;
-        }
-    }
+	private Integer[] mImageViewIds = {
+		R.id.main_appimage_1, 	R.id.main_appimage_2, 
+		R.id.main_appimage_3, 	R.id.main_appimage_4, 
+		R.id.main_appimage_5, 	R.id.main_appimage_6, 
+		R.id.main_appimage_7, 	R.id.main_appimage_8, 
+	};
 }

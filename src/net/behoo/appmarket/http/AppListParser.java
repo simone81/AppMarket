@@ -10,10 +10,11 @@ import android.util.Xml;
 import net.behoo.appmarket.data.AppInfo;
 
 public class AppListParser {
-	static public void parse(InputStream stream, ArrayList<AppInfo> appLib) {
-		if (null == stream || null == appLib)
+	static public ArrayList<AppInfo> parse(InputStream stream) {
+		if (null == stream)
 			throw new IllegalArgumentException();
 		
+		ArrayList<AppInfo> appLib = new ArrayList<AppInfo>();
     	XmlPullParser parser = Xml.newPullParser();
     	try {
     		parser.setInput(stream, null);
@@ -60,7 +61,7 @@ public class AppListParser {
                 case XmlPullParser.END_TAG:
                 	tagName = parser.getName();
                 	if (tagName.equalsIgnoreCase("BH_S_Application") && null != appInfo) {
-                		appInfo.setDetailsInit(true);
+                		appInfo.setSummaryInit(true);
                 		if(bAppUpdate || containsApp(appLib, appInfo.mAppCode)) {
                 			appLib.add(appInfo);
                 		}
@@ -77,6 +78,7 @@ public class AppListParser {
 	        }
     	} catch ( Throwable tr ) {
     	}
+    	return appLib;
 	}
 	
 	static private boolean containsApp(ArrayList<AppInfo> appLib, String appCode) {

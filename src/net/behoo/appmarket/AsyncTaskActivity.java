@@ -1,15 +1,11 @@
 package net.behoo.appmarket;
 
-import java.io.InputStream;
 
-import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.HttpUtil;
-import net.behoo.appmarket.http.UrlHelpers;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
@@ -52,12 +48,13 @@ abstract public class AsyncTaskActivity extends Activity {
 		}
 	});
 	
-	public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        mDownloadThread.start();
-        showDialog(WAITING_DIALOG);
-	}
+	public void onDestroy() {
+    	super.onDestroy();
+    	
+    	synchronized (this) { 
+    		mThreadExit = true;
+    	}
+    }
 	
 	public Dialog onCreateDialog(int id) {
 		switch (id) {
@@ -68,6 +65,11 @@ abstract public class AsyncTaskActivity extends Activity {
         			true );
        }
        return null;
+	}
+	
+	protected void startTaskAndShowDialog() {
+		mDownloadThread.start();
+        showDialog(WAITING_DIALOG);
 	}
 	
 	abstract protected boolean onRunTask() ;
