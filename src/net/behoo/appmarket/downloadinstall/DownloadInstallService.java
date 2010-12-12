@@ -133,6 +133,7 @@ public class DownloadInstallService extends Service {
 		String where = PackageDbHelper.COLUMN_CODE + "=?";
 		String[] whereValue = {appCode};
 		Cursor c = mPkgDBHelper.select(columns, where, whereValue, null);
+		Assert.assertTrue(c.getCount() >= 0 && c.getCount() <= 1);
 		boolean bExists = (c.getCount() == 1);
 		String statusStr = null;
 		PackageState state = PackageState.unknown;

@@ -15,4 +15,12 @@ public class Constants {
 		install_failed, 	install_succeeded,
 		uninstalled,		need_update,
 	}
+	
+	static public PackageState getStateByString(String value) {
+		try {
+			return PackageState.valueOf(value);// need tests tbd
+		} catch (Throwable tr) {
+			return PackageState.unknown;
+		}
+	}
 }

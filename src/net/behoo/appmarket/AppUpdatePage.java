@@ -70,7 +70,7 @@ public class AppUpdatePage extends AsyncTaskActivity {
 			reqStr += "</BH_S_App_Code_List>";
 			
 			HttpUtil httpUtil = new HttpUtil();
-			String url = UrlHelpers.getUpdateUrl("", null);
+			String url = UrlHelpers.getUpdateUrl("");
 			InputStream inputStream = httpUtil.httpPost("http://192.168.1.5", reqStr);
 			AppListParser.parse(inputStream);
 			return true;

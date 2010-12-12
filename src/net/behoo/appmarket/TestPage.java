@@ -76,8 +76,8 @@ public class TestPage extends Activity implements OnClickListener {
     		if( mServiceBound ) {
         		TextView ev = ( TextView )findViewById( R.id.main_input );
         		updateStatusUI( "begin downloading!" );
-        		mInstallService.downloadAndInstall(ev.getText().toString(), 
-        				"application/vnd.android.package-archive", null, -1);
+        		//mInstallService.downloadAndInstall(ev.getText().toString(), 
+        		//		"application/vnd.android.package-archive", null, -1);
         	}
         	else {
         		updateStatusUI( "service is not bound!" );
