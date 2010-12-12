@@ -53,7 +53,7 @@ public class PackageInstaller {
 		mPkgMgr = c.getPackageManager();
 	}
 	
-	public boolean installPackage( Uri pkgURI ) {
+	public boolean installPackage(Uri pkgURI) {
 		mPkgInfo = PackageUtils.getPackageInfo( pkgURI );
 		if(mPkgInfo == null) {
 			Log.i(TAG, "installPackage invalid package");

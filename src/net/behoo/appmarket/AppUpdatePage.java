@@ -24,6 +24,26 @@ public class AppUpdatePage extends AsyncTaskActivity {
 		ListView lv = (ListView)findViewById(R.id.app_update_list);
 		lv.setAdapter(new UpdateListAdapter(this));
 		
+		String reqStr = new String();
+		reqStr = "<BH_S_App_Code_List count=";
+		reqStr += String.format("\"%d\"", 2);
+		reqStr += ">";
+		for (int i = 0; i < 2; ++i) {
+			reqStr += "<BH_S_App_Code_Version>";
+				reqStr += "<BH_D_App_Code>";
+				reqStr += String.format("%d", i);
+				reqStr += "</BH_D_App_Code>";
+				
+				reqStr += "<BH_D_App_Version>";
+				reqStr += String.format("%d", i);
+				reqStr += "</BH_D_App_Version>";
+			reqStr += "</BH_S_App_Code_Version>";
+		}
+		reqStr += "</BH_S_App_Code_List>";
+		
+		TextView tv = (TextView)findViewById(R.id.app_update_desc);
+		tv.setText(reqStr);
+		
 		startTaskAndShowDialog();
 	}
 	
@@ -42,8 +62,8 @@ public class AppUpdatePage extends AsyncTaskActivity {
 					reqStr += "</BH_D_App_Code>";
 					
 					reqStr += "<BH_D_App_Version>";
+					reqStr += String.format("%d", i);
 					reqStr += "</BH_D_App_Version>";
-					
 				reqStr += "</BH_S_App_Code_Version>";
 			}
 			

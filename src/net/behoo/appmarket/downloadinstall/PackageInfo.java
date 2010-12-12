@@ -23,7 +23,7 @@ public class PackageInfo {
 	
 	public void sendPackageStateBroadcast(Context c) {
 		Intent i = new Intent(Constants.ACTION_STATE);
-		i.putExtra(Constants.PACKAGE_URI, mDownloadUri.toString());
+		i.putExtra(Constants.PACKAGE_CODE, mDownloadUri.toString());
 		i.putExtra(Constants.PACKAGE_STATE, mState.name());
 		c.sendBroadcast(i);
 	}

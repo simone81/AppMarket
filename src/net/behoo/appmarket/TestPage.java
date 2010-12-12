@@ -44,7 +44,7 @@ public class TestPage extends Activity implements OnClickListener {
 		public void onReceive(Context context, Intent intent) {
 			Log.i(TAG, "onReceive");
 			Bundle bundle = intent.getExtras();
-			String url = bundle.getCharSequence(Constants.PACKAGE_URI).toString();
+			String url = bundle.getCharSequence(Constants.PACKAGE_CODE).toString();
 			String state = bundle.getCharSequence(Constants.PACKAGE_STATE).toString();
 			TestPage.this.updateStatusUI( url + " " + state );
 		}

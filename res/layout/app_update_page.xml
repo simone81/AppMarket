@@ -30,9 +30,7 @@
 	    	android:layout_height="120dip"
 	    	android:layout_marginLeft="@dimen/screen_horz_margin"
 	    	android:layout_alignTop="@id/app_update_anchor"
-	    	android:editable="false"
-	    	android:maxLines="5"
-	    	android:ellipsize="end"/>
+	    	android:editable="false"/>
 	    	
 	    <ListView android:id="@+id/app_update_list" 
 	    	android:layout_width="wrap_content"
