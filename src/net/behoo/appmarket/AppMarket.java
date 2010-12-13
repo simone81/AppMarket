@@ -2,6 +2,9 @@ package net.behoo.appmarket;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+import junit.framework.Assert;
 
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
@@ -16,8 +19,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -31,6 +37,10 @@ public class AppMarket extends AsyncTaskActivity
 	
 	private static final String TAG = "AppMarket";
 	
+	private static final Integer IMAGE_DOWNLOAD_SUCCEED = 0;
+	private static final Integer IMAGE_DOWNLOAD_FAILED = 1;
+	private static final Integer MSG_DWONLOAD_COMPLETED = 0;
+	
 	private Button mButtonInstall = null;
 	private Button mButtonAppList = null;
 	private Button mButtonUpdate = null;
@@ -38,9 +48,23 @@ public class AppMarket extends AsyncTaskActivity
 	
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
 	private Integer mCurrentSelection = -1;
+	// image download threadpool
+	private ScheduledThreadPoolExecutor mThreadPool = new ScheduledThreadPoolExecutor(5);
 	
+	// apk download service
 	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
+	
+	private Handler mHandler = new Handler() {
+		public void handleMessage(Message msg) {
+			if (MSG_DWONLOAD_COMPLETED == msg.what) {
+				if (msg.arg1 == IMAGE_DOWNLOAD_SUCCEED) {
+					updateUIState();
+				}
+			}
+			super.handleMessage(msg);
+		}
+	};
 	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
@@ -169,6 +193,11 @@ public class AppMarket extends AsyncTaskActivity
 				if (i == mCurrentSelection) {
 					iv.requestFocus();
 				}
+				
+				if (null != mAppLib.get(i).mAppImageUrl) {
+					ImageDownloadTask task = new ImageDownloadTask(i, mAppLib.get(i), mHandler);
+					mThreadPool.execute(task);
+				}
 			}
 			else {
 				iv.setVisibility(View.INVISIBLE);
@@ -194,6 +223,12 @@ public class AppMarket extends AsyncTaskActivity
 			
 			tv = (TextView)findViewById(R.id.main_app_desc);
 			tv.setText(appInfo.mAppShortDesc);
+			
+			if (appInfo.getDrawable() != null) {
+				ImageView iv = (ImageView)findViewById(mImageViewIds[mCurrentSelection]);
+				Assert.assertTrue(true);
+				iv.setImageDrawable(appInfo.getDrawable());
+			}
 		}
 		else {
 		}
@@ -205,4 +240,34 @@ public class AppMarket extends AsyncTaskActivity
 		R.id.main_appimage_5, 	R.id.main_appimage_6, 
 		R.id.main_appimage_7, 	R.id.main_appimage_8, 
 	};
+	
+	private class ImageDownloadTask implements Runnable {
+		private Integer mIndex = -1;
+		private AppInfo mAppInfo = null;
+		private Handler mHandler = null;
+		
+		public ImageDownloadTask(Integer index, AppInfo appInfo, Handler handler) {
+			mIndex = index;
+			mAppInfo = appInfo;
+			mHandler = handler;
+		}
+		
+		public void run() {
+			boolean ret = false;
+			try {
+				HttpUtil httpUtil = new HttpUtil();
+				InputStream stream = httpUtil.httpGet(mAppInfo.mAppImageUrl);
+				Drawable drawable = Drawable.createFromStream(stream, "src");
+				mAppInfo.setDrawable(drawable);
+				ret = true;
+			} catch (Throwable e) {
+			}
+			
+			Message msg = new Message();
+			msg.what = MSG_DWONLOAD_COMPLETED;
+			msg.arg1 = ret ? IMAGE_DOWNLOAD_SUCCEED : IMAGE_DOWNLOAD_FAILED;
+			msg.arg2 = mIndex;
+			mHandler.sendMessage(msg);
+		}
+	}
 }

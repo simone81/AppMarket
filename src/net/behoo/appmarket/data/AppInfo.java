@@ -1,5 +1,7 @@
 package net.behoo.appmarket.data;
 
+import android.graphics.drawable.Drawable;
+
 public class AppInfo {
 	
 	// summary info
@@ -17,6 +19,8 @@ public class AppInfo {
 	public String mAppScreenShorts = "";
 	public String mAppReview = "";
 	public String mAppChangelog = "";
+	
+	private Drawable mDrawable = null;
 	
 	private boolean mSummaryInit = false;
 	private boolean mDetailsInit = false;
@@ -70,5 +74,17 @@ public class AppInfo {
 	
 	public boolean isDetailsInit() {
 		return mDetailsInit;
+	}
+	
+	public void setDrawable(Drawable d) {
+		synchronized (this) {
+			mDrawable = d;
+		}
+	}
+	
+	public Drawable getDrawable() {
+		synchronized (this) {
+			return mDrawable;
+		}
 	}
 }
