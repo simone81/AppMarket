@@ -101,75 +101,75 @@ public class PackageInstaller {
             mAppInfo = null;
         }
         
-        if (mAppInfo == null) {
-        	Log.i(TAG, "install package: "+mPkgInfo.applicationInfo.packageName);
-        	
-        	// create the temp file
-        	File tmpPackageFile  = mContext.getFileStreamPath( TMP_INSTALL_FILE_NAME );
-        	if (tmpPackageFile == null) {
-                Log.w(TAG, "Failed to create temp file");
-                return false;
-            }
-        	Log.i(TAG, "makeTempCopyAndInstall tmp file: "+tmpPackageFile.getAbsolutePath());
-        	if (tmpPackageFile.exists()) {
-                tmpPackageFile.delete();
-            }
-        	// Open file to make it world readable
-            FileOutputStream fos;
-            try {
-                fos = mContext.openFileOutput( TMP_INSTALL_FILE_NAME, Context.MODE_WORLD_READABLE );
-            } catch (FileNotFoundException e1) {
-                Log.e(TAG, "Error opening file " + TMP_INSTALL_FILE_NAME);
-                //throw e1;/// tbd self-defined exception
-                return false;
-            }
-            
-            try {
-                fos.close();
-            } catch (IOException e) {
-                Log.e(TAG, "Error close file " + TMP_INSTALL_FILE_NAME);
-                //throw e;/// tbd self-defined exception
-                return false;
-            }
-
-            // copy the file from source to temp
-            File srcPackageFile = new File( filePath );
-            Log.i(TAG, "makeTempCopyAndInstall the source file: "+srcPackageFile.getAbsolutePath());
-            if (!FileUtils.copyFile(srcPackageFile, tmpPackageFile)) {
-                Log.w(TAG, "Failed to make copy of file: " + srcPackageFile);
-                //throw new NullPointerException();/// tbd self-defined exception
-                return false;
-            }
-            
-            Uri pkgURI = Uri.parse("file://" + tmpPackageFile.getPath());
-            PackageInstallObserver observer = new PackageInstallObserver();
-            mPkgMgr.installPackage(pkgURI, observer, 0, "net.behoo.appmarket");
-           
-            // wait until the installing process finished
-            boolean bWait = true;
-            while( bWait ){
-            	try {
-            		synchronized ( mInstallingSyncObject ) {
-                    	if ( !mInstallingFinished ){
-                    		mInstallingSyncObject.wait();
-                    	}
-                    	bWait = false;
-                    }
-            	} catch ( InterruptedException e ) {
-            		bWait = true;
-        		}
-            }
-            
-            // delte the temp file
-            if( tmpPackageFile.exists() ) {
-            	tmpPackageFile.delete();
-            }
-            
-            return mInstallingSuccess;
-        } else {
-            Log.i(TAG, "Replacing existing package:"+mPkgInfo.applicationInfo.packageName);
+        int installFlags = 0;
+        if (null != mAppInfo) {
+        	Log.i(TAG, "Replacing existing package:"+mPkgInfo.applicationInfo.packageName);
+        	installFlags |= PackageManager.INSTALL_REPLACE_EXISTING;
+        }
+        
+    	Log.i(TAG, "install package: "+mPkgInfo.applicationInfo.packageName);
+    	// create the temp file
+    	File tmpPackageFile  = mContext.getFileStreamPath( TMP_INSTALL_FILE_NAME );
+    	if (tmpPackageFile == null) {
+            Log.w(TAG, "Failed to create temp file");
             return false;
         }
+    	Log.i(TAG, "makeTempCopyAndInstall tmp file: "+tmpPackageFile.getAbsolutePath());
+    	if (tmpPackageFile.exists()) {
+            tmpPackageFile.delete();
+        }
+    	// Open file to make it world readable
+        FileOutputStream fos;
+        try {
+            fos = mContext.openFileOutput( TMP_INSTALL_FILE_NAME, Context.MODE_WORLD_READABLE );
+        } catch (FileNotFoundException e1) {
+            Log.e(TAG, "Error opening file " + TMP_INSTALL_FILE_NAME);
+            //throw e1;/// tbd self-defined exception
+            return false;
+        }
+        
+        try {
+            fos.close();
+        } catch (IOException e) {
+            Log.e(TAG, "Error close file " + TMP_INSTALL_FILE_NAME);
+            //throw e;/// tbd self-defined exception
+            return false;
+        }
+
+        // copy the file from source to temp
+        File srcPackageFile = new File( filePath );
+        Log.i(TAG, "makeTempCopyAndInstall the source file: "+srcPackageFile.getAbsolutePath());
+        if (!FileUtils.copyFile(srcPackageFile, tmpPackageFile)) {
+            Log.w(TAG, "Failed to make copy of file: " + srcPackageFile);
+            //throw new NullPointerException();/// tbd self-defined exception
+            return false;
+        }
+        
+        Uri pkgURI = Uri.parse("file://" + tmpPackageFile.getPath());
+        PackageInstallObserver observer = new PackageInstallObserver();
+        mPkgMgr.installPackage(pkgURI, observer, 0, "net.behoo.appmarket");
+       
+        // wait until the installing process finished
+        boolean bWait = true;
+        while( bWait ){
+        	try {
+        		synchronized ( mInstallingSyncObject ) {
+                	if ( !mInstallingFinished ){
+                		mInstallingSyncObject.wait();
+                	}
+                	bWait = false;
+                }
+        	} catch ( InterruptedException e ) {
+        		bWait = true;
+    		}
+        }
+        
+        // delte the temp file
+        if( tmpPackageFile.exists() ) {
+        	tmpPackageFile.delete();
+        }
+        
+        return mInstallingSuccess;
     }
 	
 	private boolean isInstallingUnknownAppsAllowed() {

@@ -20,9 +20,6 @@ import org.apache.http.protocol.HTTP;
 public class HttpUtil {
 	private static final int TIMEOUT = 10000;// 10sec
 	
-	public static final int DOWNLOAD_SUCCEED = 0;
-	public static final int DOWNLOAD_FAILURE = 1;
-	
 	private HttpURLConnection mConnection = null;
 	
     public InputStream httpGet(String urlStr) throws IOException {

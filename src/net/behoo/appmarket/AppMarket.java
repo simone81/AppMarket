@@ -2,14 +2,16 @@ package net.behoo.appmarket;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import junit.framework.Assert;
 
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import net.behoo.appmarket.http.AppListParser;
+import net.behoo.appmarket.http.DownloadConstants;
 import net.behoo.appmarket.http.HttpUtil;
+import net.behoo.appmarket.http.ImageDownloadTask;
+import net.behoo.appmarket.http.PausableThreadPoolExecutor;
 import net.behoo.appmarket.http.UrlHelpers;
 import net.behoo.appmarket.data.AppInfo;
 
@@ -19,7 +21,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -37,10 +38,6 @@ public class AppMarket extends AsyncTaskActivity
 	
 	private static final String TAG = "AppMarket";
 	
-	private static final Integer IMAGE_DOWNLOAD_SUCCEED = 0;
-	private static final Integer IMAGE_DOWNLOAD_FAILED = 1;
-	private static final Integer MSG_DWONLOAD_COMPLETED = 0;
-	
 	private Button mButtonInstall = null;
 	private Button mButtonAppList = null;
 	private Button mButtonUpdate = null;
@@ -48,23 +45,11 @@ public class AppMarket extends AsyncTaskActivity
 	
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
 	private Integer mCurrentSelection = -1;
-	// image download threadpool
-	private ScheduledThreadPoolExecutor mThreadPool = new ScheduledThreadPoolExecutor(5);
 	
-	// apk download service
+	// apk download and install service
 	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
-	
-	private Handler mHandler = new Handler() {
-		public void handleMessage(Message msg) {
-			if (MSG_DWONLOAD_COMPLETED == msg.what) {
-				if (msg.arg1 == IMAGE_DOWNLOAD_SUCCEED) {
-					updateUIState();
-				}
-			}
-			super.handleMessage(msg);
-		}
-	};
+	private HttpTask mHttpTask = new HttpTask();
 	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
@@ -86,7 +71,7 @@ public class AppMarket extends AsyncTaskActivity
 			Log.i(TAG, "onReceive");
 		}
 	};
-	
+    
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,19 +93,18 @@ public class AppMarket extends AsyncTaskActivity
         mButtonAppList.setOnClickListener(this);
         
         startService(new Intent(this, DownloadInstallService.class));
-        super.startTaskAndShowDialog();
+        executeTask(mHttpTask);
+        showDialog(WAITING_DIALOG);
     }
     
     public void onResume() {
     	super.onResume();
-    	
     	bindService( new Intent( this, DownloadInstallService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
     	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_STATE ) );
     }
     
     public void onPause() {
     	super.onPause();
-    	
     	unbindService( mServiceConn );
     	unregisterReceiver( mReceiver );
     }
@@ -166,17 +150,6 @@ public class AppMarket extends AsyncTaskActivity
 		}
 	}
 	
-	protected boolean onRunTask() {
-    	try {
-    		HttpUtil httpUtil = new HttpUtil();
-			InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
-			mAppLib = AppListParser.parse(stream);
-			return true;
-    	} catch (Throwable tr) {
-    		return false;
-    	}
-    }
-	
 	protected void onTaskCompleted(int result) {
 		if (mAppLib.size() > 0) {
 			mCurrentSelection = 0;
@@ -195,8 +168,7 @@ public class AppMarket extends AsyncTaskActivity
 				}
 				
 				if (null != mAppLib.get(i).mAppImageUrl) {
-					ImageDownloadTask task = new ImageDownloadTask(i, mAppLib.get(i), mHandler);
-					mThreadPool.execute(task);
+					executeImageTask(mAppLib.get(i));
 				}
 			}
 			else {
@@ -205,6 +177,16 @@ public class AppMarket extends AsyncTaskActivity
 		}
 		
 		updateUIState();
+	}
+	
+	protected void onImageCompleted(boolean result, String appcode) {
+		if (result) {
+			for (int i = 0; i < mAppLib.size(); ++i) {
+				if (0 == appcode.compareTo(mAppLib.get(i).mAppCode)) {
+					updateImage(i);
+				}
+			}
+		}
 	}
 	
 	private void updateUIState() {
@@ -230,7 +212,17 @@ public class AppMarket extends AsyncTaskActivity
 				iv.setImageDrawable(appInfo.getDrawable());
 			}
 		}
-		else {
+	}
+	
+	private void updateImage(int index) {
+		if (index >= 0 && index < mImageViewIds.length) {
+			ImageView iv = (ImageView)findViewById(mImageViewIds[index]);
+			if (null != mAppLib.get(index).getDrawable()) {
+				iv.setImageDrawable(mAppLib.get(index).getDrawable());
+			}
+			else {
+				iv.setImageResource(R.drawable.test);
+			}
 		}
 	}
 	
@@ -241,33 +233,17 @@ public class AppMarket extends AsyncTaskActivity
 		R.id.main_appimage_7, 	R.id.main_appimage_8, 
 	};
 	
-	private class ImageDownloadTask implements Runnable {
-		private Integer mIndex = -1;
-		private AppInfo mAppInfo = null;
-		private Handler mHandler = null;
-		
-		public ImageDownloadTask(Integer index, AppInfo appInfo, Handler handler) {
-			mIndex = index;
-			mAppInfo = appInfo;
-			mHandler = handler;
-		}
-		
+	private class HttpTask implements Runnable {
+		public boolean mResult = false;
 		public void run() {
-			boolean ret = false;
-			try {
-				HttpUtil httpUtil = new HttpUtil();
-				InputStream stream = httpUtil.httpGet(mAppInfo.mAppImageUrl);
-				Drawable drawable = Drawable.createFromStream(stream, "src");
-				mAppInfo.setDrawable(drawable);
-				ret = true;
-			} catch (Throwable e) {
-			}
-			
-			Message msg = new Message();
-			msg.what = MSG_DWONLOAD_COMPLETED;
-			msg.arg1 = ret ? IMAGE_DOWNLOAD_SUCCEED : IMAGE_DOWNLOAD_FAILED;
-			msg.arg2 = mIndex;
-			mHandler.sendMessage(msg);
+	    	try {
+	    		HttpUtil httpUtil = new HttpUtil();
+				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
+				mAppLib = AppListParser.parse(stream);
+				mResult = true;
+	    	} catch (Throwable tr) {
+	    		mResult = false;
+	    	}
 		}
-	}
+    };
 }

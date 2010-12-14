@@ -2,10 +2,13 @@ package net.behoo.appmarket;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.HttpUtil;
+import net.behoo.appmarket.http.PausableThreadPoolExecutor;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +21,7 @@ import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -28,6 +32,11 @@ public class AppListPage extends AsyncTaskActivity
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
 	private ListView mListView = null;
+	
+	private Set<Integer> mImageDownloadFlags = new HashSet<Integer>();
+	private PausableThreadPoolExecutor mThreadPool = new PausableThreadPoolExecutor(5);
+	
+	private ImageView mAppImage = null;
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -40,8 +49,26 @@ public class AppListPage extends AsyncTaskActivity
 		Button button = ( Button )findViewById( R.id.applist_btn_detail );
 		button.setOnClickListener(this);
 		
-		startTaskAndShowDialog();
+		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
+		
+//		executeTask();
 	}
+	
+	public void onResume() {
+		super.onResume();
+		mThreadPool.resume();
+	}
+	
+	public void onPause() {
+		super.onPause();
+		mThreadPool.pause();
+	}
+	
+	public void onDestroy() {
+    	super.onDestroy();
+    	mThreadPool.resume();
+    	mThreadPool.shutdown();
+    }
 	
 	public void onClick(View v) {
 		//int pos = mListView.getSelectedItemPosition();
@@ -59,7 +86,6 @@ public class AppListPage extends AsyncTaskActivity
 	}
 	
 	public void onNothingSelected(AdapterView view) {
-		
 	}
 	 
 	protected boolean onRunTask() {
@@ -98,12 +124,28 @@ public class AppListPage extends AsyncTaskActivity
 			
 			tv = (TextView)findViewById(R.id.app_list_desc);
 			tv.setText(appInfo.mAppShortDesc);
+			
+			updateImage(pos, appInfo);
+		}
+	}
+	
+	private void updateImage(Integer index, AppInfo appInfo) {
+		if (null == appInfo.getDrawable()) {
+			if (false == mImageDownloadFlags.contains(new Integer(index))) {
+				executeImageTask(appInfo);
+			}
+			else {
+				mAppImage.setImageResource(R.drawable.test);
+			}
+		}
+		else {
+			mAppImage.setImageDrawable(appInfo.getDrawable());
 		}
 	}
 	
 	private class AppListAdapter extends BaseAdapter {
-		private Context mContext;
-        private LayoutInflater mInflater;
+		private Context mContext = null;
+        private LayoutInflater mInflater = null;
         
         public AppListAdapter(Context context) {
             mContext = context;

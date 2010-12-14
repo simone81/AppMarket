@@ -1,30 +1,44 @@
 package net.behoo.appmarket;
 
-
-import net.behoo.appmarket.http.HttpUtil;
+import net.behoo.appmarket.data.AppInfo;
+import net.behoo.appmarket.http.DownloadConstants;
+import net.behoo.appmarket.http.ImageDownloadTask;
+import net.behoo.appmarket.http.PausableThreadPoolExecutor;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
 abstract public class AsyncTaskActivity extends Activity {
 	
-	private static final int WAITING_DIALOG = 0;
+	public static final int WAITING_DIALOG = 0;
+	
+	private PausableThreadPoolExecutor mThreadPool = new PausableThreadPoolExecutor(5);
 	
 	private Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
         	switch (msg.what) {
-        	case HttpUtil.DOWNLOAD_SUCCEED:
+        	case DownloadConstants.MSG_PROTOCOL_SUCCEED:
         		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
-        		AsyncTaskActivity.this.onTaskCompleted(HttpUtil.DOWNLOAD_SUCCEED);
+        		AsyncTaskActivity.this.onTaskCompleted(true);
         		break;
-        	case HttpUtil.DOWNLOAD_FAILURE:
+        	case DownloadConstants.MSG_PROTOCOL_FAILURE:
         		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
-        		AsyncTaskActivity.this.onTaskCompleted(HttpUtil.DOWNLOAD_FAILURE);
-        		// retry ?
+        		AsyncTaskActivity.this.onTaskCompleted(false);
         		break;
+        	case DownloadConstants.MSG_IMG_SUCCEED: {
+        		Bundle data = msg.getData();
+        		AsyncTaskActivity.this.onImageCompleted(true, data.getString(DownloadConstants.MSG_DATA_APPCODE));
+        		break;
+        	}
+        	case DownloadConstants.MSG_IMG_FAILURE: {
+        		Bundle data = msg.getData();
+        		AsyncTaskActivity.this.onImageCompleted(false, data.getString(DownloadConstants.MSG_DATA_APPCODE));
+        		break;
+        	}
             default:
                 break;
         	}
@@ -32,28 +46,21 @@ abstract public class AsyncTaskActivity extends Activity {
         }
 	};
 	
-	private boolean mThreadExit = false;
-	private Thread mDownloadThread = new Thread(new Runnable() {
-		public void run() {
-			int msg = HttpUtil.DOWNLOAD_SUCCEED;
-			if (!AsyncTaskActivity.this.onRunTask()) {
-				msg = HttpUtil.DOWNLOAD_FAILURE;
-			}
-				
-			synchronized (this) { 
-				if(!mThreadExit) {
-					mHandler.sendEmptyMessageDelayed(msg, 0);
-				}
-			}
-		}
-	});
-	
+	public void onResume() {
+    	super.onResume();
+    	mThreadPool.resume();
+    }
+    
+    public void onPause() {
+    	super.onPause();
+    	mThreadPool.pause();
+    }
+    
 	public void onDestroy() {
     	super.onDestroy();
-    	
-    	synchronized (this) { 
-    		mThreadExit = true;
-    	}
+
+    	mThreadPool.resume();
+    	mThreadPool.shutdown();
     }
 	
 	public Dialog onCreateDialog(int id) {
@@ -67,12 +74,15 @@ abstract public class AsyncTaskActivity extends Activity {
        return null;
 	}
 	
-	protected void startTaskAndShowDialog() {
-		mDownloadThread.start();
-        showDialog(WAITING_DIALOG);
+	protected void executeTask(Runnable task) {
+		mThreadPool.execute(task);
 	}
 	
-	abstract protected boolean onRunTask() ;
-	
-	abstract protected void onTaskCompleted(int result) ;
+	protected void executeImageTask(AppInfo appInfo) {
+		ImageDownloadTask task = new ImageDownloadTask(appInfo, mHandler);
+		mThreadPool.execute(task);
+	}
+
+	protected void onTaskCompleted(boolean result) {}
+	protected void onImageCompleted(boolean result, String appcode) {}
 }

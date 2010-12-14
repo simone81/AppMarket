@@ -44,7 +44,7 @@ public class AppUpdatePage extends AsyncTaskActivity {
 		TextView tv = (TextView)findViewById(R.id.app_update_desc);
 		tv.setText(reqStr);
 		
-		startTaskAndShowDialog();
+		executeTask();
 	}
 	
 	protected boolean onRunTask() {

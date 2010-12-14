@@ -58,7 +58,7 @@ public class AppDetailsPage extends AsyncTaskActivity {
 			}
 		});
         
-        startTaskAndShowDialog();
+        executeTask();
     }
     
     public void onResume() {
