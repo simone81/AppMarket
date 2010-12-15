@@ -8,10 +8,8 @@ import junit.framework.Assert;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import net.behoo.appmarket.http.AppListParser;
-import net.behoo.appmarket.http.DownloadConstants;
 import net.behoo.appmarket.http.HttpUtil;
-import net.behoo.appmarket.http.ImageDownloadTask;
-import net.behoo.appmarket.http.PausableThreadPoolExecutor;
+import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
 import net.behoo.appmarket.data.AppInfo;
 
@@ -24,7 +22,6 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -43,26 +40,24 @@ public class AppMarket extends AsyncTaskActivity
 	private Button mButtonUpdate = null;
 	private Button mButtonDownloadMgr = null;
 	
+	private HttpTask mHttpTask = null;
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
 	private Integer mCurrentSelection = -1;
 	
 	// apk download and install service
 	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
-	private HttpTask mHttpTask = new HttpTask();
 	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		mServiceBound = true;
-    		Log.i(TAG, "onServiceConnected cname: " + cname.toShortString());
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
     		mInstallService = null;
     		mServiceBound = false;
-    		Log.i(TAG, "onServiceDisconnected");
     	}
     };
     
@@ -93,14 +88,16 @@ public class AppMarket extends AsyncTaskActivity
         mButtonAppList.setOnClickListener(this);
         
         startService(new Intent(this, DownloadInstallService.class));
+        
+        mHttpTask = new HttpTask(mHandler);
         executeTask(mHttpTask);
         showDialog(WAITING_DIALOG);
     }
     
     public void onResume() {
     	super.onResume();
-    	bindService( new Intent( this, DownloadInstallService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
-    	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_STATE ) );
+    	bindService(new Intent(this, DownloadInstallService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+    	registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
     }
     
     public void onPause() {
@@ -150,7 +147,7 @@ public class AppMarket extends AsyncTaskActivity
 		}
 	}
 	
-	protected void onTaskCompleted(int result) {
+	protected void onTaskCompleted(boolean result) {
 		if (mAppLib.size() > 0) {
 			mCurrentSelection = 0;
 		}
@@ -233,16 +230,20 @@ public class AppMarket extends AsyncTaskActivity
 		R.id.main_appimage_7, 	R.id.main_appimage_8, 
 	};
 	
-	private class HttpTask implements Runnable {
-		public boolean mResult = false;
-		public void run() {
-	    	try {
+	private class HttpTask extends ProtocolDownloadTask {
+		
+		public HttpTask(Handler handler) {
+			super(handler);
+		}
+		
+		protected boolean doTask() {
+			try {
 	    		HttpUtil httpUtil = new HttpUtil();
 				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
 				mAppLib = AppListParser.parse(stream);
-				mResult = true;
+				return true;
 	    	} catch (Throwable tr) {
-	    		mResult = false;
+	    		return false;
 	    	}
 		}
     };

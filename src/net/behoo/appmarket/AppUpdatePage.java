@@ -1,92 +1,141 @@
 package net.behoo.appmarket;
 
 
-import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
-import net.behoo.appmarket.http.AppListParser;
-import net.behoo.appmarket.http.HttpUtil;
-import net.behoo.appmarket.http.UrlHelpers;
-import android.app.Activity;
+import net.behoo.appmarket.data.AppInfo;
+import net.behoo.appmarket.downloadinstall.Constants;
+import net.behoo.appmarket.downloadinstall.DownloadInstallService;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 public class AppUpdatePage extends AsyncTaskActivity {
+	
+	//private static final String TAG = "AppUpdatePage";
+	
+	private boolean mServiceBound = false;
+	private DownloadInstallService mInstallService = null;
+	
+	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
+	private Set<String> mImageDownloadFlags = new HashSet<String>();
+	private ImageView mAppImage = null;
+	private ListView mListView = null;
+	
+	private ServiceConnection mServiceConn = new ServiceConnection() {
+		
+    	public void onServiceConnected(ComponentName cname, IBinder binder){
+    		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
+    		mServiceBound = true;
+    		
+    		mAppLib = mInstallService.getUpdateList();
+    		updateUIState();
+    		mInstallService.checkUpdate();
+    	}
+    	
+    	public void onServiceDisconnected(ComponentName cname){
+    		mInstallService = null;
+    		mServiceBound = false;
+    	}
+    };
+    
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			if (mServiceBound) {
+				mAppLib = mInstallService.getUpdateList();
+    			updateUIState();
+			}
+		}
+	};
+	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.app_update_page);
 		
-		ListView lv = (ListView)findViewById(R.id.app_update_list);
-		lv.setAdapter(new UpdateListAdapter(this));
+		mListView = (ListView)findViewById(R.id.app_update_list);
+		mListView.setAdapter(new UpdateListAdapter(this));
 		
-		String reqStr = new String();
-		reqStr = "<BH_S_App_Code_List count=";
-		reqStr += String.format("\"%d\"", 2);
-		reqStr += ">";
-		for (int i = 0; i < 2; ++i) {
-			reqStr += "<BH_S_App_Code_Version>";
-				reqStr += "<BH_D_App_Code>";
-				reqStr += String.format("%d", i);
-				reqStr += "</BH_D_App_Code>";
-				
-				reqStr += "<BH_D_App_Version>";
-				reqStr += String.format("%d", i);
-				reqStr += "</BH_D_App_Version>";
-			reqStr += "</BH_S_App_Code_Version>";
-		}
-		reqStr += "</BH_S_App_Code_List>";
-		
-		TextView tv = (TextView)findViewById(R.id.app_update_desc);
-		tv.setText(reqStr);
-		
-		executeTask();
+		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 	}
 	
-	protected boolean onRunTask() {
-		try {
-			// make the request string
-			String reqStr = new String();
-			reqStr = "<BH_S_App_Code_List count=";
-			reqStr += String.format("%d", 10);
-			reqStr += ">";
-			
-			for (int i = 0; i < 10; ++i) {
-				reqStr += "<BH_S_App_Code_Version>";
-					reqStr += "<BH_D_App_Code>";
-					reqStr += String.format("%d", i);
-					reqStr += "</BH_D_App_Code>";
-					
-					reqStr += "<BH_D_App_Version>";
-					reqStr += String.format("%d", i);
-					reqStr += "</BH_D_App_Version>";
-				reqStr += "</BH_S_App_Code_Version>";
+	public void onResume() {
+		super.onResume();
+		this.bindService(new Intent(this, DownloadInstallService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+		this.registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_UPDATE_STATE));
+	}
+	
+	public void onPause() {
+		super.onStop();
+		this.unbindService(mServiceConn);
+		this.unregisterReceiver(mReceiver);
+	}
+	
+	protected void onImageCompleted(boolean result, String appcode) {
+		mImageDownloadFlags.add(appcode);
+		if (result) {
+			for (int i = 0; i < mAppLib.size(); ++i) {
+				if (0 == appcode.compareTo(mAppLib.get(i).mAppCode)) {
+					if (i == mListView.getSelectedItemPosition()) {
+						updateImage(mAppLib.get(i));
+					}
+				}
 			}
-			
-			reqStr += "</BH_S_App_Code_List>";
-			
-			HttpUtil httpUtil = new HttpUtil();
-			String url = UrlHelpers.getUpdateUrl("");
-			InputStream inputStream = httpUtil.httpPost("http://192.168.1.5", reqStr);
-			AppListParser.parse(inputStream);
-			return true;
-		}
-		catch (Throwable tr) {
-			return false;
 		}
 	}
 	
-	protected void onTaskCompleted(int result) {
-		
+	public void updateUIState() {
+		assert(mListView.getCount() == mAppLib.size());
+		int pos = mListView.getSelectedItemPosition();
+		if (ListView.INVALID_POSITION != pos && mListView.getCount() > 0) {
+			AppInfo appInfo = mAppLib.get(pos);
+			
+			TextView tv = (TextView)findViewById(R.id.main_app_title);
+			tv.setText(appInfo.mAppName);
+			
+			tv = (TextView)findViewById(R.id.main_app_author);
+			tv.setText(appInfo.mAppAuthor);
+			
+			tv = (TextView)findViewById(R.id.main_app_version);
+			tv.setText(appInfo.mAppVersion);
+			
+			tv = (TextView)findViewById(R.id.app_list_desc);
+			tv.setText(appInfo.mAppShortDesc);
+			
+			updateImage(appInfo);
+		}
+	}
+	
+	private void updateImage(AppInfo appInfo) {
+		if (null == appInfo.getDrawable()) {
+			if (false == mImageDownloadFlags.contains(appInfo.mAppCode)) {
+				executeImageTask(appInfo);
+			}
+			else {
+				mAppImage.setImageResource(R.drawable.test);
+			}
+		}
+		else {
+			mAppImage.setImageDrawable(appInfo.getDrawable());
+		}
 	}
 	
 	private class UpdateListAdapter extends BaseAdapter {
-		private Context mContext;
-        private LayoutInflater mInflater;
+		private Context mContext = null;
+		private LayoutInflater mInflater = null;
         
         public UpdateListAdapter(Context context) {
             mContext = context;
@@ -94,7 +143,7 @@ public class AppUpdatePage extends AsyncTaskActivity {
         }
 
         public int getCount() {
-            return 10;
+            return mAppLib.size();
         }
 
         public Object getItem(int position) {
@@ -113,7 +162,7 @@ public class AppUpdatePage extends AsyncTaskActivity {
             } else {
                 text = (TextView)convertView;
             }
-            text.setText("54321");
+            text.setText(mAppLib.get(position).mAppName);
             return text;
         }
     }

@@ -100,7 +100,7 @@ public class TestPage extends Activity implements OnClickListener {
     	super.onResume();
     	
     	bindService( new Intent( this, DownloadInstallService.class ), mServiceConn, Context.BIND_AUTO_CREATE );
-    	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_STATE ) );
+    	registerReceiver( mReceiver, new IntentFilter( Constants.ACTION_DWONLOAD_INSTALL_STATE ) );
     }
     
     

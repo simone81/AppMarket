@@ -8,11 +8,12 @@ import java.util.Set;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.HttpUtil;
-import net.behoo.appmarket.http.PausableThreadPoolExecutor;
+import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,11 +32,10 @@ public class AppListPage extends AsyncTaskActivity
 	private static final String TAG = "AppListPage";
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
+	private HttpTask mHttpTask = null;
+	
 	private ListView mListView = null;
-	
-	private Set<Integer> mImageDownloadFlags = new HashSet<Integer>();
-	private PausableThreadPoolExecutor mThreadPool = new PausableThreadPoolExecutor(5);
-	
+	private Set<String> mImageDownloadFlags = new HashSet<String>();
 	private ImageView mAppImage = null;
 	
 	public void onCreate(Bundle savedInstanceState) {
@@ -51,34 +51,21 @@ public class AppListPage extends AsyncTaskActivity
 		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		
-//		executeTask();
+		mHttpTask = new HttpTask(mHandler);
+		executeTask(mHttpTask);
+		showDialog(WAITING_DIALOG);
 	}
-	
-	public void onResume() {
-		super.onResume();
-		mThreadPool.resume();
-	}
-	
-	public void onPause() {
-		super.onPause();
-		mThreadPool.pause();
-	}
-	
-	public void onDestroy() {
-    	super.onDestroy();
-    	mThreadPool.resume();
-    	mThreadPool.shutdown();
-    }
-	
+		
 	public void onClick(View v) {
-		//int pos = mListView.getSelectedItemPosition();
-		//if (ListView.INVALID_POSITION != pos) {
+		int pos = mListView.getSelectedItemPosition();
+		Log.i(TAG, "onClick pos "+Integer.toString(pos));
+		if (ListView.INVALID_POSITION != pos) {
 			Intent intent = new Intent();
 			intent.setClass(AppListPage.this, AppDetailsPage.class);
 			intent.putExtra(AppDetailsPage.APP_CODE, "");
 			//intent.putExtra(DetailsPage.APP_CODE, mAppList.get(pos).mAppCode);
 			startActivity( intent );
-		//}
+		}
 	}
 	
 	public void onItemSelected(AdapterView parent, View view, int position, long id) {
@@ -87,24 +74,26 @@ public class AppListPage extends AsyncTaskActivity
 	
 	public void onNothingSelected(AdapterView view) {
 	}
-	 
-	protected boolean onRunTask() {
-    	try {
-    		HttpUtil httpUtil = new HttpUtil();
-			InputStream stream = httpUtil.httpGet(UrlHelpers.getAppListUrl("", 0, 0));
-			mAppList = AppListParser.parse(stream);
-			return true;
-    	} catch (Throwable tr) {
-    		return false;
-    	}
-    }
 	
-	protected void onTaskCompleted(int result) {
-		Log.i(TAG, String.format("onTaskComplete %d", mAppList.size()));
+	protected void onTaskCompleted(boolean result) {
+		Log.i(TAG, String.format("onTaskComplete ret: %d, count: %d", result, mAppList.size()));
 		mListView.invalidate();
 		if (mListView.getCount() > 0)
 			mListView.setSelection(0);
 		updateUIState();
+	}
+	
+	protected void onImageCompleted(boolean result, String appcode) {
+		mImageDownloadFlags.add(appcode);
+		if (result) {
+			for (int i = 0; i < mAppList.size(); ++i) {
+				if (0 == appcode.compareTo(mAppList.get(i).mAppCode)) {
+					if (i == mListView.getSelectedItemPosition()) {
+						updateImage(mAppList.get(i));
+					}
+				}
+			}
+		}
 	}
 	
 	private void updateUIState() {
@@ -125,13 +114,13 @@ public class AppListPage extends AsyncTaskActivity
 			tv = (TextView)findViewById(R.id.app_list_desc);
 			tv.setText(appInfo.mAppShortDesc);
 			
-			updateImage(pos, appInfo);
+			updateImage(appInfo);
 		}
 	}
 	
-	private void updateImage(Integer index, AppInfo appInfo) {
+	private void updateImage(AppInfo appInfo) {
 		if (null == appInfo.getDrawable()) {
-			if (false == mImageDownloadFlags.contains(new Integer(index))) {
+			if (false == mImageDownloadFlags.contains(appInfo.mAppCode)) {
 				executeImageTask(appInfo);
 			}
 			else {
@@ -143,6 +132,24 @@ public class AppListPage extends AsyncTaskActivity
 		}
 	}
 	
+	private class HttpTask extends ProtocolDownloadTask {
+		
+		public HttpTask(Handler handler) {
+			super(handler);
+		}
+		
+		public boolean doTask() {
+	    	try {
+	    		HttpUtil httpUtil = new HttpUtil();
+				InputStream stream = httpUtil.httpGet(UrlHelpers.getAppListUrl("", 0, 0));
+				mAppList = AppListParser.parse(stream);
+				return true;
+	    	} catch (Throwable tr) {
+	    		return false;
+	    	}
+		}
+    };
+    
 	private class AppListAdapter extends BaseAdapter {
 		private Context mContext = null;
         private LayoutInflater mInflater = null;

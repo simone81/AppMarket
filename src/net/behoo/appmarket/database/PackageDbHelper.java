@@ -19,8 +19,9 @@ public class PackageDbHelper extends SQLiteOpenHelper {
 	public static final String COLUMN_APP_NAME = "app_name"; // the software display name
 	public static final String COLUMN_AUTHOR = "author";
 	public static final String COLUMN_DESC = "description";
-	public static final String COLUMN_FULL_NAME = "full_name";// file name with path
+	public static final String COLUMN_SRC_PATH = "full_name";// file name with path
 	public static final String COLUMN_STATE = "state";
+	public static final String COLUMN_IMAGE_URL = "image_url";
 	
 	public PackageDbHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -35,8 +36,9 @@ public class PackageDbHelper extends SQLiteOpenHelper {
 		  	+ COLUMN_APP_NAME + " text,"
 		  	+ COLUMN_AUTHOR + " text,"
 		  	+ COLUMN_DESC + " text,"
-		  	+ COLUMN_FULL_NAME + " text,"
-		  	+ COLUMN_STATE + " text"
+		  	+ COLUMN_SRC_PATH + " text,"
+		  	+ COLUMN_STATE + " text,"
+		  	+ COLUMN_IMAGE_URL + " text"
 			+ ");";
 
 		db.execSQL(sql);

@@ -11,6 +11,7 @@ import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
@@ -68,7 +69,7 @@ public class AppUpdateDemonThread extends Thread {
 			}
 			c.close();
 			
-			Log.i(TAG, "packages need to be updated "+Integer.toString(codes.size()));
+			Log.i(TAG, "packages need to be checked "+Integer.toString(codes.size()));
 			
 			// check
 			try {
@@ -82,12 +83,15 @@ public class AppUpdateDemonThread extends Thread {
 						AppInfo appInfo = appList.get(i);
 						cv.put(PackageDbHelper.COLUMN_STATE, PackageState.need_update.name());
 						mPkgDBHelper.update(appInfo.mAppCode, cv);
-						
-						// notify some one ?
+					}
+					
+					if (0 < appList.size()) {
+						Intent intent = new Intent(Constants.ACTION_UPDATE_STATE);
+						mContext.sendBroadcast(intent);
 					}
 				}
 			} catch( Throwable tr) {
-				Log.e(TAG, "check update->make update requst "+tr.getMessage());
+				Log.e(TAG, "check update failed "+tr.getMessage());
 			}
 			
 			// wake up after 30 minutes

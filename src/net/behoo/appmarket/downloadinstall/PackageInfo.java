@@ -22,7 +22,7 @@ public class PackageInfo {
 	}
 	
 	public void sendPackageStateBroadcast(Context c) {
-		Intent i = new Intent(Constants.ACTION_STATE);
+		Intent i = new Intent(Constants.ACTION_DWONLOAD_INSTALL_STATE);
 		i.putExtra(Constants.PACKAGE_CODE, mDownloadUri.toString());
 		i.putExtra(Constants.PACKAGE_STATE, mState.name());
 		c.sendBroadcast(i);

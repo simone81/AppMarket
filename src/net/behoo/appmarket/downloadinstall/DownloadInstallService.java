@@ -3,6 +3,7 @@ package net.behoo.appmarket.downloadinstall;
 import java.net.URI;
 import java.util.ArrayList;
 
+import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.database.PackageDbHelper;
 import net.behoo.appmarket.downloadinstall.Constants.PackageState;
 
@@ -36,6 +37,7 @@ public class DownloadInstallService extends Service {
 	private final IBinder mBinder = new LocalServiceBinder();
 
 	private PackageDbHelper mPkgDBHelper = null;
+	private AppUpdateDemonThread mUpdateDaemonThread = null;
 	
 	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
@@ -77,7 +79,7 @@ public class DownloadInstallService extends Service {
 							statusStr = Constants.PackageState.download_failed.name();
 						}
 						cv.put(PackageDbHelper.COLUMN_STATE, statusStr);
-						cv.put(PackageDbHelper.COLUMN_FULL_NAME, filename);
+						cv.put(PackageDbHelper.COLUMN_SRC_PATH, filename);
 						mPkgDBHelper.update(code, cv);	
 						PackageStateSender.sendPackageStateBroadcast(DownloadInstallService.this, 
 								code, statusStr);
@@ -106,6 +108,8 @@ public class DownloadInstallService extends Service {
 		mPkgDBHelper = new PackageDbHelper(this);
 		IntentFilter filter = new IntentFilter(DownloadReceiver.DOWNLOAD_COMPLETED);
 		this.registerReceiver(mReceiver, filter);
+		mUpdateDaemonThread = new AppUpdateDemonThread(this);
+		mUpdateDaemonThread.start();
 	}
 	
 	public void onDestroy() {
@@ -120,17 +124,18 @@ public class DownloadInstallService extends Service {
 	}
 	
 	public void downloadAndInstall(String url, String mimetype,
-            String appCode, String version, String appName, String author,
-            String desc) {
+            AppInfo appInfo) {
 		// check the argument
-		if (null == url || null == mimetype || null == appCode || null == version) {
+		if (null == url || null == mimetype || 
+			null == appInfo || null == appInfo.mAppCode ||
+			null == appInfo.mAppVersion) {
 			throw new IllegalArgumentException();
 		}
 		
 		// check the app state
 		String [] columns = {PackageDbHelper.COLUMN_CODE, PackageDbHelper.COLUMN_STATE};
 		String where = PackageDbHelper.COLUMN_CODE + "=?";
-		String[] whereValue = {appCode};
+		String[] whereValue = {appInfo.mAppCode};
 		Cursor c = mPkgDBHelper.select(columns, where, whereValue, null);
 		Assert.assertTrue(c.getCount() >= 0 && c.getCount() <= 1);
 		boolean bExists = (c.getCount() == 1);
@@ -148,7 +153,7 @@ public class DownloadInstallService extends Service {
 		
 		if (bExists && isDownloadingOrInstalling(state)) {
 			Log.i(TAG, "is downloading or installing now");
-			PackageStateSender.sendPackageStateBroadcast(this, appCode, state.name());
+			PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, state.name());
 		}
 		else {
 			// validate the downlaod uri
@@ -156,21 +161,23 @@ public class DownloadInstallService extends Service {
 			
 	        // add/update values to local database
 	        ContentValues valuesLocal = new ContentValues();
-	        valuesLocal.put(PackageDbHelper.COLUMN_VERSION, version);
-	        valuesLocal.put(PackageDbHelper.COLUMN_APP_NAME, appName);
-	        valuesLocal.put(PackageDbHelper.COLUMN_AUTHOR, author);
-	        valuesLocal.put(PackageDbHelper.COLUMN_DESC, desc);
-	        valuesLocal.put(PackageDbHelper.COLUMN_FULL_NAME, "");
+	        valuesLocal.put(PackageDbHelper.COLUMN_VERSION, appInfo.mAppVersion);
+	        valuesLocal.put(PackageDbHelper.COLUMN_APP_NAME, appInfo.mAppName);
+	        valuesLocal.put(PackageDbHelper.COLUMN_AUTHOR, appInfo.mAppAuthor);
+	        valuesLocal.put(PackageDbHelper.COLUMN_DESC, appInfo.mAppDesc);
+	        valuesLocal.put(PackageDbHelper.COLUMN_SRC_PATH, "");
 	        valuesLocal.put(PackageDbHelper.COLUMN_PKG_NAME, "");
 	        valuesLocal.put(PackageDbHelper.COLUMN_STATE, Constants.PackageState.downloading.name());
+	        valuesLocal.put(PackageDbHelper.COLUMN_IMAGE_URL,appInfo.mAppImageUrl);
 	        if (bExists) {
-	        	mPkgDBHelper.update(appCode, valuesLocal);
+	        	mPkgDBHelper.update(appInfo.mAppCode, valuesLocal);
 	        }
 	        else {
-	        	valuesLocal.put(PackageDbHelper.COLUMN_CODE, appCode);
+	        	valuesLocal.put(PackageDbHelper.COLUMN_CODE, appInfo.mAppCode);
 	        	mPkgDBHelper.insert(valuesLocal);
 	        }
-	        PackageStateSender.sendPackageStateBroadcast(this, appCode, Constants.PackageState.downloading.name());
+	        PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, 
+	        		Constants.PackageState.downloading.name());
 	        
 			int delCount = getContentResolver().delete(Downloads.CONTENT_URI, where, whereValue);
 			Log.i(TAG, "row deleted of code: "+code+" is "+Integer.toString(delCount));
@@ -183,12 +190,51 @@ public class DownloadInstallService extends Service {
 	        values.put(Downloads.COLUMN_VISIBILITY, Downloads.VISIBILITY_HIDDEN);
 	        values.put(Downloads.COLUMN_MIME_TYPE, mimetype);
 	        values.put(Downloads.COLUMN_DESCRIPTION, BEHOO_APP_MARKET);
-	        values.put(Downloads.COLUMN_NOTIFICATION_EXTRAS, appCode);
+	        values.put(Downloads.COLUMN_NOTIFICATION_EXTRAS, appInfo.mAppCode);
 	        values.put(Downloads.COLUMN_DESTINATION, Downloads.DESTINATION_CACHE_PARTITION_PURGEABLE);
 	        values.put(Downloads.COLUMN_TOTAL_BYTES, -1);
 	        Uri uriInserted = getContentResolver().insert(Downloads.CONTENT_URI, values);
 	        Log.i(TAG, "inserted uri "+uriInserted.toString());
 		}
+	}
+	
+	public void checkUpdate() {
+		mUpdateDaemonThread.checkUpdate();
+	}
+	
+	public ArrayList<AppInfo> getUpdateList() {
+		String [] columns = {
+			PackageDbHelper.COLUMN_CODE, PackageDbHelper.COLUMN_VERSION,
+			PackageDbHelper.COLUMN_APP_NAME, PackageDbHelper.COLUMN_AUTHOR,
+			PackageDbHelper.COLUMN_DESC, PackageDbHelper.COLUMN_IMAGE_URL,
+		};
+		
+		String where = PackageDbHelper.COLUMN_STATE + "=?";
+		String [] whereArgs = {Constants.PackageState.need_update.name()};
+		
+		ArrayList<AppInfo> appList = null;
+		Cursor c = mPkgDBHelper.select(columns, where, whereArgs, null);
+		if (c != null) {
+			int codeId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_CODE);
+			int pkgNameId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_PKG_NAME);
+			int versionId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_VERSION);
+			int authorId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_AUTHOR);
+			int descId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_DESC);
+			int imageId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_IMAGE_URL);
+			appList = new ArrayList<AppInfo>();
+			for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+				AppInfo appInfo = new AppInfo(c.getString(pkgNameId),
+					c.getString(versionId),
+					c.getString(codeId),
+					c.getString(authorId),
+					c.getString(imageId),
+					c.getString(descId));
+				appList.add(appInfo);
+			}
+		}
+		c.close();
+		
+		return appList;
 	}
 	
 	public boolean install( String uri ) {

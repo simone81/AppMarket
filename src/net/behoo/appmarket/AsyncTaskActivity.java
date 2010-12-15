@@ -18,7 +18,7 @@ abstract public class AsyncTaskActivity extends Activity {
 	
 	private PausableThreadPoolExecutor mThreadPool = new PausableThreadPoolExecutor(5);
 	
-	private Handler mHandler = new Handler() {
+	protected Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
         	switch (msg.what) {
         	case DownloadConstants.MSG_PROTOCOL_SUCCEED:

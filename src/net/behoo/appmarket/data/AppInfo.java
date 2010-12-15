@@ -4,6 +4,8 @@ import android.graphics.drawable.Drawable;
 
 public class AppInfo {
 	
+	public static final String MIMETYPE = "";
+	
 	// summary info
 	public String mAppName = "";
 	public String mAppVersion = "";
@@ -26,7 +28,7 @@ public class AppInfo {
 	private boolean mDetailsInit = false;
 	
 	public AppInfo() {
-		
+		mSummaryInit = true;
 	}
 	
 	public AppInfo(String appName, 
