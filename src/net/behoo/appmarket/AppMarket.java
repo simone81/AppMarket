@@ -43,16 +43,21 @@ public class AppMarket extends AsyncTaskActivity
 	private HttpTask mHttpTask = null;
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
 	private Integer mCurrentSelection = -1;
+	private InstallButtonGuard mInstallButtonGuard = null;
 	
 	// apk download and install service
 	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
-	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		mServiceBound = true;
+    		
+    		if (-1 != mCurrentSelection) {
+    			mInstallButtonGuard = new InstallButtonGuard(mButtonInstall, 
+    					mAppLib.get(mCurrentSelection), mInstallService);
+    		}
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
@@ -64,6 +69,9 @@ public class AppMarket extends AsyncTaskActivity
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
 			Log.i(TAG, "onReceive");
+			if (null != mInstallButtonGuard) {
+				mInstallButtonGuard.updateAppState();
+			}
 		}
 	};
     

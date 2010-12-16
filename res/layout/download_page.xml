@@ -43,7 +43,7 @@
 	    	android:layout_marginLeft="10dip"
 	    	android:layout_alignTop="@id/downloadpage_anchor"/>	
 	    
-	    <Button android:id="@+id/downloadpage_btn_detail" 
+	    <Button android:id="@+id/downloadpage_btn_to_install" 
 	    	android:text="@string/downloadpage_to_install"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"

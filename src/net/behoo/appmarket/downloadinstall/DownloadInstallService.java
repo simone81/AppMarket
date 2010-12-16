@@ -237,6 +237,22 @@ public class DownloadInstallService extends Service {
 		return appList;
 	}
 	
+	public PackageState getAppState(String code) {
+		try {
+			String [] columns = {PackageDbHelper.COLUMN_STATE};
+			String where = PackageDbHelper.COLUMN_CODE + "=?";
+			String [] whereArgs = {code};
+			Cursor c = mPkgDBHelper.select(columns, where, whereArgs, null);
+			int index = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_STATE);
+			PackageState state = PackageState.valueOf(c.getString(index));
+			c.close();
+			return state;
+		} catch (Throwable tr){
+			Log.i(TAG, "getAppState "+tr.getMessage());
+			return PackageState.unknown;
+		}
+	}
+	
 	public boolean install( String uri ) {
 		return true;
 	}

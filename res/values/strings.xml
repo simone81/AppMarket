@@ -42,10 +42,12 @@
 	<!-- download install page -->
 	<string name="downloadpage_to_install">开始安装</string>
 	<string name="downloadpage_downloading">正在下载</string>
+	<string name="downloadpage_download_success">下载成功</string>
 	<string name="downloadpage_download_failure">下载失败</string>
 	<string name="downloadpage_installing">正在安装</string>
-	<string name="downloadpage_install_success">安装成功</string>
+	<string name="downloadpage_install_success">已成功</string>
 	<string name="downloadpage_install_failure">安装失败</string>
 	<string name="downloadpage_retry">重试</string>
+	<string name="downloadpage_update">立即升级</string>
 	
 </resources>
