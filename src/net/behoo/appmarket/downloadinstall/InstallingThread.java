@@ -60,7 +60,7 @@ public class InstallingThread extends Thread {
 				int delCount = mContext.getContentResolver().delete(Downloads.CONTENT_URI, where, whereArgs);
 				Log.i(TAG, "row deleted of code: "+mPkgCode+" is "+Integer.toString(delCount));
 			}
-			mPkgDBHelper.update(mPkgCode, cv);
+			mPkgDBHelper.update(mPkgCode, cv2);
 			PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, status);
 
 			Log.i(TAG, "ret: "+status+" "+mPkgSrcUri);

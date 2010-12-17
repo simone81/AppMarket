@@ -121,6 +121,10 @@ public class DownloadInstallService extends Service {
 		mUpdateDaemonThread.start();
 	}
 	
+	public IBinder onBind(Intent intent) {
+		return mBinder;
+		
+	}
 	public void onDestroy() {
 		super.onDestroy();
 		this.unregisterReceiver(mReceiver);
@@ -194,7 +198,7 @@ public class DownloadInstallService extends Service {
 	        		Constants.PackageState.downloading.name());
 	        
 			int delCount = getContentResolver().delete(Downloads.CONTENT_URI, where, whereValue);
-			Log.i(TAG, "row deleted of code: "+code+" is "+Integer.toString(delCount));
+			Log.i(TAG, "row deleted of code: "+appInfo.mAppCode+" is "+Integer.toString(delCount));
 			
 	        // add values to download database
 	        ContentValues values = new ContentValues();
