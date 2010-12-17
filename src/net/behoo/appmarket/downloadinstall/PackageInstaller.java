@@ -147,7 +147,7 @@ public class PackageInstaller {
         
         Uri pkgURI = Uri.parse("file://" + tmpPackageFile.getPath());
         PackageInstallObserver observer = new PackageInstallObserver();
-        mPkgMgr.installPackage(pkgURI, observer, 0, "net.behoo.appmarket");
+        mPkgMgr.installPackage(pkgURI, observer, installFlags, "net.behoo.appmarket");
        
         // wait until the installing process finished
         boolean bWait = true;

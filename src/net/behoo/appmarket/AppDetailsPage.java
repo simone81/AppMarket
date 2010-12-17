@@ -2,6 +2,7 @@ package net.behoo.appmarket;
 
 import java.io.InputStream;
 
+import net.behoo.appmarket.InstallButtonGuard.OnInstallListener;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
@@ -19,23 +20,26 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-public class AppDetailsPage extends AsyncTaskActivity implements OnClickListener {
+public class AppDetailsPage extends AsyncTaskActivity implements OnInstallListener {
 	
 	public static final String APP_CODE = "appcode";
+	public static final String APP_NAME = "appcode";
+	public static final String APP_VERSION = "appcode";
+	public static final String APP_AUTHOR = "appcode";
+	public static final String APP_DESC = "appcode";
+	public static final String APP_IMAGE_URL = "appcode";
 	
 	private static final String TAG = "DetailsPage";
 	
-	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
+	private Button mInstallButton = null;
+	private InstallButtonGuard mInstallButtonGuard = null;
 	
 	private AppInfo mAppInfo = new AppInfo();
-	
 	private HttpTask mHttpTask = null;
 	
 	private Integer[] mRemoteCntl = {
@@ -49,18 +53,22 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnClickListener
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
-    		mServiceBound = true;
+    		mInstallButtonGuard = new InstallButtonGuard(mInstallButton,
+    				mAppInfo, mInstallService);
+    		mInstallButtonGuard.setOnInstallListener(AppDetailsPage.this);
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
     		mInstallService = null;
-    		mServiceBound = false;
     	}
     };
     
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
 			Log.i(TAG, "onReceive");
+			if (null != mInstallButtonGuard) {
+				mInstallButtonGuard.updateAppState();
+			}
 		}
 	};
 	
@@ -68,28 +76,29 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnClickListener
         super.onCreate(savedInstanceState);
         setContentView(R.layout.details_page); 
         
+        // get the summary application information
         Bundle bundle = getIntent().getExtras();
-        mAppInfo.mAppCode = bundle.getString(APP_CODE);
+        mAppInfo = new AppInfo(bundle.getString(APP_NAME),
+        		bundle.getString(APP_VERSION),
+        		bundle.getString(APP_CODE),
+        		bundle.getString(APP_AUTHOR),
+        		bundle.getString(APP_DESC),
+        		bundle.getString(APP_IMAGE_URL));
         
-        Button button = (Button)findViewById(R.id.detail_btn_install);
-        button.setOnClickListener(this);
+        // tbd should disable first, because we can't get the app state now
+        mInstallButton = (Button)findViewById(R.id.detail_btn_install);
         
         mHttpTask = new HttpTask(mHandler);
         executeTask(mHttpTask);
         showDialog(WAITING_DIALOG);
     }
     
-    public void onClick(View v) {
+    public void onInstalled(AppInfo appInfo) {
 		// TODO Auto-generated method stub
-    	if (mServiceBound) {
-    		mInstallService.downloadAndInstall(UrlHelpers.getDownloadUrl("", mAppInfo.mAppCode), 
-    				AppInfo.MIMETYPE, mAppInfo);
-    		
-			Intent intent = new Intent();
-			intent.setClass(AppDetailsPage.this, AppDownloadPage.class);
-			startActivity(intent);
-    	}
-	}
+		Intent intent = new Intent();
+		intent.setClass(this, AppDownloadPage.class);
+		startActivity(intent);
+	};
     
     public void onResume() {
     	super.onResume();
@@ -153,12 +162,13 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnClickListener
 		protected boolean doTask() {
 			try {
 				HttpUtil httpUtil = new HttpUtil();
-				InputStream stream = httpUtil.httpGet(UrlHelpers.getAppDetailUrl("token", mAppInfo.mAppCode));
+				InputStream stream = httpUtil.httpGet(
+						UrlHelpers.getAppDetailUrl("token", mAppInfo.mAppCode));
 				mAppInfo = AppDetailParser.parse(stream);
 				return true;
 	    	} catch (Throwable tr) {
 	    		return false;
 	    	}
 		}
-    };
+    }
 }

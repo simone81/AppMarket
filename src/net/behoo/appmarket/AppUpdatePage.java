@@ -19,16 +19,17 @@ import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.AdapterView.OnItemSelectedListener;
 
-public class AppUpdatePage extends AsyncTaskActivity {
+public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedListener {
 	
 	//private static final String TAG = "AppUpdatePage";
 	
-	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
 	
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
@@ -40,24 +41,21 @@ public class AppUpdatePage extends AsyncTaskActivity {
 		
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
-    		mServiceBound = true;
     		
-    		mAppLib = mInstallService.getUpdateList();
-    		updateUIState();
+    		updateListView();
     		mInstallService.checkUpdate();
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
     		mInstallService = null;
-    		mServiceBound = false;
     	}
     };
     
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
-			if (mServiceBound) {
+			if (null != mInstallService) {
 				mAppLib = mInstallService.getUpdateList();
-    			updateUIState();
+				updateListView();
 			}
 		}
 	};
@@ -68,6 +66,7 @@ public class AppUpdatePage extends AsyncTaskActivity {
 		
 		mListView = (ListView)findViewById(R.id.app_update_list);
 		mListView.setAdapter(new UpdateListAdapter(this));
+		mListView.setOnItemSelectedListener(this);
 		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 	}
@@ -84,6 +83,15 @@ public class AppUpdatePage extends AsyncTaskActivity {
 		this.unregisterReceiver(mReceiver);
 	}
 	
+	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
+			long arg3) {
+		updateUIState();
+	}
+
+	public void onNothingSelected(AdapterView<?> arg0) {
+		// TODO Auto-generated method stub
+	}
+	
 	protected void onImageCompleted(boolean result, String appcode) {
 		mImageDownloadFlags.add(appcode);
 		if (result) {
@@ -94,6 +102,18 @@ public class AppUpdatePage extends AsyncTaskActivity {
 					}
 				}
 			}
+		}
+	}
+	
+	public void updateListView() {
+		mAppLib = mInstallService.getUpdateList();
+		mListView.invalidate();
+		if (ListView.INVALID_POSITION == mListView.getSelectedItemPosition() 
+			&& mListView.getCount() > 0) {
+			mListView.setSelection(0);
+		}
+		else {
+			updateUIState();
 		}
 	}
 	
@@ -134,11 +154,11 @@ public class AppUpdatePage extends AsyncTaskActivity {
 	}
 	
 	private class UpdateListAdapter extends BaseAdapter {
-		private Context mContext = null;
+		//private Context mContext = null;
 		private LayoutInflater mInflater = null;
         
         public UpdateListAdapter(Context context) {
-            mContext = context;
+            //mContext = context;
             mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
 

@@ -7,12 +7,22 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 public class ImageDownloadTask implements Runnable {
+	private static final String TAG = "ImageDownloadTask";
+	
 	private AppInfo mAppInfo = null;
 	private Handler mHandler = null;
 	
 	public ImageDownloadTask(AppInfo appInfo, Handler handler) {
+		if (null == appInfo) {
+			throw new NullPointerException();
+		}
+		if (null == appInfo.mAppCode) {
+			throw new IllegalArgumentException();
+		}
+		
 		mAppInfo = appInfo;
 		mHandler = handler;
 	}
@@ -26,13 +36,18 @@ public class ImageDownloadTask implements Runnable {
 			mAppInfo.setDrawable(drawable);
 			ret = true;
 		} catch (Throwable e) {
+			String image = (mAppInfo.mAppImageUrl == null ? "null" : mAppInfo.mAppImageUrl);
+			Log.w(TAG, "failed to download image of code: "+mAppInfo.mAppCode+" url: "+image);
+			ret = false;
 		}
 		
-		Message msg = new Message();
-		msg.what = ret ? DownloadConstants.MSG_IMG_SUCCEED : DownloadConstants.MSG_IMG_FAILURE;
-		Bundle b = new Bundle();
-		b.putString(DownloadConstants.MSG_DATA_APPCODE, mAppInfo.mAppCode);
-		msg.setData(b);
-		mHandler.sendMessage(msg);
+		if (null != mHandler) {
+			Message msg = new Message();
+			msg.what = ret ? DownloadConstants.MSG_IMG_SUCCEED : DownloadConstants.MSG_IMG_FAILURE;
+			Bundle b = new Bundle();
+			b.putString(DownloadConstants.MSG_DATA_APPCODE, mAppInfo.mAppCode);
+			msg.setData(b);
+			mHandler.sendMessage(msg);
+		}
 	}
 }

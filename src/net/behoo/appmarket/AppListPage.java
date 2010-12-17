@@ -28,7 +28,8 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 public class AppListPage extends AsyncTaskActivity 
-						 implements OnClickListener, OnItemSelectedListener {
+						 implements OnClickListener, 
+						 OnItemSelectedListener {
 	private static final String TAG = "AppListPage";
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
@@ -62,17 +63,21 @@ public class AppListPage extends AsyncTaskActivity
 		if (ListView.INVALID_POSITION != pos) {
 			Intent intent = new Intent();
 			intent.setClass(AppListPage.this, AppDetailsPage.class);
-			intent.putExtra(AppDetailsPage.APP_CODE, "");
-			//intent.putExtra(DetailsPage.APP_CODE, mAppList.get(pos).mAppCode);
+			intent.putExtra(AppDetailsPage.APP_CODE, mAppList.get(pos).mAppCode);
+			intent.putExtra(AppDetailsPage.APP_NAME, mAppList.get(pos).mAppName);
+			intent.putExtra(AppDetailsPage.APP_VERSION, mAppList.get(pos).mAppVersion);
+			intent.putExtra(AppDetailsPage.APP_AUTHOR, mAppList.get(pos).mAppAuthor);
+			intent.putExtra(AppDetailsPage.APP_DESC, mAppList.get(pos).mAppDesc);
+			intent.putExtra(AppDetailsPage.APP_IMAGE_URL, mAppList.get(pos).mAppImageUrl);
 			startActivity( intent );
 		}
 	}
 	
-	public void onItemSelected(AdapterView parent, View view, int position, long id) {
+	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		updateUIState();
 	}
 	
-	public void onNothingSelected(AdapterView view) {
+	public void onNothingSelected(AdapterView<?> view) {
 	}
 	
 	protected void onTaskCompleted(boolean result) {
@@ -151,11 +156,11 @@ public class AppListPage extends AsyncTaskActivity
     };
     
 	private class AppListAdapter extends BaseAdapter {
-		private Context mContext = null;
+		//private Context mContext = null;
         private LayoutInflater mInflater = null;
         
         public AppListAdapter(Context context) {
-            mContext = context;
+            //mContext = context;
             mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
 
@@ -181,5 +186,5 @@ public class AppListPage extends AsyncTaskActivity
             
             return view;
         }
-    }   
+    }  
 }

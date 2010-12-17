@@ -2,8 +2,6 @@ package net.behoo.appmarket.http;
 
 import java.util.ArrayList;
 
-import junit.framework.Assert;
-
 public class UrlHelpers {
 	private static final String SERVER_URL = "http://192.168.1.50/appmarket?";
 	
@@ -23,8 +21,9 @@ public class UrlHelpers {
 	
 	public static String getUpdateRequestString(ArrayList<String> codeArr, ArrayList<String> versArr) {
 		if (codeArr == null || versArr == null)
+			throw new NullPointerException();
+		if (codeArr.size() != versArr.size()) 
 			throw new IllegalArgumentException();
-		Assert.assertEquals(codeArr.size(), versArr.size());
 		
 		if (codeArr.size() > 0) {
 			String reqStr = new String();

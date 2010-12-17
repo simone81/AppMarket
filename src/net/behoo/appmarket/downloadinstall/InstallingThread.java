@@ -41,26 +41,25 @@ public class InstallingThread extends Thread {
 				
 				PackageInstaller installer = new PackageInstaller(mContext);
 				ret = installer.installPackage(Uri.parse(mPkgSrcUri));
-				
-				if (ret) {
-					PackageParser.Package pkgInfo = PackageUtils.getPackageInfo(Uri.parse(mPkgSrcUri));
-					Assert.assertNotNull(pkgInfo);
-					ContentValues cv2 = new ContentValues();
-					cv2.put(PackageDbHelper.COLUMN_PKG_NAME, pkgInfo.packageName);
-					mPkgDBHelper.update(mPkgCode, cv2);
-					
-					String where = Downloads.COLUMN_NOTIFICATION_EXTRAS + "=?";
-					String [] whereArgs = {mPkgCode};
-					int delCount = mContext.getContentResolver().delete(Downloads.CONTENT_URI, where, whereArgs);
-					Log.i(TAG, "row deleted of code: "+code+" is "+Integer.toString(delCount));
-				}
 			} catch ( Throwable tr ) {
 				ret = false;
 			}
+			
+			// update the local data record
 			String status = ( ret ? Constants.PackageState.install_succeeded.name()
 					: Constants.PackageState.install_failed.name() );
-			ContentValues cv = new ContentValues();
-			cv.put(PackageDbHelper.COLUMN_STATE, status);
+			ContentValues cv2 = new ContentValues();
+			cv2.put(PackageDbHelper.COLUMN_STATE, status);
+			if (ret) {
+				PackageParser.Package pkgInfo = PackageUtils.getPackageInfo(Uri.parse(mPkgSrcUri));
+				cv2.put(PackageDbHelper.COLUMN_PKG_NAME, pkgInfo.packageName);
+				
+				// delete the record from download provider database
+				String where = Downloads.COLUMN_NOTIFICATION_EXTRAS + "=?";
+				String [] whereArgs = {mPkgCode};
+				int delCount = mContext.getContentResolver().delete(Downloads.CONTENT_URI, where, whereArgs);
+				Log.i(TAG, "row deleted of code: "+mPkgCode+" is "+Integer.toString(delCount));
+			}
 			mPkgDBHelper.update(mPkgCode, cv);
 			PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, status);
 

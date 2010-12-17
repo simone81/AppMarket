@@ -1,9 +1,7 @@
 package net.behoo.appmarket;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,7 +9,6 @@ import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.database.PackageDbHelper;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -23,7 +20,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -43,13 +39,14 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	private Set<String> mImageDownloadFlags = new HashSet<String>();
 	private Map<String, AppInfo> mAppMap = new HashMap<String, AppInfo>();
 	private DownloadInstallService mInstallService = null;
+	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		
-    			mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
-    					null, mInstallService);
+    		mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
+    			null, mInstallService);
     		
     	}
     	
@@ -85,6 +82,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		mListView = (ListView)findViewById(R.id.downloadpage_list);
 		mListView.setAdapter(new ListAdapter(this, android.R.layout.simple_list_item_1, c));
 		mListView.setOnItemSelectedListener(this);
+		mListView.requestFocus();
 		
 		mInstallButton = (Button)findViewById(R.id.downloadpage_btn_to_install);
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
@@ -102,39 +100,42 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
     	unregisterReceiver( mReceiver );
     }
     
-	public void onItemSelected(AdapterView parent, View view, int position, long id) {
+	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		// get the app code of the selected item
-		//updateUIState();
+		updateUIState();
 	}
 	
-	public void onNothingSelected(AdapterView view) {
+	public void onNothingSelected(AdapterView<?> view) {
 	}
 	
 	private void updateUIState() {
-//		int pos = mListView.getSelectedItemPosition();
-//		if (ListView.INVALID_POSITION != pos && mListView.getCount() > 0) {
-//			AppInfo appInfo = mAppList.get(pos);
-//			
-//			TextView tv = (TextView)findViewById(R.id.main_app_title);
-//			tv.setText(appInfo.mAppName);
-//			
-//			tv = (TextView)findViewById(R.id.main_app_author);
-//			tv.setText(appInfo.mAppAuthor);
-//			
-//			tv = (TextView)findViewById(R.id.main_app_version);
-//			tv.setText(appInfo.mAppVersion);
-//			
-//			tv = (TextView)findViewById(R.id.app_list_desc);
-//			tv.setText(appInfo.mAppShortDesc);
-//			
-//			updateImage(appInfo);
-//		}
+		int pos = mListView.getSelectedItemPosition();
+		if (ListView.INVALID_POSITION != pos) {
+			String code = (String)mListView.getItemAtPosition(pos);
+			if (null != code) {
+				AppInfo appInfo = mAppMap.get(code);
+				
+				TextView tv = (TextView)findViewById(R.id.main_app_title);
+				tv.setText(appInfo.mAppName);
+				
+				tv = (TextView)findViewById(R.id.main_app_author);
+				tv.setText(appInfo.mAppAuthor);
+				
+				tv = (TextView)findViewById(R.id.main_app_version);
+				tv.setText(appInfo.mAppVersion);
+				
+				tv = (TextView)findViewById(R.id.app_list_desc);
+				tv.setText(appInfo.mAppShortDesc);
+				
+				updateImage(appInfo);
+			}
+		}
 	}
 	
 	protected void onImageCompleted(boolean result, String appcode) {
 		mImageDownloadFlags.add(appcode);
 		if (result) {
-			  
+			updateImage(mAppMap.get(appcode));
         } 
 	}
 	
@@ -159,7 +160,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         private int mIndexAuthor = -1;
         private int mIndexDesc = -1;
         private int mIndexImage = -1;
-        
+        private Cursor mCursor = null;
         public ListAdapter(Context context, int layout, Cursor c) {
         	super(context, layout, c);
         	
@@ -169,15 +170,29 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         	mIndexAuthor = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_AUTHOR);
             mIndexDesc = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_DESC);
             mIndexImage = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_IMAGE_URL);
+            
+            mCursor = c;
         }
-
+        
+        public Object getItem(int position) {
+        	int iIndex = mCursor.getPosition();
+        	if (mCursor.moveToPosition(position)) {
+        		// can't go back to -1 :(
+        		if (-1 != iIndex) {
+        			mCursor.moveToPosition(iIndex);
+        		}
+        		return mCursor.getString(mIndexColCode);
+        	}
+        	return null;
+        }
+        
         public void bindView(View view, Context context, Cursor cursor) {
         	String str = cursor.getString(mIndexColName);
         	str += "--";
         	str += cursor.getString(mIndexColCode);
         	str += "--";
         	str += cursor.getString(mIndexColVersion);
-        	Log.i(TAG, "bindView" + str);
+        	Log.i(TAG, "bindView " + str);
         	
         	TextView tv = (TextView)view;
         	tv.setText(str);
@@ -189,7 +204,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         				cursor.getString(mIndexColCode),
         				cursor.getString(mIndexAuthor),
         				cursor.getString(mIndexImage),
-        				cursor.getString(mIndexImage));
+        				cursor.getString(mIndexDesc));
         		mAppMap.put(cursor.getString(mIndexColCode), appInfo);
         	}
         }

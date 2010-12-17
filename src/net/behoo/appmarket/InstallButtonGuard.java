@@ -5,11 +5,6 @@ import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import net.behoo.appmarket.downloadinstall.Constants.PackageState;
 import net.behoo.appmarket.http.UrlHelpers;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -22,6 +17,7 @@ public class InstallButtonGuard implements OnClickListener {
 	private AppInfo mAppInfo = null;
 	private DownloadInstallService mService = null;
     private PackageState mAppState = Constants.PackageState.unknown;
+    private OnInstallListener mListener = null;
     
 	public InstallButtonGuard(Button button, AppInfo appInfo, DownloadInstallService service) {
 		if (null == button || null == appInfo || null == service)
@@ -37,11 +33,19 @@ public class InstallButtonGuard implements OnClickListener {
 		updateAppState();
 	}
 	
+	public void setOnInstallListener(OnInstallListener listener ) {
+		mListener = listener;
+	}
+	
 	public void setAppInfo(AppInfo appInfo) {
 		if (mAppInfo.mAppCode.compareTo(appInfo.mAppCode) != 0) {
 			mAppInfo = appInfo;
 			updateButtonState();
 		}
+	}
+	
+	public PackageState getPackageState() {
+		return mAppState;
 	}
 	
 	public void onClick(View v) {
@@ -53,6 +57,9 @@ public class InstallButtonGuard implements OnClickListener {
 		case download_failed:	
 			mService.downloadAndInstall(UrlHelpers.getDownloadUrl("token", mAppInfo.mAppChangelog),
 					AppInfo.MIMETYPE, mAppInfo);
+			if (null != mListener) {
+				mListener.onInstalled(mAppInfo);
+			}
 			break;
 		case downloading:
 		case download_succeeded:
@@ -105,5 +112,9 @@ public class InstallButtonGuard implements OnClickListener {
 			Log.w(TAG, "updateButtonState unspecified app state");
 			break;
 		}
+	}
+	
+	interface OnInstallListener {
+		abstract void onInstalled(AppInfo appInfo) ;
 	}
 }

@@ -12,6 +12,7 @@ import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
 import net.behoo.appmarket.data.AppInfo;
+import net.behoo.appmarket.InstallButtonGuard.OnInstallListener;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -31,7 +32,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 public class AppMarket extends AsyncTaskActivity 
-					   implements OnClickListener, OnFocusChangeListener {
+					   implements OnClickListener, OnFocusChangeListener, OnInstallListener {
 	
 	private static final String TAG = "AppMarket";
 	
@@ -46,23 +47,21 @@ public class AppMarket extends AsyncTaskActivity
 	private InstallButtonGuard mInstallButtonGuard = null;
 	
 	// apk download and install service
-	private boolean mServiceBound = false;
 	private DownloadInstallService mInstallService = null;
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
-    		mServiceBound = true;
     		
     		if (-1 != mCurrentSelection) {
     			mInstallButtonGuard = new InstallButtonGuard(mButtonInstall, 
     					mAppLib.get(mCurrentSelection), mInstallService);
+    			mInstallButtonGuard.setOnInstallListener(AppMarket.this);
     		}
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
     		mInstallService = null;
-    		mServiceBound = false;
     	}
     };
     
@@ -84,7 +83,6 @@ public class AppMarket extends AsyncTaskActivity
         tv.setText(R.string.market_promotion);
         
         mButtonInstall = ( Button )findViewById(R.id.main_btn_install);
-        mButtonInstall.setOnClickListener(this);
         
         mButtonUpdate = ( Button )findViewById(R.id.main_btn_download_page);
         mButtonUpdate.setOnClickListener(this);
@@ -114,12 +112,17 @@ public class AppMarket extends AsyncTaskActivity
     	unregisterReceiver( mReceiver );
     }
     
+    public void onInstalled(AppInfo appInfo) {
+		// TODO Auto-generated method stub
+		Intent intent = new Intent();
+		intent.setClass(this, AppDownloadPage.class);
+		startActivity(intent);
+	};
+	
 	public void onClick(View v) {
 		Intent intent = new Intent();
 		if (v.getId() == R.id.main_btn_install) {
-			if (mServiceBound) {
-				mInstallService.install("");
-			}
+			Assert.assertTrue(false);
 		}
 		else if (v.getId() == R.id.main_btn_applist_page ) {
 			intent.setClass(this, AppListPage.class);
@@ -148,6 +151,8 @@ public class AppMarket extends AsyncTaskActivity
 				mButtonAppList.setNextFocusUpId(v.getId());
 				mButtonUpdate.setNextFocusUpId(v.getId());
 				mButtonDownloadMgr.setNextFocusUpId(v.getId());
+				
+				mInstallButtonGuard.setAppInfo(mAppLib.get(index));
 			}
 			else {
 				v.setBackgroundResource(0);
@@ -247,12 +252,12 @@ public class AppMarket extends AsyncTaskActivity
 		protected boolean doTask() {
 			try {
 	    		HttpUtil httpUtil = new HttpUtil();
-				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl(""));
+				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl("token"));
 				mAppLib = AppListParser.parse(stream);
 				return true;
 	    	} catch (Throwable tr) {
 	    		return false;
 	    	}
 		}
-    };
+	}
 }

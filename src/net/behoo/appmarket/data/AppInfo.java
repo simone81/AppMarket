@@ -4,7 +4,7 @@ import android.graphics.drawable.Drawable;
 
 public class AppInfo {
 	
-	public static final String MIMETYPE = "";
+	public static final String MIMETYPE = "application/vnd.android.package-archive";
 	
 	// summary info
 	public String mAppName = "";
