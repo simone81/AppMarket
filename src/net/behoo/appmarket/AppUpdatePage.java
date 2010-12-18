@@ -106,14 +106,17 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
 	}
 	
 	public void updateListView() {
-		mAppLib = mInstallService.getUpdateList();
-		mListView.invalidate();
-		if (ListView.INVALID_POSITION == mListView.getSelectedItemPosition() 
-			&& mListView.getCount() > 0) {
-			mListView.setSelection(0);
-		}
-		else {
-			updateUIState();
+		ArrayList<AppInfo> appLib = mInstallService.getUpdateList();
+		if (null != appLib) {
+			mAppLib = appLib;
+			mListView.invalidate();
+			if (ListView.INVALID_POSITION == mListView.getSelectedItemPosition() 
+				&& mListView.getCount() > 0) {
+				mListView.setSelection(0);
+			}
+			else {
+				updateUIState();
+			}
 		}
 	}
 	

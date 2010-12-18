@@ -53,11 +53,7 @@ public class AppMarket extends AsyncTaskActivity
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		
-    		if (-1 != mCurrentSelection) {
-    			mInstallButtonGuard = new InstallButtonGuard(mButtonInstall, 
-    					mAppLib.get(mCurrentSelection), mInstallService);
-    			mInstallButtonGuard.setOnInstallListener(AppMarket.this);
-    		}
+    		createInstallButtonGuard();
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
@@ -137,22 +133,18 @@ public class AppMarket extends AsyncTaskActivity
     }
 	
 	public void onFocusChange(View v, boolean hasFocus) {
-		Integer index = -1;
-		int min = mImageViewIds[0];
-		int max = mImageViewIds[mImageViewIds.length-1];
-		if (v.getId() <= max && v.getId() >= min) {
-			index = (Integer)v.getTag();
-			mCurrentSelection = index;
+		Integer index = (Integer)v.getTag();
+		if (0 <= index && index < mImageViewIds.length) {
 			// redraw
 			if (hasFocus) {
+				mCurrentSelection = index;
+				Log.i(TAG, "focus "+Integer.toString(index));
 				updateUIState();
 				v.setBackgroundResource(R.drawable.focus);
 				mButtonInstall.setNextFocusDownId(v.getId());
 				mButtonAppList.setNextFocusUpId(v.getId());
 				mButtonUpdate.setNextFocusUpId(v.getId());
 				mButtonDownloadMgr.setNextFocusUpId(v.getId());
-				
-				mInstallButtonGuard.setAppInfo(mAppLib.get(index));
 			}
 			else {
 				v.setBackgroundResource(0);
@@ -175,6 +167,8 @@ public class AppMarket extends AsyncTaskActivity
 				iv.setPadding(5, 5, 5, 5);
 				if (i == mCurrentSelection) {
 					iv.requestFocus();
+					
+					createInstallButtonGuard();
 				}
 				
 				if (null != mAppLib.get(i).mAppImageUrl) {
@@ -199,6 +193,14 @@ public class AppMarket extends AsyncTaskActivity
 		}
 	}
 	
+	private void createInstallButtonGuard() {
+		if (-1 != mCurrentSelection && null != mInstallService && mAppLib.size() > 0) {
+			mInstallButtonGuard = new InstallButtonGuard(mButtonInstall, 
+					mAppLib.get(mCurrentSelection), mInstallService);
+			mInstallButtonGuard.setOnInstallListener(AppMarket.this);
+		}
+	}
+	
 	private void updateUIState() {
 		if (mAppLib.size() > 0) {
 			assert(mCurrentSelection >= 0 && mCurrentSelection < mAppLib.size());
@@ -219,6 +221,9 @@ public class AppMarket extends AsyncTaskActivity
 			if (appInfo.getDrawable() != null) {
 				ImageView iv = (ImageView)findViewById(mImageViewIds[mCurrentSelection]);
 				Assert.assertTrue(true);
+				iv.setImageDrawable(appInfo.getDrawable());
+				
+				iv = (ImageView)findViewById(R.id.main_app_logo);
 				iv.setImageDrawable(appInfo.getDrawable());
 			}
 		}

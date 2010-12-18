@@ -81,7 +81,7 @@ public class AppListPage extends AsyncTaskActivity
 	}
 	
 	protected void onTaskCompleted(boolean result) {
-		Log.i(TAG, String.format("onTaskComplete ret: %d, count: %d", result, mAppList.size()));
+		Log.i(TAG, String.format("onTaskComplete ret: %d, count: %d", result?1:0, mAppList.size()));
 		mListView.invalidate();
 		if (mListView.getCount() > 0)
 			mListView.setSelection(0);

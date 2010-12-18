@@ -45,9 +45,14 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		
-    		mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
-    			null, mInstallService);
-    		
+    		int pos = mListView.getSelectedItemPosition();
+    		if (ListView.INVALID_POSITION != pos) {
+    			String code = (String)mListView.getItemAtPosition(pos);
+    			if (null != code) {
+    				mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
+    						mAppMap.get(code), mInstallService);
+    			}
+    		}
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
