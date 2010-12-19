@@ -17,7 +17,7 @@ public class InstallButtonGuard implements OnClickListener {
 	private AppInfo mAppInfo = null;
 	private DownloadInstallService mService = null;
     private PackageState mAppState = Constants.PackageState.unknown;
-    private OnInstallListener mListener = null;
+    private OnInstallClickListener mListener = null;
     
 	public InstallButtonGuard(Button button, AppInfo appInfo, DownloadInstallService service) {
 		if (null == button || null == appInfo || null == service)
@@ -33,7 +33,7 @@ public class InstallButtonGuard implements OnClickListener {
 		updateAppState();
 	}
 	
-	public void setOnInstallListener(OnInstallListener listener ) {
+	public void setOnInstallClickListener(OnInstallClickListener listener ) {
 		mListener = listener;
 	}
 	
@@ -58,7 +58,7 @@ public class InstallButtonGuard implements OnClickListener {
 			mService.downloadAndInstall(UrlHelpers.getDownloadUrl("token", mAppInfo.mAppChangelog),
 					AppInfo.MIMETYPE, mAppInfo);
 			if (null != mListener) {
-				mListener.onInstalled(mAppInfo);
+				mListener.onInstallClicked(mAppInfo);
 			}
 			break;
 		case downloading:
@@ -114,7 +114,7 @@ public class InstallButtonGuard implements OnClickListener {
 		}
 	}
 	
-	interface OnInstallListener {
-		abstract void onInstalled(AppInfo appInfo) ;
+	interface OnInstallClickListener {
+		abstract void onInstallClicked(AppInfo appInfo) ;
 	}
 }

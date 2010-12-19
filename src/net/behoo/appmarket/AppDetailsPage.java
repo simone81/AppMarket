@@ -2,7 +2,7 @@ package net.behoo.appmarket;
 
 import java.io.InputStream;
 
-import net.behoo.appmarket.InstallButtonGuard.OnInstallListener;
+import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
@@ -24,7 +24,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-public class AppDetailsPage extends AsyncTaskActivity implements OnInstallListener {
+public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickListener {
 	
 	public static final String APP_CODE = "appcode";
 	public static final String APP_NAME = "appcode";
@@ -55,7 +55,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallListen
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		mInstallButtonGuard = new InstallButtonGuard(mInstallButton,
     				mAppInfo, mInstallService);
-    		mInstallButtonGuard.setOnInstallListener(AppDetailsPage.this);
+    		mInstallButtonGuard.setOnInstallClickListener(AppDetailsPage.this);
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
@@ -93,7 +93,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallListen
         showDialog(WAITING_DIALOG);
     }
     
-    public void onInstalled(AppInfo appInfo) {
+    public void onInstallClicked(AppInfo appInfo) {
 		// TODO Auto-generated method stub
 		Intent intent = new Intent();
 		intent.setClass(this, AppDownloadPage.class);

@@ -2,6 +2,8 @@ package net.behoo.appmarket;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import junit.framework.Assert;
 
@@ -12,7 +14,7 @@ import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
 import net.behoo.appmarket.data.AppInfo;
-import net.behoo.appmarket.InstallButtonGuard.OnInstallListener;
+import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -32,7 +34,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 public class AppMarket extends AsyncTaskActivity 
-					   implements OnClickListener, OnFocusChangeListener, OnInstallListener {
+					   implements OnClickListener, OnFocusChangeListener, OnInstallClickListener {
 	
 	private static final String TAG = "AppMarket";
 	
@@ -41,8 +43,10 @@ public class AppMarket extends AsyncTaskActivity
 	private Button mButtonUpdate = null;
 	private Button mButtonDownloadMgr = null;
 	
+	private boolean mFirstRun = true;
 	private HttpTask mHttpTask = null;
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
+	private Map<String, Integer> mCodeIndexMap = new HashMap<String, Integer>();
 	private Integer mCurrentSelection = -1;
 	private InstallButtonGuard mInstallButtonGuard = null;
 	
@@ -57,6 +61,7 @@ public class AppMarket extends AsyncTaskActivity
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
+    		mInstallButtonGuard = null;
     		mInstallService = null;
     	}
     };
@@ -92,14 +97,17 @@ public class AppMarket extends AsyncTaskActivity
         startService(new Intent(this, DownloadInstallService.class));
         
         mHttpTask = new HttpTask(mHandler);
-        executeTask(mHttpTask);
-        showDialog(WAITING_DIALOG);
     }
     
     public void onResume() {
     	super.onResume();
     	bindService(new Intent(this, DownloadInstallService.class), mServiceConn, Context.BIND_AUTO_CREATE);
     	registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
+    	if (mFirstRun) {
+            executeTask(mHttpTask);
+            showDialog(WAITING_DIALOG);
+    		mFirstRun = false;
+    	}
     }
     
     public void onPause() {
@@ -108,7 +116,7 @@ public class AppMarket extends AsyncTaskActivity
     	unregisterReceiver( mReceiver );
     }
     
-    public void onInstalled(AppInfo appInfo) {
+    public void onInstallClicked(AppInfo appInfo) {
 		// TODO Auto-generated method stub
 		Intent intent = new Intent();
 		intent.setClass(this, AppDownloadPage.class);
@@ -134,11 +142,11 @@ public class AppMarket extends AsyncTaskActivity
 	
 	public void onFocusChange(View v, boolean hasFocus) {
 		Integer index = (Integer)v.getTag();
+		Log.i(TAG, "onFocusChange index "+Integer.toString(index)+" hasFocus: "+(hasFocus?"1":"0"));
 		if (0 <= index && index < mImageViewIds.length) {
 			// redraw
 			if (hasFocus) {
 				mCurrentSelection = index;
-				Log.i(TAG, "focus "+Integer.toString(index));
 				updateUIState();
 				v.setBackgroundResource(R.drawable.focus);
 				mButtonInstall.setNextFocusDownId(v.getId());
@@ -160,7 +168,8 @@ public class AppMarket extends AsyncTaskActivity
 		for (int i = 0; i < mImageViewIds.length; ++i) {
 			ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
 			if (i < mAppLib.size()) {
-				iv.setImageResource(R.drawable.test);
+				mCodeIndexMap.put(mAppLib.get(i).mAppCode, i);
+				
 				iv.setFocusable(true);
 				iv.setOnFocusChangeListener(this);
 				iv.setTag(new Integer(i));
@@ -179,16 +188,19 @@ public class AppMarket extends AsyncTaskActivity
 				iv.setVisibility(View.INVISIBLE);
 			}
 		}
-		
-		updateUIState();
 	}
 	
 	protected void onImageCompleted(boolean result, String appcode) {
 		if (result) {
-			for (int i = 0; i < mAppLib.size(); ++i) {
-				if (0 == appcode.compareTo(mAppLib.get(i).mAppCode)) {
-					updateImage(i);
-				}
+			Integer i = mCodeIndexMap.get(appcode);
+			Log.i(TAG, "onImageCompleted "+appcode+" "+Integer.toString(i)+" "+mCurrentSelection.toString());
+			if (0 <= i && i < mAppLib.size()) {
+				ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
+				iv.setImageDrawable(mAppLib.get(i).getDrawable());
+			}
+			
+			if (0 == i.compareTo(mCurrentSelection)) {
+				updateImage(i);
 			}
 		}
 	}
@@ -197,7 +209,7 @@ public class AppMarket extends AsyncTaskActivity
 		if (-1 != mCurrentSelection && null != mInstallService && mAppLib.size() > 0) {
 			mInstallButtonGuard = new InstallButtonGuard(mButtonInstall, 
 					mAppLib.get(mCurrentSelection), mInstallService);
-			mInstallButtonGuard.setOnInstallListener(AppMarket.this);
+			mInstallButtonGuard.setOnInstallClickListener(AppMarket.this);
 		}
 	}
 	
@@ -218,25 +230,15 @@ public class AppMarket extends AsyncTaskActivity
 			tv = (TextView)findViewById(R.id.main_app_desc);
 			tv.setText(appInfo.mAppShortDesc);
 			
-			if (appInfo.getDrawable() != null) {
-				ImageView iv = (ImageView)findViewById(mImageViewIds[mCurrentSelection]);
-				Assert.assertTrue(true);
-				iv.setImageDrawable(appInfo.getDrawable());
-				
-				iv = (ImageView)findViewById(R.id.main_app_logo);
-				iv.setImageDrawable(appInfo.getDrawable());
-			}
+			updateImage(mCurrentSelection);
 		}
 	}
 	
 	private void updateImage(int index) {
 		if (index >= 0 && index < mImageViewIds.length) {
-			ImageView iv = (ImageView)findViewById(mImageViewIds[index]);
 			if (null != mAppLib.get(index).getDrawable()) {
+				ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
 				iv.setImageDrawable(mAppLib.get(index).getDrawable());
-			}
-			else {
-				iv.setImageResource(R.drawable.test);
 			}
 		}
 	}

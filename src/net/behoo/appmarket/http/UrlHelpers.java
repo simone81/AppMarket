@@ -3,20 +3,20 @@ package net.behoo.appmarket.http;
 import java.util.ArrayList;
 
 public class UrlHelpers {
-	private static final String SERVER_URL = "http://192.168.1.50/appmarket?";
+	private static final String SERVER_URL = "http://10.130.36.155/appmarket?";
 	
 	public static final String APP_MINE_TYPE = "application/vnd.android.package-archive";
 	
 	// get the promotion list
 	public static String getPromotionUrl(String token) {
 		//return SERVER_URL+"token="+token;
-		return "http://192.168.1.50/promotion.xml";
+		return "http://10.130.36.155/promotion.xml";
 	}
 	
 	// get the update list
 	public static String getUpdateUrl(String token) {
 		//return SERVER_URL+"token="+token;
-		return "http://192.168.1.50/update.xml";
+		return "http://10.130.36.155/update.xml";
 	}
 	
 	public static String getUpdateRequestString(ArrayList<String> codeArr, ArrayList<String> versArr) {
@@ -51,12 +51,12 @@ public class UrlHelpers {
 	public static String getAppListUrl(String token, int startIndex, int pageCount) {
 		//return String.format("%stoken=%s&startIndex=%d&pageCount=%d", 
 		//		SERVER_URL, token, startIndex, pageCount);
-		return "http://192.168.1.50/promotion.xml";
+		return "http://10.130.36.155/promotion.xml";
 	}
 	
 	// get the application detail
 	public static String getAppDetailUrl(String token, String appCode) {
-		return "http://192.168.1.50/appmarketdetail.xml";
+		return "http://10.130.36.155/appmarketdetail.xml";
 		//return makeCommonUrl(token, appCode);
 	}
 	
