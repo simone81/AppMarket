@@ -77,13 +77,8 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
         setContentView(R.layout.details_page); 
         
         // get the summary application information
-        Bundle bundle = getIntent().getExtras();
-        mAppInfo = new AppInfo(bundle.getString(APP_NAME),
-        		bundle.getString(APP_VERSION),
-        		bundle.getString(APP_CODE),
-        		bundle.getString(APP_AUTHOR),
-        		bundle.getString(APP_DESC),
-        		bundle.getString(APP_IMAGE_URL));
+        String [] value = getIntent().getStringArrayExtra("net.behoo.appmarket.AppDetailsPage");
+        mAppInfo = new AppInfo(value[0], value[1], value[2], value[3], value[4], value[5]);
         
         // tbd should disable first, because we can't get the app state now
         mInstallButton = (Button)findViewById(R.id.detail_btn_install);
@@ -124,7 +119,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	
 	protected void onImageCompleted(boolean result, String appcode) {
 		if (result) {
-			ImageView iv = (ImageView)findViewById(R.id.market_logo);
+			ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
 			iv.setImageDrawable(mAppInfo.getDrawable());
 		}
 	}
@@ -139,7 +134,12 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		tv = (TextView)findViewById(R.id.main_app_version);
 		tv.setText(mAppInfo.mAppVersion);
 		
-		ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_1);
+		ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
+		if (null != mAppInfo.getDrawable()) {
+			iv.setImageDrawable(mAppInfo.getDrawable());
+		}
+		
+		iv = (ImageView)findViewById(R.id.detail_screenshort_1);
 		iv.setImageResource(R.drawable.test);
 		
 		iv = (ImageView)findViewById(R.id.detail_screenshort_2);
@@ -164,7 +164,13 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 				HttpUtil httpUtil = new HttpUtil();
 				InputStream stream = httpUtil.httpGet(
 						UrlHelpers.getAppDetailUrl("token", mAppInfo.mAppCode));
-				mAppInfo = AppDetailParser.parse(stream);
+				 AppInfo appInfo = AppDetailParser.parse(stream);
+				 mAppInfo.mAppChangelog = appInfo.mAppChangelog;
+				 mAppInfo.mAppDesc = appInfo.mAppDesc;
+				 mAppInfo.mAppRemoteCntlScore = appInfo.mAppRemoteCntlScore;
+				 mAppInfo.mAppReview = appInfo.mAppReview;
+				 mAppInfo.mAppSize = appInfo.mAppSize;
+				 mAppInfo.mAppScreenShorts = appInfo.mAppScreenShorts;
 				return true;
 	    	} catch (Throwable tr) {
 	    		return false;

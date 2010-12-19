@@ -18,13 +18,11 @@ public class DownloadReceiver extends BroadcastReceiver {
 	public void onReceive(Context context, Intent intent) {
 		Log.i(TAG, "onReceive ");
 		Intent i = new Intent(DownloadReceiver.DOWNLOAD_COMPLETED);
-		// the data
-		Uri uri = intent.getData();
-		i.putExtra(DOWNLOAD_DATA_URI, uri.toString());
-		// extra data
+		// data
 		Bundle bundle = intent.getExtras();
-		String url = bundle.getCharSequence(Downloads.COLUMN_NOTIFICATION_EXTRAS).toString();
-		i.putExtra(Downloads.COLUMN_NOTIFICATION_EXTRAS, url);
+		String extraData = bundle.getCharSequence(Downloads.COLUMN_NOTIFICATION_EXTRAS).toString();
+		String [] values = {intent.getData().toString(), extraData};
+		i.putExtra(DOWNLOAD_COMPLETED, values);
 		context.sendBroadcast( i );
 	}
 }

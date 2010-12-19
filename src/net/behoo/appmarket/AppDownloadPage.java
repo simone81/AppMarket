@@ -27,6 +27,7 @@ import android.widget.ListView;
 import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.provider.Downloads;
 
 public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelectedListener {
 	private static final String TAG = "AppDownloadPage";
@@ -45,14 +46,14 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		
-    		int pos = mListView.getSelectedItemPosition();
-    		if (ListView.INVALID_POSITION != pos) {
-    			String code = (String)mListView.getItemAtPosition(pos);
-    			if (null != code) {
-    				mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
-    						mAppMap.get(code), mInstallService);
-    			}
-    		}
+//    		int pos = mListView.getSelectedItemPosition();
+//    		if (ListView.INVALID_POSITION != pos) {
+//    			String code = (String)mListView.getItemAtPosition(pos);
+//    			if (null != code) {
+//    				mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
+//    						mAppMap.get(code), mInstallService);
+//    			}
+//    		}
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
@@ -73,19 +74,16 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.download_page);
 		
-		mPkgDBHelper = new PackageDbHelper(this);
-        String [] columns = { PackageDbHelper.COLUMN_ID, 
-        		PackageDbHelper.COLUMN_CODE, 
-        		PackageDbHelper.COLUMN_VERSION,
-        		PackageDbHelper.COLUMN_APP_NAME,
-        		PackageDbHelper.COLUMN_AUTHOR,
-        		PackageDbHelper.COLUMN_DESC,
-        		PackageDbHelper.COLUMN_IMAGE_URL};
-        Cursor c = mPkgDBHelper.select(columns, null, null, null);
-        this.startManagingCursor(c);
+		Cursor cursor = null;
+		cursor = managedQuery(Downloads.CONTENT_URI, 
+                new String [] {"_id", Downloads.COLUMN_TITLE, Downloads.COLUMN_STATUS,
+                Downloads.COLUMN_TOTAL_BYTES, Downloads.COLUMN_CURRENT_BYTES, 
+                Downloads._DATA, Downloads.COLUMN_DESCRIPTION, 
+                Downloads.COLUMN_LAST_MODIFICATION}, 
+                null, null);
         
 		mListView = (ListView)findViewById(R.id.downloadpage_list);
-		mListView.setAdapter(new ListAdapter(this, android.R.layout.simple_list_item_1, c));
+		mListView.setAdapter(new ListAdapter(this, android.R.layout.simple_list_item_1, cursor));
 		mListView.setOnItemSelectedListener(this);
 		mListView.requestFocus();
 		
@@ -114,33 +112,33 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	}
 	
 	private void updateUIState() {
-		int pos = mListView.getSelectedItemPosition();
-		if (ListView.INVALID_POSITION != pos) {
-			String code = (String)mListView.getItemAtPosition(pos);
-			if (null != code) {
-				AppInfo appInfo = mAppMap.get(code);
-				
-				TextView tv = (TextView)findViewById(R.id.main_app_title);
-				tv.setText(appInfo.mAppName);
-				
-				tv = (TextView)findViewById(R.id.main_app_author);
-				tv.setText(appInfo.mAppAuthor);
-				
-				tv = (TextView)findViewById(R.id.main_app_version);
-				tv.setText(appInfo.mAppVersion);
-				
-				tv = (TextView)findViewById(R.id.app_list_desc);
-				tv.setText(appInfo.mAppShortDesc);
-				
-				updateImage(appInfo);
-			}
-		}
+//		int pos = mListView.getSelectedItemPosition();
+//		if (ListView.INVALID_POSITION != pos) {
+//			String code = (String)mListView.getItemAtPosition(pos);
+//			if (null != code) {
+//				AppInfo appInfo = mAppMap.get(code);
+//				
+//				TextView tv = (TextView)findViewById(R.id.main_app_title);
+//				tv.setText(appInfo.mAppName);
+//				
+//				tv = (TextView)findViewById(R.id.main_app_author);
+//				tv.setText(appInfo.mAppAuthor);
+//				
+//				tv = (TextView)findViewById(R.id.main_app_version);
+//				tv.setText(appInfo.mAppVersion);
+//				
+//				tv = (TextView)findViewById(R.id.app_list_desc);
+//				tv.setText(appInfo.mAppShortDesc);
+//				
+//				updateImage(appInfo);
+//			}
+//		}
 	}
 	
 	protected void onImageCompleted(boolean result, String appcode) {
 		mImageDownloadFlags.add(appcode);
 		if (result) {
-			updateImage(mAppMap.get(appcode));
+			//updateImage(mAppMap.get(appcode));
         } 
 	}
 	
@@ -158,59 +156,59 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		}
 	}
 	
-	private class ListAdapter extends ResourceCursorAdapter {
-		private int mIndexColCode = -1;
-		private int mIndexColVersion = -1;
-        private int mIndexColName = -1;
-        private int mIndexAuthor = -1;
-        private int mIndexDesc = -1;
-        private int mIndexImage = -1;
+	private class ListAdapter extends ResourceCursorAdapter {   
+		private int mTitleId = -1;
+		private int mStatusId = -1;
+        private int mTotalBytesId = -1;
+        private int mCurBytesId = -1;
+        private int mDataId = -1;
+        private int mDescId = -1;
         private Cursor mCursor = null;
+        
         public ListAdapter(Context context, int layout, Cursor c) {
         	super(context, layout, c);
+                 
+        	mDescId = c.getColumnIndexOrThrow(Downloads.COLUMN_DESCRIPTION);
+            mTotalBytesId = c.getColumnIndexOrThrow(Downloads.COLUMN_TOTAL_BYTES);
+            mCurBytesId = c.getColumnIndexOrThrow(Downloads.COLUMN_CURRENT_BYTES);
         	
-        	mIndexColCode = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_CODE);
-        	mIndexColVersion = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_VERSION);
-        	mIndexColName = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_APP_NAME);
-        	mIndexAuthor = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_AUTHOR);
-            mIndexDesc = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_DESC);
-            mIndexImage = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_IMAGE_URL);
-            
             mCursor = c;
         }
         
         public Object getItem(int position) {
         	int iIndex = mCursor.getPosition();
         	if (mCursor.moveToPosition(position)) {
+        		String code = mCursor.getString(mDescId);
         		// can't go back to -1 :(
         		if (-1 != iIndex) {
         			mCursor.moveToPosition(iIndex);
         		}
-        		return mCursor.getString(mIndexColCode);
+        		return code;
         	}
         	return null;
         }
         
         public void bindView(View view, Context context, Cursor cursor) {
-        	String str = cursor.getString(mIndexColName);
+        	String str = cursor.getString(mDescId);
         	str += "--";
-        	str += cursor.getString(mIndexColCode);
+        	str += cursor.getString(mCurBytesId);
         	str += "--";
-        	str += cursor.getString(mIndexColVersion);
+        	str += cursor.getString(mTotalBytesId);
         	Log.i(TAG, "bindView " + str);
         	
         	TextView tv = (TextView)view;
         	tv.setText(str);
-        	tv.setTag(cursor.getString(mIndexColCode));
         	
-        	if (!mAppMap.containsKey(cursor.getString(mIndexColCode))) {
-        		AppInfo appInfo = new AppInfo(cursor.getString(mIndexColName),
-        				cursor.getString(mIndexColVersion),
-        				cursor.getString(mIndexColCode),
-        				cursor.getString(mIndexAuthor),
-        				cursor.getString(mIndexImage),
-        				cursor.getString(mIndexDesc));
-        		mAppMap.put(cursor.getString(mIndexColCode), appInfo);
+        	Log.i(TAG, "bindView "+cursor.getString(mDescId));
+        	if (!mAppMap.containsKey(cursor.getString(mDescId))) {
+        		Log.i(TAG, "bindView data added");
+//        		AppInfo appInfo = new AppInfo(cursor.getString(mIndexColName),
+//        				cursor.getString(mIndexColVersion),
+//        				cursor.getString(mIndexColCode),
+//        				cursor.getString(mIndexAuthor),
+//        				cursor.getString(mIndexImage),
+//        				cursor.getString(mIndexDesc));
+//        		mAppMap.put(cursor.getString(mIndexColCode), appInfo);
         	}
         }
     }

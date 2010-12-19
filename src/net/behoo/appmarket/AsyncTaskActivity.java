@@ -11,10 +11,11 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 abstract public class AsyncTaskActivity extends Activity {
-	
 	public static final int WAITING_DIALOG = 0;
+	private static final String TAG = "AsyncTaskActivity";
 	
 	private PausableThreadPoolExecutor mThreadPool = new PausableThreadPoolExecutor(5);
 	
@@ -26,6 +27,7 @@ abstract public class AsyncTaskActivity extends Activity {
         		AsyncTaskActivity.this.onTaskCompleted(true);
         		break;
         	case DownloadConstants.MSG_PROTOCOL_FAILURE:
+        		Log.w(TAG, "handleMessage "+"MSG_PROTOCOL_FAILURE");
         		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
         		AsyncTaskActivity.this.onTaskCompleted(false);
         		break;

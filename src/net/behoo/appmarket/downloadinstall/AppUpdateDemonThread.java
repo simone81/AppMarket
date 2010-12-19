@@ -35,12 +35,12 @@ public class AppUpdateDemonThread extends Thread {
 			// do the task
 			String [] columns = {PackageDbHelper.COLUMN_CODE, 
 					PackageDbHelper.COLUMN_VERSION,
-					PackageDbHelper.COLUMN_STATE};
+					PackageDbHelper.COLUMN_STATE,
+					PackageDbHelper.COLUMN_PKG_NAME};
 			
 			// get all the applications that need to be checked
 			Cursor c = mPkgDBHelper.select(columns, null, null, null);
 			Log.i(TAG, "begin to check update. packages installed by appmarket "+Integer.toString(c.getCount()));
-			
 			int codeId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_CODE);
 			int versionId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_VERSION);
 			int stateId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_STATE);
@@ -59,7 +59,6 @@ public class AppUpdateDemonThread extends Thread {
 				pkgName = c.getString(pkgNameId);
 				PackageState pkgstate = Constants.getStateByString(state);
 				if (pkgUninstalled(pm, pkgName, pkgstate)) {
-					// change the status field or delete it from database? tbd
 					mPkgDBHelper.delete(code);
 				}
 				else if (PackageState.install_succeeded == pkgstate){
@@ -75,8 +74,10 @@ public class AppUpdateDemonThread extends Thread {
 			try {
 				String reqStr = UrlHelpers.getUpdateRequestString(codes, versions);
 				if (reqStr != null) {
+					Log.i(TAG, "update request string "+reqStr);
 					HttpUtil httpUtil = new HttpUtil();
-					InputStream stream = httpUtil.httpPost(UrlHelpers.getUpdateUrl(""), reqStr);
+					//InputStream stream = httpUtil.httpPost(UrlHelpers.getUpdateUrl(""), reqStr);
+					InputStream stream = httpUtil.httpGet(UrlHelpers.getUpdateUrl(""));
 					ArrayList<AppInfo> appList = AppListParser.parse(stream);
 					ContentValues cv = new ContentValues();
 					for (int i = 0; i < appList.size(); ++i) {

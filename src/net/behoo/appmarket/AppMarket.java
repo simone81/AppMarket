@@ -153,6 +153,10 @@ public class AppMarket extends AsyncTaskActivity
 				mButtonAppList.setNextFocusUpId(v.getId());
 				mButtonUpdate.setNextFocusUpId(v.getId());
 				mButtonDownloadMgr.setNextFocusUpId(v.getId());
+				
+				if (null != mInstallButtonGuard) {
+					mInstallButtonGuard.setAppInfo(mAppLib.get(index));
+				}
 			}
 			else {
 				v.setBackgroundResource(0);

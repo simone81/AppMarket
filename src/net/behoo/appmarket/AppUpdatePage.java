@@ -8,6 +8,7 @@ import java.util.Set;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
+import net.behoo.appmarket.http.UrlHelpers;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -16,19 +17,22 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 
-public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedListener {
-	
-	//private static final String TAG = "AppUpdatePage";
+public class AppUpdatePage extends AsyncTaskActivity 
+						   implements OnItemSelectedListener, OnClickListener {
+	private static final String TAG = "AppUpdatePage";
 	
 	private DownloadInstallService mInstallService = null;
 	
@@ -36,6 +40,7 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
 	private Set<String> mImageDownloadFlags = new HashSet<String>();
 	private ImageView mAppImage = null;
 	private ListView mListView = null;
+	private UpdateListAdapter mListAdapter = null;
 	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
 		
@@ -54,7 +59,6 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
 			if (null != mInstallService) {
-				mAppLib = mInstallService.getUpdateList();
 				updateListView();
 			}
 		}
@@ -65,10 +69,14 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
 		setContentView(R.layout.app_update_page);
 		
 		mListView = (ListView)findViewById(R.id.app_update_list);
-		mListView.setAdapter(new UpdateListAdapter(this));
+		mListAdapter = new UpdateListAdapter(this);
+		mListView.setAdapter(mListAdapter);
 		mListView.setOnItemSelectedListener(this);
 		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
+		
+		Button button = (Button)findViewById(R.id.appupdate_btn_update);
+		button.setOnClickListener(this);
 	}
 	
 	public void onResume() {
@@ -83,6 +91,21 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
 		this.unregisterReceiver(mReceiver);
 	}
 	
+	public void onClick(View v) {
+		// TODO Auto-generated method stub
+		int pos = mListView.getSelectedItemPosition();
+		Log.i(TAG, "onClick "+Integer.toString(pos));
+		if (ListView.INVALID_POSITION != pos) {
+			mInstallService.downloadAndInstall(
+					UrlHelpers.getDownloadUrl("token", mAppLib.get(pos).mAppCode), 
+					AppInfo.MIMETYPE, mAppLib.get(pos));
+			
+			Intent i = new Intent();
+			i.setClass(this, AppDownloadPage.class);
+			startActivity(i);
+		}
+	}
+	
 	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
 			long arg3) {
 		updateUIState();
@@ -95,11 +118,11 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
 	protected void onImageCompleted(boolean result, String appcode) {
 		mImageDownloadFlags.add(appcode);
 		if (result) {
-			for (int i = 0; i < mAppLib.size(); ++i) {
-				if (0 == appcode.compareTo(mAppLib.get(i).mAppCode)) {
-					if (i == mListView.getSelectedItemPosition()) {
-						updateImage(mAppLib.get(i));
-					}
+			int pos = mListView.getSelectedItemPosition();
+			if (ListView.INVALID_POSITION != pos) {
+				String code = (String)mListView.getItemAtPosition(pos);
+				if (0 == code.compareTo(appcode)) {
+					updateImage(mAppLib.get(pos));
 				}
 			}
 		}
@@ -109,14 +132,12 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
 		ArrayList<AppInfo> appLib = mInstallService.getUpdateList();
 		if (null != appLib) {
 			mAppLib = appLib;
-			mListView.invalidate();
+			mListAdapter.notifyDataSetChanged();
 			if (ListView.INVALID_POSITION == mListView.getSelectedItemPosition() 
 				&& mListView.getCount() > 0) {
 				mListView.setSelection(0);
 			}
-			else {
-				updateUIState();
-			}
+			updateUIState();
 		}
 	}
 	
@@ -135,7 +156,7 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
 			tv = (TextView)findViewById(R.id.main_app_version);
 			tv.setText(appInfo.mAppVersion);
 			
-			tv = (TextView)findViewById(R.id.app_list_desc);
+			tv = (TextView)findViewById(R.id.app_update_desc);
 			tv.setText(appInfo.mAppShortDesc);
 			
 			updateImage(appInfo);
@@ -170,7 +191,7 @@ public class AppUpdatePage extends AsyncTaskActivity implements OnItemSelectedLi
         }
 
         public Object getItem(int position) {
-            return position;
+            return mAppLib.get(position).mAppCode;
         }
 
         public long getItemId(int position) {

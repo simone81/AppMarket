@@ -40,7 +40,7 @@ public class InstallButtonGuard implements OnClickListener {
 	public void setAppInfo(AppInfo appInfo) {
 		if (mAppInfo.mAppCode.compareTo(appInfo.mAppCode) != 0) {
 			mAppInfo = appInfo;
-			updateButtonState();
+			updateAppState();
 		}
 	}
 	
@@ -54,8 +54,9 @@ public class InstallButtonGuard implements OnClickListener {
 		case uninstalled:	
 		case need_update:	
 		case install_failed:	
-		case download_failed:	
-			mService.downloadAndInstall(UrlHelpers.getDownloadUrl("token", mAppInfo.mAppChangelog),
+		case download_failed:
+			Log.i(TAG, "onClick app "+mAppInfo.mAppName);
+			mService.downloadAndInstall(UrlHelpers.getDownloadUrl("token", mAppInfo.mAppCode),
 					AppInfo.MIMETYPE, mAppInfo);
 			if (null != mListener) {
 				mListener.onInstallClicked(mAppInfo);

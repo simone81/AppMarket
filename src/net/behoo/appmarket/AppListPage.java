@@ -35,7 +35,9 @@ public class AppListPage extends AsyncTaskActivity
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
 	private HttpTask mHttpTask = null;
 	
+	private boolean mFirstRun = true;
 	private ListView mListView = null;
+	private AppListAdapter mListAdapter = null;
 	private Set<String> mImageDownloadFlags = new HashSet<String>();
 	private ImageView mAppImage = null;
 	
@@ -43,8 +45,9 @@ public class AppListPage extends AsyncTaskActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.app_list_page);
 		
+		mListAdapter = new AppListAdapter(this);
 		mListView = (ListView)findViewById(R.id.app_list);
-		mListView.setAdapter(new AppListAdapter(this));
+		mListView.setAdapter(mListAdapter);
 		mListView.setOnItemSelectedListener(this);
 		
 		Button button = ( Button )findViewById( R.id.applist_btn_detail );
@@ -53,22 +56,32 @@ public class AppListPage extends AsyncTaskActivity
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		
 		mHttpTask = new HttpTask(mHandler);
-		executeTask(mHttpTask);
-		showDialog(WAITING_DIALOG);
 	}
-		
+	
+	public void onResume() {
+		super.onResume();
+		if (mFirstRun) {
+			executeTask(mHttpTask);
+			showDialog(WAITING_DIALOG);
+		}
+	}
+	
 	public void onClick(View v) {
 		int pos = mListView.getSelectedItemPosition();
 		Log.i(TAG, "onClick pos "+Integer.toString(pos));
 		if (ListView.INVALID_POSITION != pos) {
 			Intent intent = new Intent();
 			intent.setClass(AppListPage.this, AppDetailsPage.class);
-			intent.putExtra(AppDetailsPage.APP_CODE, mAppList.get(pos).mAppCode);
-			intent.putExtra(AppDetailsPage.APP_NAME, mAppList.get(pos).mAppName);
-			intent.putExtra(AppDetailsPage.APP_VERSION, mAppList.get(pos).mAppVersion);
-			intent.putExtra(AppDetailsPage.APP_AUTHOR, mAppList.get(pos).mAppAuthor);
-			intent.putExtra(AppDetailsPage.APP_DESC, mAppList.get(pos).mAppDesc);
-			intent.putExtra(AppDetailsPage.APP_IMAGE_URL, mAppList.get(pos).mAppImageUrl);
+			String [] value = {
+				mAppList.get(pos).mAppName,
+				mAppList.get(pos).mAppVersion,
+				mAppList.get(pos).mAppCode,
+				mAppList.get(pos).mAppAuthor,
+				mAppList.get(pos).mAppImageUrl,
+				mAppList.get(pos).mAppDesc,
+			};
+			intent.putExtra("net.behoo.appmarket.AppDetailsPage", value);
+			
 			startActivity( intent );
 		}
 	}
@@ -82,20 +95,22 @@ public class AppListPage extends AsyncTaskActivity
 	
 	protected void onTaskCompleted(boolean result) {
 		Log.i(TAG, String.format("onTaskComplete ret: %d, count: %d", result?1:0, mAppList.size()));
-		mListView.invalidate();
-		if (mListView.getCount() > 0)
+		mListAdapter.notifyDataSetChanged();
+		if (mListView.getCount() > 0) {
 			mListView.setSelection(0);
+		}
+		mListView.requestFocus();
 		updateUIState();
 	}
 	
 	protected void onImageCompleted(boolean result, String appcode) {
 		mImageDownloadFlags.add(appcode);
 		if (result) {
-			for (int i = 0; i < mAppList.size(); ++i) {
-				if (0 == appcode.compareTo(mAppList.get(i).mAppCode)) {
-					if (i == mListView.getSelectedItemPosition()) {
-						updateImage(mAppList.get(i));
-					}
+			int pos = mListView.getSelectedItemPosition();
+			if (ListView.INVALID_POSITION != pos) {
+				String code = (String)mListView.getItemAtPosition(pos);
+				if (0 == code.compareTo(appcode)) {
+					updateImage(mAppList.get(pos));
 				}
 			}
 		}
@@ -125,11 +140,9 @@ public class AppListPage extends AsyncTaskActivity
 	
 	private void updateImage(AppInfo appInfo) {
 		if (null == appInfo.getDrawable()) {
+			mAppImage.setImageResource(R.drawable.test);
 			if (false == mImageDownloadFlags.contains(appInfo.mAppCode)) {
 				executeImageTask(appInfo);
-			}
-			else {
-				mAppImage.setImageResource(R.drawable.test);
 			}
 		}
 		else {
@@ -147,8 +160,12 @@ public class AppListPage extends AsyncTaskActivity
 	    	try {
 	    		HttpUtil httpUtil = new HttpUtil();
 				InputStream stream = httpUtil.httpGet(UrlHelpers.getAppListUrl("", 0, 0));
-				mAppList = AppListParser.parse(stream);
-				return true;
+				ArrayList<AppInfo> appLib = AppListParser.parse(stream);
+				if (null != appLib) {
+					mAppList.addAll(appLib);
+					return true;
+				}
+				return false;
 	    	} catch (Throwable tr) {
 	    		return false;
 	    	}
@@ -169,7 +186,7 @@ public class AppListPage extends AsyncTaskActivity
         }
 
         public Object getItem(int position) {
-            return position;
+            return mAppList.get(position).mAppCode;
         }
 
         public long getItemId(int position) {
@@ -177,9 +194,18 @@ public class AppListPage extends AsyncTaskActivity
         }
 
         public View getView(int position, View convertView, ViewGroup parent) {
-            View view = mInflater.inflate(R.layout.applist_item_layout, parent, false);
-            view.setFocusable(true);
-            
+        	View view = null;
+        	if (convertView == null) {
+        		Log.i(TAG, "getView create "+Integer.toString(position));
+        		view = mInflater.inflate(R.layout.applist_item_layout, parent, false);
+        		view.setFocusable(true);
+        	}
+        	else {
+        		Log.i(TAG, "getView convertView "+Integer.toString(position));
+        		view = convertView;
+        	}
+        	
+        	// update state
             AppInfo appInfo = mAppList.get(position);
             TextView tv = (TextView)view.findViewById(R.id.applist_item_title);
             tv.setText(appInfo.mAppName);
