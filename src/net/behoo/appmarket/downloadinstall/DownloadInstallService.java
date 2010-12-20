@@ -47,44 +47,45 @@ public class DownloadInstallService extends Service {
 			String code = values[1];
 			Log.i(TAG, "onReceive code: "+code+" uri: "+uri);
 			
-			// find the local record of "code", and update some field of the table
+			// get the downloaded file state
 			boolean bDownloadRet = false;
-			String filename = null;
+			String filename = "";
 			if (mPkgDBHelper.isCodeExists(code)) {
 				// get the file name from database. tbd how to determine the record of table
 				// if duplicated, maybe the uri should be used, but I don't know its meaning
 				String [] projects = {Downloads._DATA, Downloads.COLUMN_STATUS};
 				Cursor c = context.getContentResolver().query(Uri.parse(uri), 
 						projects, null, null, null);
-				int filenameId = c.getColumnIndexOrThrow(Downloads._DATA);
-				int statusId = c.getColumnIndexOrThrow(Downloads.COLUMN_STATUS);
-				if (c.getCount() > 0 && c.moveToFirst()) {
+				if (null != c && c.getCount() > 0 && c.moveToFirst()) {
+					int filenameId = c.getColumnIndexOrThrow(Downloads._DATA);
+					int statusId = c.getColumnIndexOrThrow(Downloads.COLUMN_STATUS);
 					int status = c.getInt(statusId);
 					if (Downloads.isStatusSuccess(status)) {
 						bDownloadRet = true;
-					}
-					filename = "file://"+c.getString(filenameId);
-					Log.i(TAG, "The downloaded file: "+filename+" status: "+Integer.toString(status));
-					
-					ContentValues cv = new ContentValues();
-					String statusStr = null;
-					if (bDownloadRet) {
-						statusStr = Constants.PackageState.download_succeeded.name();
-					}
-					else {
-						statusStr = Constants.PackageState.download_failed.name();
-					}
-					cv.put(PackageDbHelper.COLUMN_STATE, statusStr);
-					cv.put(PackageDbHelper.COLUMN_SRC_PATH, filename);
-					mPkgDBHelper.update(code, cv);	
-					PackageStateSender.sendPackageStateBroadcast(DownloadInstallService.this, 
-							code, statusStr);
+						filename = "file://"+c.getString(filenameId);
+					}			
 				}
-				else {
-					Log.w(TAG, "can't find the record from table of download provider database. code "+code);
+				if (null != c) {
+					c.close();
 				}
-				c.close();
 			}	
+			
+			// update the local database
+			ContentValues cv = new ContentValues();
+			String statusStr = null;
+			if (bDownloadRet) {
+				Log.i(TAG, "The downloaded file: "+filename);
+				statusStr = Constants.PackageState.download_succeeded.name();
+			}
+			else {
+				Log.w(TAG, "can't find the record from download provider database.");
+				statusStr = Constants.PackageState.download_failed.name();
+			}
+			cv.put(PackageDbHelper.COLUMN_STATE, statusStr);
+			cv.put(PackageDbHelper.COLUMN_SRC_PATH, filename);
+			mPkgDBHelper.update(code, cv);	
+			PackageStateSender.sendPackageStateBroadcast(DownloadInstallService.this, 
+					code, statusStr);
 			
 			// the download has completed successfully!
 			if (bDownloadRet) {
@@ -102,9 +103,10 @@ public class DownloadInstallService extends Service {
 	
 	public void onCreate() {
 		super.onCreate();
+		
 		mPkgDBHelper = new PackageDbHelper(this);
 		
-		// receiver for download status from download provider
+		// receiver for state from download provider
 		IntentFilter filter = new IntentFilter(DownloadReceiver.DOWNLOAD_COMPLETED);
 		this.registerReceiver(mReceiver, filter);
 		
@@ -143,7 +145,9 @@ public class DownloadInstallService extends Service {
 		}
 		
 		// check the application state
-		String [] columns = {PackageDbHelper.COLUMN_CODE, PackageDbHelper.COLUMN_STATE};
+		String [] columns = {PackageDbHelper.COLUMN_CODE, 
+				PackageDbHelper.COLUMN_STATE,
+				PackageDbHelper.COLUMN_DOWNLOAD_URI};
 		String where = PackageDbHelper.COLUMN_CODE + "=?";
 		String[] whereValue = {appInfo.mAppCode};
 		Cursor c = mPkgDBHelper.select(columns, where, whereValue, null);
@@ -151,13 +155,14 @@ public class DownloadInstallService extends Service {
 		boolean bExists = (c.getCount() == 1 && c.moveToFirst());
 		String statusStr = null;
 		PackageState state = PackageState.unknown;
+		String downloadUri = null;
 		if (bExists) {
 			int index = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_STATE);
 			statusStr = c.getString(index);
-			try {
-				state = PackageState.valueOf(statusStr);
-			} catch (Throwable tr){
-			}
+			state = PackageState.valueOf(statusStr);
+			
+			index = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_DOWNLOAD_URI);
+			downloadUri = c.getString(index);	
 		}
 		c.close();
 		
@@ -169,44 +174,50 @@ public class DownloadInstallService extends Service {
 			// validate the downlaod uri
 			URI uri = getURI(url);
 			
-	        // add/update values to local database
-	        ContentValues valuesLocal = new ContentValues();
-	        valuesLocal.put(PackageDbHelper.COLUMN_VERSION, appInfo.mAppVersion);
-	        valuesLocal.put(PackageDbHelper.COLUMN_APP_NAME, appInfo.mAppName);
-	        valuesLocal.put(PackageDbHelper.COLUMN_AUTHOR, appInfo.mAppAuthor);
-	        valuesLocal.put(PackageDbHelper.COLUMN_DESC, appInfo.mAppDesc);
-	        valuesLocal.put(PackageDbHelper.COLUMN_SRC_PATH, "");
-	        valuesLocal.put(PackageDbHelper.COLUMN_PKG_NAME, "");
-	        valuesLocal.put(PackageDbHelper.COLUMN_STATE, Constants.PackageState.downloading.name());
-	        valuesLocal.put(PackageDbHelper.COLUMN_IMAGE_URL, appInfo.mAppImageUrl);
-	        if (bExists) {
-	        	mPkgDBHelper.update(appInfo.mAppCode, valuesLocal);
-	        }
-	        else {
-	        	valuesLocal.put(PackageDbHelper.COLUMN_CODE, appInfo.mAppCode);
-	        	mPkgDBHelper.insert(valuesLocal);
-	        }
-	        PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, 
-	        		Constants.PackageState.downloading.name());
-	        
-//	        String select = Downloads.COLUMN_NOTIFICATION_EXTRAS + "=?";
-//			String[] selectArgs = {appInfo.mAppCode};
-//			int delCount = getContentResolver().delete(Downloads.CONTENT_URI, select, selectArgs);
-//			Log.i(TAG, "row deleted of code: "+appInfo.mAppCode+" is "+Integer.toString(delCount));
-			
-	        // add values to download database
+			// add values to download database
 	        ContentValues values = new ContentValues();
 	        values.put(Downloads.COLUMN_URI, uri.toString());
 	        values.put(Downloads.COLUMN_NOTIFICATION_PACKAGE, this.getPackageName());
 	        values.put(Downloads.COLUMN_NOTIFICATION_CLASS, DownloadReceiver.class.getCanonicalName());
 	        values.put(Downloads.COLUMN_VISIBILITY, Downloads.VISIBILITY_HIDDEN);
 	        values.put(Downloads.COLUMN_MIME_TYPE, mimetype);
-	        values.put(Downloads.COLUMN_DESCRIPTION, appInfo.mAppCode);
+	        values.put(Downloads.COLUMN_DESCRIPTION, BEHOO_APP_MARKET);
 	        values.put(Downloads.COLUMN_NOTIFICATION_EXTRAS, appInfo.mAppCode);
 	        values.put(Downloads.COLUMN_DESTINATION, Downloads.DESTINATION_CACHE_PARTITION_PURGEABLE);
 	        values.put(Downloads.COLUMN_TOTAL_BYTES, -1);
 	        Uri uriInserted = getContentResolver().insert(Downloads.CONTENT_URI, values);
-	        Log.i(TAG, "inserted uri "+uriInserted.toString());
+	        
+	        // add/update values to local database
+	        if (null != uriInserted) {
+	        	Log.i(TAG, "downloadAndInstall, add task "+uriInserted.toString());
+		        ContentValues valuesLocal = new ContentValues();
+		        valuesLocal.put(PackageDbHelper.COLUMN_VERSION, appInfo.mAppVersion);
+		        valuesLocal.put(PackageDbHelper.COLUMN_APP_NAME, appInfo.mAppName);
+		        valuesLocal.put(PackageDbHelper.COLUMN_AUTHOR, appInfo.mAppAuthor);
+		        valuesLocal.put(PackageDbHelper.COLUMN_DESC, appInfo.mAppDesc);
+		        valuesLocal.put(PackageDbHelper.COLUMN_SRC_PATH, "");
+		        valuesLocal.put(PackageDbHelper.COLUMN_PKG_NAME, "");
+		        valuesLocal.put(PackageDbHelper.COLUMN_STATE, Constants.PackageState.downloading.name());
+		        valuesLocal.put(PackageDbHelper.COLUMN_DOWNLOAD_URI, uriInserted.toString());
+		        valuesLocal.put(PackageDbHelper.COLUMN_IMAGE_URL, appInfo.mAppImageUrl);
+		        if (bExists) {
+		        	try {
+		        		getContentResolver().delete(Uri.parse(downloadUri), null, null);
+		        	} catch (Throwable tr) {
+		        	}
+		        	mPkgDBHelper.update(appInfo.mAppCode, valuesLocal);
+		        }
+		        else {
+		        	valuesLocal.put(PackageDbHelper.COLUMN_CODE, appInfo.mAppCode);
+		        	mPkgDBHelper.insert(valuesLocal);
+		        }
+		        PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, 
+		        		Constants.PackageState.downloading.name()); 
+	        }
+	        else {
+	        	PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, 
+		        		Constants.PackageState.download_failed.name()); 
+	        }
 		}
 	}
 	
