@@ -1,9 +1,12 @@
 package net.behoo.appmarket;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import junit.framework.Assert;
 
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.database.PackageDbHelper;
@@ -40,20 +43,15 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	private Set<String> mImageDownloadFlags = new HashSet<String>();
 	private Map<String, AppInfo> mAppMap = new HashMap<String, AppInfo>();
 	private DownloadInstallService mInstallService = null;
+	private Cursor mDownloadCursor = null;
 	
 	private ServiceConnection mServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){
     		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
     		
-//    		int pos = mListView.getSelectedItemPosition();
-//    		if (ListView.INVALID_POSITION != pos) {
-//    			String code = (String)mListView.getItemAtPosition(pos);
-//    			if (null != code) {
-//    				mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
-//    						mAppMap.get(code), mInstallService);
-//    			}
-//    		}
+    		initList();
+    		createInstallButtonGuard();
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
@@ -74,18 +72,11 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.download_page);
 		
-		Cursor cursor = null;
-		cursor = managedQuery(Downloads.CONTENT_URI, 
+		mDownloadCursor = managedQuery(Downloads.CONTENT_URI, 
                 new String [] {"_id", Downloads.COLUMN_TITLE, Downloads.COLUMN_STATUS,
                 Downloads.COLUMN_TOTAL_BYTES, Downloads.COLUMN_CURRENT_BYTES, 
-                Downloads._DATA, Downloads.COLUMN_DESCRIPTION, 
-                Downloads.COLUMN_LAST_MODIFICATION}, 
+                Downloads._DATA, Downloads.COLUMN_DESCRIPTION}, 
                 null, null);
-        
-		mListView = (ListView)findViewById(R.id.downloadpage_list);
-		mListView.setAdapter(new ListAdapter(this, android.R.layout.simple_list_item_1, cursor));
-		mListView.setOnItemSelectedListener(this);
-		mListView.requestFocus();
 		
 		mInstallButton = (Button)findViewById(R.id.downloadpage_btn_to_install);
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
@@ -105,6 +96,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
     
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		// get the app code of the selected item
+		createInstallButtonGuard();
 		updateUIState();
 	}
 	
@@ -112,33 +104,33 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	}
 	
 	private void updateUIState() {
-//		int pos = mListView.getSelectedItemPosition();
-//		if (ListView.INVALID_POSITION != pos) {
-//			String code = (String)mListView.getItemAtPosition(pos);
-//			if (null != code) {
-//				AppInfo appInfo = mAppMap.get(code);
-//				
-//				TextView tv = (TextView)findViewById(R.id.main_app_title);
-//				tv.setText(appInfo.mAppName);
-//				
-//				tv = (TextView)findViewById(R.id.main_app_author);
-//				tv.setText(appInfo.mAppAuthor);
-//				
-//				tv = (TextView)findViewById(R.id.main_app_version);
-//				tv.setText(appInfo.mAppVersion);
-//				
-//				tv = (TextView)findViewById(R.id.app_list_desc);
-//				tv.setText(appInfo.mAppShortDesc);
-//				
-//				updateImage(appInfo);
-//			}
-//		}
+		int pos = mListView.getSelectedItemPosition();
+		if (ListView.INVALID_POSITION != pos) {
+			String code = (String)mListView.getItemAtPosition(pos);
+			if (null != code) {
+				AppInfo appInfo = mAppMap.get(code);
+				
+				TextView tv = (TextView)findViewById(R.id.main_app_title);
+				tv.setText(appInfo.mAppName);
+				
+				tv = (TextView)findViewById(R.id.main_app_author);
+				tv.setText(appInfo.mAppAuthor);
+				
+				tv = (TextView)findViewById(R.id.main_app_version);
+				tv.setText(appInfo.mAppVersion);
+				
+				tv = (TextView)findViewById(R.id.downloadpage_desc);
+				tv.setText(appInfo.mAppShortDesc);
+				
+				updateImage(appInfo);
+			}
+		}
 	}
 	
 	protected void onImageCompleted(boolean result, String appcode) {
 		mImageDownloadFlags.add(appcode);
 		if (result) {
-			//updateImage(mAppMap.get(appcode));
+			updateImage(mAppMap.get(appcode));
         } 
 	}
 	
@@ -156,8 +148,43 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		}
 	}
 	
+	private void initList() {
+		mListView = (ListView)findViewById(R.id.downloadpage_list);
+		Log.i(TAG, "initList ***********");
+		mListView.setAdapter(new ListAdapter(this, android.R.layout.simple_list_item_1, mDownloadCursor));
+		Log.i(TAG, "initList +++++++++++");
+		mListView.setOnItemSelectedListener(this);
+		mListView.requestFocus();
+	}
+	
+	private void createInstallButtonGuard() {
+		int pos = mListView.getSelectedItemPosition();
+		if (ListView.INVALID_POSITION != pos) {
+			String code = (String)mListView.getItemAtPosition(pos);
+			if (null != code) {
+				if (null == mInstallButtonGuard) {
+					mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
+							mAppMap.get(code), mInstallService);
+				}
+				else {
+					mInstallButtonGuard.setAppInfo(mAppMap.get(code));
+				}
+			}
+		}		
+	}
+	
+	private void addAppInfo(String code) {
+		if (!mAppMap.containsKey(code)) {
+    		String where = PackageDbHelper.COLUMN_CODE + "=?";
+    		String [] whereArgs = {code};
+    		ArrayList<AppInfo> appList = mInstallService.getAppList(where, whereArgs);
+    		Assert.assertTrue(null != appList && appList.size() == 1);
+    		mAppMap.put(code, appList.get(0));
+    	}
+	}
+	
 	private class ListAdapter extends ResourceCursorAdapter {   
-		private int mTitleId = -1;
+		private int mRowId = -1;
 		private int mStatusId = -1;
         private int mTotalBytesId = -1;
         private int mCurBytesId = -1;
@@ -167,7 +194,8 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         
         public ListAdapter(Context context, int layout, Cursor c) {
         	super(context, layout, c);
-                 
+             
+        	mRowId = c.getColumnIndexOrThrow("_id");
         	mDescId = c.getColumnIndexOrThrow(Downloads.COLUMN_DESCRIPTION);
             mTotalBytesId = c.getColumnIndexOrThrow(Downloads.COLUMN_TOTAL_BYTES);
             mCurBytesId = c.getColumnIndexOrThrow(Downloads.COLUMN_CURRENT_BYTES);
@@ -183,6 +211,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         		if (-1 != iIndex) {
         			mCursor.moveToPosition(iIndex);
         		}
+        		AppDownloadPage.this.addAppInfo(code);
         		return code;
         	}
         	return null;
@@ -199,17 +228,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         	TextView tv = (TextView)view;
         	tv.setText(str);
         	
-        	Log.i(TAG, "bindView "+cursor.getString(mDescId));
-        	if (!mAppMap.containsKey(cursor.getString(mDescId))) {
-        		Log.i(TAG, "bindView data added");
-//        		AppInfo appInfo = new AppInfo(cursor.getString(mIndexColName),
-//        				cursor.getString(mIndexColVersion),
-//        				cursor.getString(mIndexColCode),
-//        				cursor.getString(mIndexAuthor),
-//        				cursor.getString(mIndexImage),
-//        				cursor.getString(mIndexDesc));
-//        		mAppMap.put(cursor.getString(mIndexColCode), appInfo);
-        	}
+        	AppDownloadPage.this.addAppInfo(cursor.getString(mDescId));
         }
     }
 }

@@ -76,8 +76,8 @@ public class AppUpdateDemonThread extends Thread {
 				if (reqStr != null) {
 					Log.i(TAG, "update request string "+reqStr);
 					HttpUtil httpUtil = new HttpUtil();
-					//InputStream stream = httpUtil.httpPost(UrlHelpers.getUpdateUrl(""), reqStr);
-					InputStream stream = httpUtil.httpGet(UrlHelpers.getUpdateUrl(""));
+					InputStream stream = httpUtil.httpPost(UrlHelpers.getUpdateUrl(""), reqStr);
+					//InputStream stream = httpUtil.httpGet(UrlHelpers.getUpdateUrl(""));
 					ArrayList<AppInfo> appList = AppListParser.parse(stream);
 					ContentValues cv = new ContentValues();
 					for (int i = 0; i < appList.size(); ++i) {

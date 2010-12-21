@@ -33,12 +33,14 @@ abstract public class AsyncTaskActivity extends Activity {
         		break;
         	case DownloadConstants.MSG_IMG_SUCCEED: {
         		Bundle data = msg.getData();
-        		AsyncTaskActivity.this.onImageCompleted(true, data.getString(DownloadConstants.MSG_DATA_APPCODE));
+        		AsyncTaskActivity.this.onImageCompleted(true, 
+        				data.getString(DownloadConstants.MSG_DATA_APPCODE));
         		break;
         	}
         	case DownloadConstants.MSG_IMG_FAILURE: {
         		Bundle data = msg.getData();
-        		AsyncTaskActivity.this.onImageCompleted(false, data.getString(DownloadConstants.MSG_DATA_APPCODE));
+        		AsyncTaskActivity.this.onImageCompleted(false, 
+        				data.getString(DownloadConstants.MSG_DATA_APPCODE));
         		break;
         	}
             default:

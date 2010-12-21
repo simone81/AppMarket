@@ -31,7 +31,9 @@ public class PackageDbHelper extends SQLiteOpenHelper {
 	
 	public void onCreate(SQLiteDatabase db) {
 		// TODO Auto-generated method stub
-		String sql = "CREATE TABLE " + TABLE_NAME + "(" + COLUMN_ID + " integer primary key autoincrement," 
+		String sql = "CREATE TABLE " + TABLE_NAME + 
+			"(" 
+			+ COLUMN_ID + " integer primary key autoincrement," 
 			+ COLUMN_CODE + " text unique,"
 			+ COLUMN_VERSION + " text," 
 		  	+ COLUMN_PKG_NAME + " text,"
@@ -41,7 +43,7 @@ public class PackageDbHelper extends SQLiteOpenHelper {
 		  	+ COLUMN_SRC_PATH + " text,"
 		  	+ COLUMN_STATE + " text,"
 		  	+ COLUMN_IMAGE_URL + " text,"
-		  	+ COLUMN_DOWNLOAD_URI + " text index"
+		  	+ COLUMN_DOWNLOAD_URI + " text unique"
 			+ ");";
 
 		db.execSQL(sql);

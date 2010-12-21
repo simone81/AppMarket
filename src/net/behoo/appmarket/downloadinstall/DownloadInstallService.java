@@ -181,7 +181,7 @@ public class DownloadInstallService extends Service {
 	        values.put(Downloads.COLUMN_NOTIFICATION_CLASS, DownloadReceiver.class.getCanonicalName());
 	        values.put(Downloads.COLUMN_VISIBILITY, Downloads.VISIBILITY_HIDDEN);
 	        values.put(Downloads.COLUMN_MIME_TYPE, mimetype);
-	        values.put(Downloads.COLUMN_DESCRIPTION, BEHOO_APP_MARKET);
+	        values.put(Downloads.COLUMN_DESCRIPTION, appInfo.mAppCode);
 	        values.put(Downloads.COLUMN_NOTIFICATION_EXTRAS, appInfo.mAppCode);
 	        values.put(Downloads.COLUMN_DESTINATION, Downloads.DESTINATION_CACHE_PARTITION_PURGEABLE);
 	        values.put(Downloads.COLUMN_TOTAL_BYTES, -1);
@@ -226,14 +226,17 @@ public class DownloadInstallService extends Service {
 	}
 	
 	public ArrayList<AppInfo> getUpdateList() {
+		String where = PackageDbHelper.COLUMN_STATE + "=?";
+		String [] whereArgs = {Constants.PackageState.need_update.name()};
+		return getAppList(where, whereArgs);
+	}
+	
+	public ArrayList<AppInfo> getAppList(String where, String [] whereArgs) {
 		String [] columns = {
 			PackageDbHelper.COLUMN_CODE, PackageDbHelper.COLUMN_VERSION,
 			PackageDbHelper.COLUMN_APP_NAME, PackageDbHelper.COLUMN_AUTHOR,
 			PackageDbHelper.COLUMN_DESC, PackageDbHelper.COLUMN_IMAGE_URL,
 		};
-		
-		String where = PackageDbHelper.COLUMN_STATE + "=?";
-		String [] whereArgs = {Constants.PackageState.need_update.name()};
 		
 		ArrayList<AppInfo> appList = null;
 		Cursor c = mPkgDBHelper.select(columns, where, whereArgs, null);

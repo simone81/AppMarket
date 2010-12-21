@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import behoo.sync.ISyncService;
+
 import junit.framework.Assert;
 
 import net.behoo.appmarket.downloadinstall.Constants;
@@ -25,6 +27,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -49,6 +52,30 @@ public class AppMarket extends AsyncTaskActivity
 	private Map<String, Integer> mCodeIndexMap = new HashMap<String, Integer>();
 	private Integer mCurrentSelection = -1;
 	private InstallButtonGuard mInstallButtonGuard = null;
+	private ISyncService mSyncService = null;
+	private ServiceConnection mSyncServiceConn = new ServiceConnection() {
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			mSyncService = ISyncService.Stub.asInterface(service);
+			Log.i(TAG, "syncService connected");
+			try {
+				String token = mSyncService.getToken();
+				if (null != token && token.length() > 0 && mFirstRun) {
+		            executeTask(mHttpTask);
+		            showDialog(WAITING_DIALOG);
+		    		mFirstRun = false;
+				}
+				else {
+					Log.i(TAG, token==null ? "null token" : token);
+				}
+	        } catch ( RemoteException e ) {
+	    		Log.e( TAG, "RemoteException when getting user properties by membercenter" );
+	    	}
+		}
+
+		public void onServiceDisconnected(ComponentName name) {
+			mSyncService = null;
+		}
+	};
 	
 	// apk download and install service
 	private DownloadInstallService mInstallService = null;
@@ -101,19 +128,16 @@ public class AppMarket extends AsyncTaskActivity
     
     public void onResume() {
     	super.onResume();
+    	bindService(new Intent(behoo.content.Intent.ACTION_SYNCSERVICE), mSyncServiceConn, BIND_AUTO_CREATE);
     	bindService(new Intent(this, DownloadInstallService.class), mServiceConn, Context.BIND_AUTO_CREATE);
     	registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
-    	if (mFirstRun) {
-            executeTask(mHttpTask);
-            showDialog(WAITING_DIALOG);
-    		mFirstRun = false;
-    	}
     }
     
     public void onPause() {
     	super.onPause();
-    	unbindService( mServiceConn );
-    	unregisterReceiver( mReceiver );
+    	unbindService(mServiceConn);
+    	unregisterReceiver(mReceiver);
+    	unbindService(mSyncServiceConn);
     }
     
     public void onInstallClicked(AppInfo appInfo) {
@@ -263,7 +287,8 @@ public class AppMarket extends AsyncTaskActivity
 		protected boolean doTask() {
 			try {
 	    		HttpUtil httpUtil = new HttpUtil();
-				InputStream stream = httpUtil.httpGet(UrlHelpers.getPromotionUrl("token"));
+	    		String url = UrlHelpers.getPromotionUrl(mSyncService.getToken());
+				InputStream stream = httpUtil.httpGet(url);
 				mAppLib = AppListParser.parse(stream);
 				return true;
 	    	} catch (Throwable tr) {

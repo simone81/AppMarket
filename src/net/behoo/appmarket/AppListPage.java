@@ -159,7 +159,8 @@ public class AppListPage extends AsyncTaskActivity
 		public boolean doTask() {
 	    	try {
 	    		HttpUtil httpUtil = new HttpUtil();
-				InputStream stream = httpUtil.httpGet(UrlHelpers.getAppListUrl("", 0, 0));
+	    		String url = UrlHelpers.getAppListUrl("", 0, 20);
+				InputStream stream = httpUtil.httpGet(url);
 				ArrayList<AppInfo> appLib = AppListParser.parse(stream);
 				if (null != appLib) {
 					mAppList.addAll(appLib);
