@@ -1,6 +1,5 @@
 package net.behoo.appmarket.http;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,16 +7,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 
 public class HttpUtil {
@@ -52,22 +42,6 @@ public class HttpUtil {
     		out.write(data);
 
     		return mConnection.getInputStream();
-//    		HttpPost httppost = new HttpPost(url);
-//        	StringEntity se = new StringEntity(requestStr, HTTP.UTF_8);
-//        	se.setContentType("text/html");
-//        	httppost.setHeader("Content-Type","text/html");
-//        	httppost.setEntity(se); 
-//    		
-//    		HttpParams params = new BasicHttpParams();
-//    		HttpConnectionParams.setConnectionTimeout(params, TIMEOUT);
-//    	    HttpConnectionParams.setSoTimeout(params, TIMEOUT);
-//    	    HttpClient httpclient = new DefaultHttpClient(params); 
-//    		HttpResponse response = httpclient.execute(httppost); 
-//    		
-//    		if (null != response && HttpStatus.SC_OK == response.getStatusLine().getStatusCode()) {
-//    			return response.getEntity().getContent();
-//    		}
-//    		return null;
     	} catch (ClientProtocolException e) { 
     		  // TODO Auto-generated catch block 
     		  e.printStackTrace(); 

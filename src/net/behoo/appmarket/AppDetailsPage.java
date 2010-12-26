@@ -90,14 +90,16 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	protected void onTaskCompleted(boolean result) {
 		if (result) {
 			updateUIState();
-			executeImageTask(mAppInfo);
+			executeImageTask(mAppInfo.mAppImageUrl, mAppInfo.mAppCode);
 		}
 	}
 	
-	protected void onImageCompleted(boolean result, String appcode) {
+	protected void onImageCompleted(boolean result, String url, String appcode) {
 		if (result) {
-			ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
-			iv.setImageDrawable(mAppInfo.getDrawable());
+			if (null != ImageLib.inst().getDrawable(url)) {
+				ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
+				iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+			}
 		}
 	}
 	
@@ -111,9 +113,10 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		tv = (TextView)findViewById(R.id.main_app_version);
 		tv.setText(mAppInfo.mAppVersion);
 		
-		ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
-		if (null != mAppInfo.getDrawable()) {
-			iv.setImageDrawable(mAppInfo.getDrawable());
+		ImageView iv = null;
+		if (null != ImageLib.inst().getDrawable(mAppInfo.mAppImageUrl)) {
+			iv = (ImageView)findViewById(R.id.main_app_logo);
+			iv.setImageDrawable(ImageLib.inst().getDrawable(mAppInfo.mAppImageUrl));
 		}
 		
 		iv = (ImageView)findViewById(R.id.detail_screenshort_1);

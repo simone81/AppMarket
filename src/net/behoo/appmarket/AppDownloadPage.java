@@ -40,7 +40,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	private InstallButtonGuard mInstallButtonGuard = null;
 	private Button mInstallButton = null;
 	private ImageView mAppImage = null;
-	private Set<String> mImageDownloadFlags = new HashSet<String>();
+
 	private Map<String, AppInfo> mAppMap = new HashMap<String, AppInfo>();
 	private DownloadInstallService mInstallService = null;
 	private Cursor mDownloadCursor = null;
@@ -127,24 +127,23 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		}
 	}
 	
-	protected void onImageCompleted(boolean result, String appcode) {
-		mImageDownloadFlags.add(appcode);
+	protected void onImageCompleted(boolean result, String url, String appcode) {
 		if (result) {
 			updateImage(mAppMap.get(appcode));
         } 
 	}
 	
 	private void updateImage(AppInfo appInfo) {
-		if (null == appInfo.getDrawable()) {
-			if (false == mImageDownloadFlags.contains(appInfo.mAppCode)) {
-				executeImageTask(appInfo);
+		if (null == ImageLib.inst().getDrawable(appInfo.mAppImageUrl)) {
+			if (false == ImageLib.inst().isImageDownloading(appInfo.mAppImageUrl)) {
+				executeImageTask(appInfo.mAppImageUrl, appInfo.mAppCode);
 			}
 			else {
 				mAppImage.setImageResource(R.drawable.test);
 			}
 		}
 		else {
-			mAppImage.setImageDrawable(appInfo.getDrawable());
+			mAppImage.setImageDrawable(ImageLib.inst().getDrawable(appInfo.mAppImageUrl));
 		}
 	}
 	

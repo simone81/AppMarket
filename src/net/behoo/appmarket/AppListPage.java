@@ -2,8 +2,6 @@ package net.behoo.appmarket;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
@@ -39,7 +37,6 @@ public class AppListPage extends AsyncTaskActivity
 	
 	private ListView mListView = null;
 	private AppListAdapter mListAdapter = null;
-	private Set<String> mImageDownloadFlags = new HashSet<String>();
 	private ImageView mAppImage = null;
 	
 	public void onCreate(Bundle savedInstanceState) {
@@ -106,8 +103,7 @@ public class AppListPage extends AsyncTaskActivity
 		updateUIState();
 	}
 	
-	protected void onImageCompleted(boolean result, String appcode) {
-		mImageDownloadFlags.add(appcode);
+	protected void onImageCompleted(boolean result, String url, String appcode) {
 		if (result) {
 			int pos = mListView.getSelectedItemPosition();
 			if (ListView.INVALID_POSITION != pos) {
@@ -142,14 +138,14 @@ public class AppListPage extends AsyncTaskActivity
 	}
 	
 	private void updateImage(AppInfo appInfo) {
-		if (null == appInfo.getDrawable()) {
+		if (null == ImageLib.inst().getDrawable(appInfo.mAppImageUrl)) {
 			mAppImage.setImageResource(R.drawable.test);
-			if (false == mImageDownloadFlags.contains(appInfo.mAppCode)) {
-				executeImageTask(appInfo);
+			if (false == ImageLib.inst().isImageDownloading(appInfo.mAppImageUrl)) {
+				executeImageTask(appInfo.mAppImageUrl, appInfo.mAppCode);
 			}
 		}
 		else {
-			mAppImage.setImageDrawable(appInfo.getDrawable());
+			mAppImage.setImageDrawable(ImageLib.inst().getDrawable(appInfo.mAppImageUrl));
 		}
 	}
 	

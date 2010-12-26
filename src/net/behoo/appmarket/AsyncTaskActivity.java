@@ -1,6 +1,5 @@
 package net.behoo.appmarket;
 
-import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.DownloadConstants;
 import net.behoo.appmarket.http.ImageDownloadTask;
 import net.behoo.appmarket.http.PausableThreadPoolExecutor;
@@ -34,13 +33,17 @@ abstract public class AsyncTaskActivity extends Activity {
         	case DownloadConstants.MSG_IMG_SUCCEED: {
         		Bundle data = msg.getData();
         		AsyncTaskActivity.this.onImageCompleted(true, 
-        				data.getString(DownloadConstants.MSG_DATA_APPCODE));
+        				data.getString(DownloadConstants.MSG_DATA_URL),
+        				data.getString(DownloadConstants.MSG_DATA_APPCODE)
+        				);
         		break;
         	}
         	case DownloadConstants.MSG_IMG_FAILURE: {
         		Bundle data = msg.getData();
         		AsyncTaskActivity.this.onImageCompleted(false, 
-        				data.getString(DownloadConstants.MSG_DATA_APPCODE));
+        				data.getString(DownloadConstants.MSG_DATA_URL),
+        				data.getString(DownloadConstants.MSG_DATA_APPCODE)
+        				);
         		break;
         	}
             default:
@@ -82,11 +85,12 @@ abstract public class AsyncTaskActivity extends Activity {
 		mThreadPool.execute(task);
 	}
 	
-	protected void executeImageTask(AppInfo appInfo) {
-		ImageDownloadTask task = new ImageDownloadTask(appInfo, mHandler);
+	protected void executeImageTask(String url, String appCode) {
+		ImageDownloadTask task = new ImageDownloadTask(url, appCode, mHandler);
+		ImageLib.inst().setDownloadFlag(url);
 		mThreadPool.execute(task);
 	}
 
 	protected void onTaskCompleted(boolean result) {}
-	protected void onImageCompleted(boolean result, String appcode) {}
+	protected void onImageCompleted(boolean result, String url, String appcode) {}
 }

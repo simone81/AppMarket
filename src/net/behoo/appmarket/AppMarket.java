@@ -235,9 +235,7 @@ public class AppMarket extends AsyncTaskActivity
 					updateInstallButtonGuard();
 				}
 				
-				if (null != mAppLib.get(i).mAppImageUrl) {
-					executeImageTask(mAppLib.get(i));
-				}
+				executeImageTask(mAppLib.get(i).mAppImageUrl, mAppLib.get(i).mAppCode);
 			}
 			else {
 				iv.setVisibility(View.INVISIBLE);
@@ -245,13 +243,15 @@ public class AppMarket extends AsyncTaskActivity
 		}
 	}
 	
-	protected void onImageCompleted(boolean result, String appcode) {
+	protected void onImageCompleted(boolean result, String url, String appcode) {
 		if (result) {
 			Integer i = mCodeIndexMap.get(appcode);
 			Log.i(TAG, "onImageCompleted "+appcode+" "+Integer.toString(i)+" "+mCurrentSelection.toString());
 			if (0 <= i && i < mAppLib.size()) {
 				ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
-				iv.setImageDrawable(mAppLib.get(i).getDrawable());
+				if (null != ImageLib.inst().getDrawable(url)) {
+					iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+				}
 			}
 			
 			if (0 == i.compareTo(mCurrentSelection)) {
@@ -308,9 +308,10 @@ public class AppMarket extends AsyncTaskActivity
 	
 	private void updateImage(int index) {
 		if (index >= 0 && index < mImageViewIds.length) {
-			if (null != mAppLib.get(index).getDrawable()) {
+			String url = mAppLib.get(index).mAppImageUrl;
+			if (null != ImageLib.inst().getDrawable(url)) {
 				ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
-				iv.setImageDrawable(mAppLib.get(index).getDrawable());
+				iv.setImageDrawable(ImageLib.inst().getDrawable(url));
 			}
 		}
 	}
