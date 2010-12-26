@@ -5,37 +5,52 @@ import java.util.ArrayList;
 
 import org.xmlpull.v1.XmlPullParser;
 
+import android.util.Log;
 import android.util.Xml;
 
 import net.behoo.appmarket.data.AppInfo;
 
 public class AppListParser {
+	private static final String TAG = "AppListParser";
+	
 	static public ArrayList<AppInfo> parse(InputStream stream) {
 		if (null == stream)
-			throw new IllegalArgumentException();
+			throw new NullPointerException("can't parse null input stream");
 		
+		// for testing tbd
+//		try {
+//			BufferedReader r = new BufferedReader(new InputStreamReader(stream));
+//			StringBuilder total = new StringBuilder();
+//			String line;
+//			while ((line = r.readLine()) != null) {
+//			    total.append(line);
+//			}
+//		} catch (IOException e) {
+//		}
+		
+		String appCount = "0";
 		ArrayList<AppInfo> appLib = new ArrayList<AppInfo>();
     	XmlPullParser parser = Xml.newPullParser();
     	try {
     		parser.setInput(stream, null);
 	        int eventType = parser.getEventType();
 	        boolean done = false;
-	        
-	        boolean bAppUpdate = false;
+
 	        String tagName = null;
 	        AppInfo appInfo = null;
 	        while (eventType != XmlPullParser.END_DOCUMENT && !done) {
 	        	switch (eventType) {
                 case XmlPullParser.START_TAG:
                 	tagName = parser.getName();
-                	if( tagName.equalsIgnoreCase("BH_S_Application")) {
+                	if(tagName.equalsIgnoreCase("BH_S_App_Promotion_List")
+                	   || tagName.equalsIgnoreCase("BH_S_App_List")) {
+                		// do nothing
+                		if (parser.getAttributeCount() == 1) {
+                			appCount = parser.getAttributeValue(parser.getAttributeNamespace(0), parser.getAttributeName(0));
+                		}
+                	}
+                	else if(tagName.equalsIgnoreCase("BH_S_Application")) {
                 		appInfo = new AppInfo();
-                	}
-                	else if (tagName.equalsIgnoreCase("BH_S_App_Promotion_List")) {
-                		bAppUpdate = false;
-                	}
-                	else if (tagName.equalsIgnoreCase("BH_S_App_List")) {
-                		bAppUpdate = true;
                 	}
                 	else if (null != appInfo){
                 		if (tagName.equalsIgnoreCase("BH_D_App_Name")) {
@@ -61,10 +76,9 @@ public class AppListParser {
                 case XmlPullParser.END_TAG:
                 	tagName = parser.getName();
                 	if (tagName.equalsIgnoreCase("BH_S_Application") && null != appInfo) {
+                		Log.i("AppListParser", "code "+appInfo.mAppCode);
                 		appInfo.setSummaryInit(true);
-                		if(bAppUpdate || containsApp(appLib, appInfo.mAppCode)) {
-                			appLib.add(appInfo);
-                		}
+                		appLib.add(appInfo);
                 		appInfo = null;
                 	}
                 	break;
@@ -77,16 +91,9 @@ public class AppListParser {
 	        	eventType = parser.next();
 	        }
     	} catch ( Throwable tr ) {
+    		Log.i(TAG, "exception "+tr.getMessage());
     	}
+    	Log.i(TAG, "app count by protocol "+appCount+" and real count is "+Integer.toString(appLib.size()));
     	return appLib;
-	}
-	
-	static private boolean containsApp(ArrayList<AppInfo> appLib, String appCode) {
-		for (int i = 0; i < appLib.size(); ++i) {
-			if (appCode == appLib.get(i).mAppCode) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

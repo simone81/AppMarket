@@ -7,8 +7,6 @@ import java.util.Map;
 
 import behoo.sync.ISyncService;
 
-import junit.framework.Assert;
-
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import net.behoo.appmarket.http.AppListParser;
@@ -52,13 +50,13 @@ public class AppMarket extends AsyncTaskActivity
 	private Map<String, Integer> mCodeIndexMap = new HashMap<String, Integer>();
 	private Integer mCurrentSelection = -1;
 	private InstallButtonGuard mInstallButtonGuard = null;
-	private ISyncService mSyncService = null;
+	
 	private ServiceConnection mSyncServiceConn = new ServiceConnection() {
 		public void onServiceConnected(ComponentName name, IBinder service) {
-			mSyncService = ISyncService.Stub.asInterface(service);
-			Log.i(TAG, "syncService connected");
+			ServiceManager.inst().setSyncHandler(ISyncService.Stub.asInterface(service));
+			
 			try {
-				String token = mSyncService.getToken();
+				String token = ServiceManager.inst().getSyncHandler().getToken();
 				if (null != token && token.length() > 0 && mFirstRun) {
 		            executeTask(mHttpTask);
 		            showDialog(WAITING_DIALOG);
@@ -67,41 +65,47 @@ public class AppMarket extends AsyncTaskActivity
 				else {
 					Log.i(TAG, token==null ? "null token" : token);
 				}
-	        } catch ( RemoteException e ) {
-	    		Log.e( TAG, "RemoteException when getting user properties by membercenter" );
+				checkUpdate();
+	        } catch (RemoteException e) {
+	    		Log.w(TAG, "getToken "+e.getLocalizedMessage());
 	    	}
 		}
 
 		public void onServiceDisconnected(ComponentName name) {
-			mSyncService = null;
+			ServiceManager.inst().setSyncHandler(null);
 		}
 	};
 	
-	// apk download and install service
-	private DownloadInstallService mInstallService = null;
-	private ServiceConnection mServiceConn = new ServiceConnection() {
+	private ServiceConnection mDownloadServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName cname, IBinder binder){
-    		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
+    		ServiceManager.inst().setDownloadHandler(
+    				((DownloadInstallService.LocalServiceBinder)binder).getService());
     		
-    		createInstallButtonGuard();
+    		checkUpdate();
+    		updateInstallButtonGuard();
     	}
     	
     	public void onServiceDisconnected(ComponentName cname){
     		mInstallButtonGuard = null;
-    		mInstallService = null;
+    		ServiceManager.inst().setDownloadHandler(null);
     	}
     };
     
-    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver mDownloadReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
-			Log.i(TAG, "onReceive");
 			if (null != mInstallButtonGuard) {
 				mInstallButtonGuard.updateAppState();
 			}
 		}
 	};
     
+	private BroadcastReceiver mUpdateReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			// do something
+		}
+	};
+	
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -129,14 +133,17 @@ public class AppMarket extends AsyncTaskActivity
     public void onResume() {
     	super.onResume();
     	bindService(new Intent(behoo.content.Intent.ACTION_SYNCSERVICE), mSyncServiceConn, BIND_AUTO_CREATE);
-    	bindService(new Intent(this, DownloadInstallService.class), mServiceConn, Context.BIND_AUTO_CREATE);
-    	registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
+    	bindService(new Intent(this, DownloadInstallService.class), mDownloadServiceConn, Context.BIND_AUTO_CREATE);
+    	registerReceiver(mDownloadReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
+    	registerReceiver(mUpdateReceiver, new IntentFilter(Constants.ACTION_UPDATE_STATE));
+    	updateInstallButtonGuard();
     }
     
     public void onPause() {
     	super.onPause();
-    	unbindService(mServiceConn);
-    	unregisterReceiver(mReceiver);
+    	unregisterReceiver(mUpdateReceiver);
+    	unregisterReceiver(mDownloadReceiver);
+    	unbindService(mDownloadServiceConn);
     	unbindService(mSyncServiceConn);
     }
     
@@ -148,39 +155,59 @@ public class AppMarket extends AsyncTaskActivity
 	};
 	
 	public void onClick(View v) {
-		Intent intent = new Intent();
-		if (v.getId() == R.id.main_btn_install) {
-			Assert.assertTrue(false);
-		}
-		else if (v.getId() == R.id.main_btn_applist_page ) {
+		if (v.getId() == R.id.main_btn_applist_page ) {
+			Intent intent = new Intent();
 			intent.setClass(this, AppListPage.class);
+			startActivity(intent);
 		}
 		else if (v.getId() == R.id.main_btn_update_page) {
+			Intent intent = new Intent();
 			intent.setClass(this, AppUpdatePage.class);
+			startActivity(intent);
 		}
 		else if (v.getId() == R.id.main_btn_download_page) {
+			Intent intent = new Intent();
 			intent.setClass(this, AppDownloadPage.class);
+			startActivity(intent);
 		}
-		startActivity( intent );
+		else {
+			for (int i = 0; i < mImageViewIds.length; ++i) {
+				if (v.getId() == mImageViewIds[i]) {
+					// go to details page
+					Intent intent = new Intent();
+					intent.setClass(this, AppDetailsPage.class);
+					String [] value = {
+						mAppLib.get(i).mAppName,
+						mAppLib.get(i).mAppVersion,
+						mAppLib.get(i).mAppCode,
+						mAppLib.get(i).mAppAuthor,
+						mAppLib.get(i).mAppImageUrl,
+						mAppLib.get(i).mAppDesc,
+					};
+					intent.putExtra(AppDetailsPage.EXTRA_KAY, value);
+					startActivity(intent);
+					break;
+				}
+			}
+		}
     }
 	
 	public void onFocusChange(View v, boolean hasFocus) {
 		Integer index = (Integer)v.getTag();
-		Log.i(TAG, "onFocusChange index "+Integer.toString(index)+" hasFocus: "+(hasFocus?"1":"0"));
 		if (0 <= index && index < mImageViewIds.length) {
 			// redraw
 			if (hasFocus) {
 				mCurrentSelection = index;
 				updateUIState();
+				// the default picture
 				v.setBackgroundResource(R.drawable.focus);
+				v.setOnClickListener(this);
 				mButtonInstall.setNextFocusDownId(v.getId());
 				mButtonAppList.setNextFocusUpId(v.getId());
 				mButtonUpdate.setNextFocusUpId(v.getId());
 				mButtonDownloadMgr.setNextFocusUpId(v.getId());
 				
-				if (null != mInstallButtonGuard) {
-					mInstallButtonGuard.setAppInfo(mAppLib.get(index));
-				}
+				updateInstallButtonGuard();
 			}
 			else {
 				v.setBackgroundResource(0);
@@ -197,7 +224,7 @@ public class AppMarket extends AsyncTaskActivity
 			ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
 			if (i < mAppLib.size()) {
 				mCodeIndexMap.put(mAppLib.get(i).mAppCode, i);
-				
+				iv.setImageResource(R.drawable.test);
 				iv.setFocusable(true);
 				iv.setOnFocusChangeListener(this);
 				iv.setTag(new Integer(i));
@@ -205,7 +232,7 @@ public class AppMarket extends AsyncTaskActivity
 				if (i == mCurrentSelection) {
 					iv.requestFocus();
 					
-					createInstallButtonGuard();
+					updateInstallButtonGuard();
 				}
 				
 				if (null != mAppLib.get(i).mAppImageUrl) {
@@ -233,11 +260,28 @@ public class AppMarket extends AsyncTaskActivity
 		}
 	}
 	
-	private void createInstallButtonGuard() {
-		if (-1 != mCurrentSelection && null != mInstallService && mAppLib.size() > 0) {
-			mInstallButtonGuard = new InstallButtonGuard(mButtonInstall, 
-					mAppLib.get(mCurrentSelection), mInstallService);
-			mInstallButtonGuard.setOnInstallClickListener(AppMarket.this);
+	private void updateInstallButtonGuard() {
+		if (null == mInstallButtonGuard) {
+			if (-1 != mCurrentSelection 
+					&& null != ServiceManager.inst().getDownloadHandler() 
+					&& mAppLib.size() > 0) {
+				mInstallButtonGuard = new InstallButtonGuard(mButtonInstall, 
+						mAppLib.get(mCurrentSelection), ServiceManager.inst().getDownloadHandler());
+				mInstallButtonGuard.setOnInstallClickListener(AppMarket.this);
+			}
+		}
+		else {
+			AppInfo oldAppInfo = mInstallButtonGuard.getAppInfo();
+			if (-1 != mCurrentSelection) {
+				AppInfo newAppInfo = mAppLib.get(mCurrentSelection);
+				if (null != oldAppInfo
+						&& 0 == oldAppInfo.mAppCode.compareTo(newAppInfo.mAppCode)) {
+					mInstallButtonGuard.updateAppState();
+				}
+				else {
+					mInstallButtonGuard.setAppInfo(mAppLib.get(mCurrentSelection));
+				}
+			}
 		}
 	}
 	
@@ -271,6 +315,14 @@ public class AppMarket extends AsyncTaskActivity
 		}
 	}
 	
+	private void checkUpdate() {
+		if (null != ServiceManager.inst().getDownloadHandler()
+				&& null != ServiceManager.inst().getSyncHandler()) {
+			ServiceManager.inst().getDownloadHandler().checkUpdate(
+					ServiceManager.inst().getSyncHandler());
+		}
+	}
+	
 	private Integer[] mImageViewIds = {
 		R.id.main_appimage_1, 	R.id.main_appimage_2, 
 		R.id.main_appimage_3, 	R.id.main_appimage_4, 
@@ -285,14 +337,23 @@ public class AppMarket extends AsyncTaskActivity
 		}
 		
 		protected boolean doTask() {
+			HttpUtil httpUtil = new HttpUtil();
 			try {
-	    		HttpUtil httpUtil = new HttpUtil();
-	    		String url = UrlHelpers.getPromotionUrl(mSyncService.getToken());
+	    		String url = UrlHelpers.getPromotionUrl(
+	    				ServiceManager.inst().getSyncHandler().getToken());
+	    		Log.i(TAG, "doTask "+url);
 				InputStream stream = httpUtil.httpGet(url);
-				mAppLib = AppListParser.parse(stream);
-				return true;
+				ArrayList<AppInfo> appLib = AppListParser.parse(stream);
+				if (null != appLib) {
+					mAppLib = appLib;
+					return true;
+				}
+				return false;
 	    	} catch (Throwable tr) {
+	    		Log.i(TAG, "doTask "+tr.getLocalizedMessage());
 	    		return false;
+	    	} finally {
+	    		httpUtil.disconnect();
 	    	}
 		}
 	}

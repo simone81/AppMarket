@@ -1,7 +1,10 @@
 package net.behoo.appmarket.http;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -23,37 +26,48 @@ public class HttpUtil {
 	private HttpURLConnection mConnection = null;
 	
     public InputStream httpGet(String urlStr) throws IOException {
-        
-        InputStream inputStream = null;
-		URL url = new URL(urlStr);
+    	InputStream inputStream = null;
+    	URL url = new URL(urlStr);
 		mConnection = (HttpURLConnection)url.openConnection();
 		mConnection.setConnectTimeout(TIMEOUT);
 		mConnection.setRequestMethod("GET");
-		mConnection.connect();
-
-        inputStream = mConnection.getInputStream();
-		
-		return inputStream;
+    	mConnection.connect();
+	    inputStream = mConnection.getInputStream();
+    	return inputStream;
     }
     
-    public InputStream httpPost(String url, String requestStr) throws IOException {
+    public InputStream httpPost(String urlStr, String requestStr) throws IOException {
     	try { 
-    		HttpPost httppost = new HttpPost(url);
-        	StringEntity se = new StringEntity(requestStr, HTTP.UTF_8);
-        	se.setContentType("text/xml");
-        	httppost.setHeader("Content-Type","application/soap+xml;charset=UTF-8");
-        	httppost.setEntity(se); 
+    		URL url = new URL(urlStr);
+    		mConnection = (HttpURLConnection)url.openConnection();
+    		mConnection.setConnectTimeout(TIMEOUT);
+    		mConnection.setRequestMethod("POST");
+    		mConnection.setRequestProperty("Content-Type", "text/xml; charset=utf-8");
     		
-    		HttpParams params = new BasicHttpParams();
-    		HttpConnectionParams.setConnectionTimeout(params, TIMEOUT);
-    	    HttpConnectionParams.setSoTimeout(params, TIMEOUT);
-    	    HttpClient httpclient = new DefaultHttpClient(params); 
-    		HttpResponse response = httpclient.execute(httppost); 
-    		
-    		if (null != response && HttpStatus.SC_OK == response.getStatusLine().getStatusCode()) {
-    			return response.getEntity().getContent();
-    		}
-    		return null;
+    		mConnection.setDoOutput(true);
+    		mConnection.setChunkedStreamingMode(0);
+
+    		OutputStream out = new BufferedOutputStream(mConnection.getOutputStream());
+    		byte [] data = requestStr.getBytes(HTTP.UTF_8);
+    		out.write(data);
+
+    		return mConnection.getInputStream();
+//    		HttpPost httppost = new HttpPost(url);
+//        	StringEntity se = new StringEntity(requestStr, HTTP.UTF_8);
+//        	se.setContentType("text/html");
+//        	httppost.setHeader("Content-Type","text/html");
+//        	httppost.setEntity(se); 
+//    		
+//    		HttpParams params = new BasicHttpParams();
+//    		HttpConnectionParams.setConnectionTimeout(params, TIMEOUT);
+//    	    HttpConnectionParams.setSoTimeout(params, TIMEOUT);
+//    	    HttpClient httpclient = new DefaultHttpClient(params); 
+//    		HttpResponse response = httpclient.execute(httppost); 
+//    		
+//    		if (null != response && HttpStatus.SC_OK == response.getStatusLine().getStatusCode()) {
+//    			return response.getEntity().getContent();
+//    		}
+//    		return null;
     	} catch (ClientProtocolException e) { 
     		  // TODO Auto-generated catch block 
     		  e.printStackTrace(); 

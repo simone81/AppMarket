@@ -3,6 +3,8 @@ package net.behoo.appmarket.downloadinstall;
 import java.net.URI;
 import java.util.ArrayList;
 
+import behoo.sync.ISyncService;
+
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.database.PackageDbHelper;
 import net.behoo.appmarket.downloadinstall.Constants.PackageState;
@@ -173,6 +175,7 @@ public class DownloadInstallService extends Service {
 		else {
 			// validate the downlaod uri
 			URI uri = getURI(url);
+			Log.i(TAG, "downloadAndInstall "+uri.toString());
 			
 			// add values to download database
 	        ContentValues values = new ContentValues();
@@ -221,8 +224,8 @@ public class DownloadInstallService extends Service {
 		}
 	}
 	
-	public void checkUpdate() {
-		mUpdateDaemonThread.checkUpdate();
+	public void checkUpdate(ISyncService syncService) {
+		mUpdateDaemonThread.checkUpdate(syncService);
 	}
 	
 	public ArrayList<AppInfo> getUpdateList() {

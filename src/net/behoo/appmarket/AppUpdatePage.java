@@ -1,27 +1,20 @@
 package net.behoo.appmarket;
 
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
-import net.behoo.appmarket.downloadinstall.DownloadInstallService;
-import net.behoo.appmarket.http.UrlHelpers;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -31,36 +24,21 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 public class AppUpdatePage extends AsyncTaskActivity 
-						   implements OnItemSelectedListener, OnClickListener {
-	private static final String TAG = "AppUpdatePage";
-	
-	private DownloadInstallService mInstallService = null;
+						   implements OnItemSelectedListener, 
+						   			  OnInstallClickListener {
+	//private static final String TAG = "AppUpdatePage";
 	
 	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
 	private Set<String> mImageDownloadFlags = new HashSet<String>();
+	
 	private ImageView mAppImage = null;
 	private ListView mListView = null;
 	private UpdateListAdapter mListAdapter = null;
-	
-	private ServiceConnection mServiceConn = new ServiceConnection() {
-		
-    	public void onServiceConnected(ComponentName cname, IBinder binder){
-    		mInstallService = ((DownloadInstallService.LocalServiceBinder)binder).getService();
-    		
-    		updateListView();
-    		mInstallService.checkUpdate();
-    	}
-    	
-    	public void onServiceDisconnected(ComponentName cname){
-    		mInstallService = null;
-    	}
-    };
+    private InstallButtonGuard mButtonGuard = null;
     
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
-			if (null != mInstallService) {
-				updateListView();
-			}
+			updateListView();
 		}
 	};
 	
@@ -76,38 +54,33 @@ public class AppUpdatePage extends AsyncTaskActivity
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		
 		Button button = (Button)findViewById(R.id.appupdate_btn_update);
-		button.setOnClickListener(this);
+		mButtonGuard = new InstallButtonGuard(button, 
+				null, ServiceManager.inst().getDownloadHandler());
+		mButtonGuard.setOnInstallClickListener(this);
+		
+		updateListView();
 	}
 	
 	public void onResume() {
 		super.onResume();
-		this.bindService(new Intent(this, DownloadInstallService.class), mServiceConn, Context.BIND_AUTO_CREATE);
 		this.registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_UPDATE_STATE));
 	}
 	
 	public void onPause() {
 		super.onStop();
-		this.unbindService(mServiceConn);
 		this.unregisterReceiver(mReceiver);
 	}
 	
-	public void onClick(View v) {
+	public void onInstallClicked(AppInfo appInfo) {
 		// TODO Auto-generated method stub
-		int pos = mListView.getSelectedItemPosition();
-		Log.i(TAG, "onClick "+Integer.toString(pos));
-		if (ListView.INVALID_POSITION != pos) {
-			mInstallService.downloadAndInstall(
-					UrlHelpers.getDownloadUrl("token", mAppLib.get(pos).mAppCode), 
-					AppInfo.MIMETYPE, mAppLib.get(pos));
-			
-			Intent i = new Intent();
-			i.setClass(this, AppDownloadPage.class);
-			startActivity(i);
-		}
+		Intent i = new Intent();
+		i.setClass(this, AppDownloadPage.class);
+		startActivity(i);
 	}
 	
-	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
-			long arg3) {
+	public void onItemSelected(AdapterView<?> arg0, View arg1, 
+			int position, long id) {
+		mButtonGuard.setAppInfo(mAppLib.get(position));
 		updateUIState();
 	}
 
@@ -129,7 +102,7 @@ public class AppUpdatePage extends AsyncTaskActivity
 	}
 	
 	public void updateListView() {
-		ArrayList<AppInfo> appLib = mInstallService.getUpdateList();
+		ArrayList<AppInfo> appLib = ServiceManager.inst().getDownloadHandler().getUpdateList();
 		if (null != appLib) {
 			mAppLib = appLib;
 			mListAdapter.notifyDataSetChanged();
@@ -209,5 +182,5 @@ public class AppUpdatePage extends AsyncTaskActivity
             text.setText(mAppLib.get(position).mAppName);
             return text;
         }
-    }
+	}
 }

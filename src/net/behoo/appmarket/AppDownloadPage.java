@@ -150,9 +150,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	
 	private void initList() {
 		mListView = (ListView)findViewById(R.id.downloadpage_list);
-		Log.i(TAG, "initList ***********");
 		mListView.setAdapter(new ListAdapter(this, android.R.layout.simple_list_item_1, mDownloadCursor));
-		Log.i(TAG, "initList +++++++++++");
 		mListView.setOnItemSelectedListener(this);
 		mListView.requestFocus();
 	}
@@ -223,7 +221,6 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         	str += cursor.getString(mCurBytesId);
         	str += "--";
         	str += cursor.getString(mTotalBytesId);
-        	Log.i(TAG, "bindView " + str);
         	
         	TextView tv = (TextView)view;
         	tv.setText(str);

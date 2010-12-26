@@ -30,11 +30,16 @@ public class ImageDownloadTask implements Runnable {
 	public void run() {
 		boolean ret = false;
 		try {
-			HttpUtil httpUtil = new HttpUtil();
-			InputStream stream = httpUtil.httpGet(mAppInfo.mAppImageUrl);
-			Drawable drawable = Drawable.createFromStream(stream, "src");
-			mAppInfo.setDrawable(drawable);
-			ret = true;
+			if (null != mAppInfo.mAppImageUrl && mAppInfo.mAppImageUrl.length() > 0) {
+				HttpUtil httpUtil = new HttpUtil();
+				InputStream stream = httpUtil.httpGet(UrlHelpers.getImageUrl(mAppInfo.mAppImageUrl));
+				Drawable drawable = Drawable.createFromStream(stream, "src");
+				mAppInfo.setDrawable(drawable);
+				ret = true;
+			}
+			else {
+				ret = false;
+			}
 		} catch (Throwable e) {
 			String image = (mAppInfo.mAppImageUrl == null ? "null" : mAppInfo.mAppImageUrl);
 			Log.w(TAG, "failed to download image of code: "+mAppInfo.mAppCode+" url: "+image);

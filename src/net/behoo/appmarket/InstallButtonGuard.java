@@ -5,6 +5,7 @@ import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import net.behoo.appmarket.downloadinstall.Constants.PackageState;
 import net.behoo.appmarket.http.UrlHelpers;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -20,7 +21,7 @@ public class InstallButtonGuard implements OnClickListener {
     private OnInstallClickListener mListener = null;
     
 	public InstallButtonGuard(Button button, AppInfo appInfo, DownloadInstallService service) {
-		if (null == button || null == appInfo || null == service)
+		if (null == button || null == service)
 			throw new NullPointerException();
 		
 		mButton = button;
@@ -38,10 +39,15 @@ public class InstallButtonGuard implements OnClickListener {
 	}
 	
 	public void setAppInfo(AppInfo appInfo) {
-		if (mAppInfo.mAppCode.compareTo(appInfo.mAppCode) != 0) {
+		if (null == mAppInfo
+				|| mAppInfo.mAppCode.compareTo(appInfo.mAppCode) != 0) {
 			mAppInfo = appInfo;
 			updateAppState();
 		}
+	}
+	
+	public AppInfo getAppInfo() {
+		return mAppInfo;
 	}
 	
 	public PackageState getPackageState() {
@@ -55,11 +61,16 @@ public class InstallButtonGuard implements OnClickListener {
 		case need_update:	
 		case install_failed:	
 		case download_failed:
-			Log.i(TAG, "onClick app "+mAppInfo.mAppName);
-			mService.downloadAndInstall(UrlHelpers.getDownloadUrl("token", mAppInfo.mAppCode),
-					AppInfo.MIMETYPE, mAppInfo);
+			try {
+			String url = UrlHelpers.getDownloadUrl(
+					ServiceManager.inst().getSyncHandler().getToken(), 
+					mAppInfo.mAppCode);
+			mService.downloadAndInstall(url, AppInfo.MIMETYPE, mAppInfo);
 			if (null != mListener) {
 				mListener.onInstallClicked(mAppInfo);
+			}
+			} catch (RemoteException e) {
+				Log.i(TAG, "onClick "+e.getLocalizedMessage());
 			}
 			break;
 		case downloading:
@@ -67,14 +78,20 @@ public class InstallButtonGuard implements OnClickListener {
 		case installing:
 		case install_succeeded:	
 		default:
-			Log.e(TAG, "the button under these states should be clicked");
+			Log.e(TAG, "the button under these states should not be clicked");
 			break;
 		}
 	}
 	
 	public void updateAppState() {
-		mAppState = mService.getAppState(mAppInfo.mAppCode);
-		updateButtonState();
+		if (null != mAppInfo) {
+			mAppState = mService.getAppState(mAppInfo.mAppCode);
+			mButton.setVisibility(View.VISIBLE);
+			updateButtonState();
+		}
+		else {
+			mButton.setVisibility(View.INVISIBLE);
+		}
 	}
 	
 	private void updateButtonState() {

@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.IPackageInstallObserver;
 import android.content.pm.IPackageDataObserver;
+import android.content.pm.IPackageDeleteObserver;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageParser;
@@ -41,6 +42,7 @@ public class PackageInstaller {
 	
 	// ApplicationInfo object primarily used for already existing applications
     private ApplicationInfo mAppInfo = null;
+    
     private boolean mInstallingFinished = false;
     private Object mInstallingSyncObject = new Object();
     private boolean mInstallingSuccess = false;
@@ -48,13 +50,19 @@ public class PackageInstaller {
     private boolean mFreeingStorageFinished = false;
     private Object mFreeingStorageSyncObject = new Object();
     
+    private Object mUninstallSyncObject = new Object();
+    private boolean mUninstallFinished = false;
+    private boolean mUninstallSuccess = false;
+    
 	public PackageInstaller(Context c) {
 		mContext = c;
 		mPkgMgr = c.getPackageManager();
 	}
 	
+	// the source file uri
 	public boolean installPackage(Uri pkgURI) {
-		mPkgInfo = PackageUtils.getPackageInfo( pkgURI );
+		mAppInfo = null;
+		mPkgInfo = PackageUtils.getPackageInfo(pkgURI);
 		if(mPkgInfo == null) {
 			Log.i(TAG, "installPackage invalid package");
             return false;
@@ -64,6 +72,37 @@ public class PackageInstaller {
         checkOutOfSpace( pkgURI.getPath() );
 		
 		return makeTempCopyAndInstall( pkgURI.getPath() );
+	}
+	
+	public boolean uninstallPackage(String pkgName) {
+		mAppInfo = null;
+		try {	 
+			mAppInfo = mPkgMgr.getApplicationInfo(
+				pkgName, PackageManager.GET_UNINSTALLED_PACKAGES);
+		} catch (NameNotFoundException e) {
+		}
+		
+		if (null != mAppInfo) {
+			// wait unitl the freeing process finished
+	        boolean bWait = true;
+	        while (bWait){
+	        	try {
+	        		synchronized (mUninstallSyncObject) {
+	                	if(!mUninstallFinished) {
+	                		mUninstallSyncObject.wait();
+	                	}
+	                	bWait = false;
+	                } 
+	    		} catch ( InterruptedException e ) {
+	    			bWait = true;
+	    		}
+	        }
+		}
+		else {
+			Log.i(TAG, "uninstallPackage: pkg "+pkgName+" is not installed yet");
+			mUninstallSuccess = true;
+		}
+		return mUninstallSuccess;
 	}
 	
 	private void checkOutOfSpace( String apkPath ) {
@@ -177,8 +216,7 @@ public class PackageInstaller {
             Settings.Secure.INSTALL_NON_MARKET_APPS, 0) > 0;
     }
 	
-	class FreeStorageObserver extends IPackageDataObserver.Stub {
-		
+	class FreeStorageObserver extends IPackageDataObserver.Stub {	
 		public void onRemoveCompleted(String pkgname, boolean success){
 			synchronized ( mFreeingStorageSyncObject ) {
 				mFreeingStorageFinished = true;
@@ -197,4 +235,14 @@ public class PackageInstaller {
         	Log.i(TAG, "PackageInstallObserver installed");
         }
     }
+	
+	class PackageDeleteObserver extends IPackageDeleteObserver.Stub {
+         public void packageDeleted(boolean succeeded) {
+        	 synchronized (mUninstallSyncObject) {
+        		 mUninstallFinished = true;
+        		 mUninstallSuccess = succeeded;
+        		 mUninstallSyncObject.notify();
+        	 }
+         }
+     }
 }

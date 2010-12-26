@@ -53,12 +53,6 @@ public class InstallingThread extends Thread {
 			if (ret) {
 				PackageParser.Package pkgInfo = PackageUtils.getPackageInfo(Uri.parse(mPkgSrcUri));
 				cv2.put(PackageDbHelper.COLUMN_PKG_NAME, pkgInfo.packageName);
-				
-				// delete the record from download provider database
-//				String where = Downloads.COLUMN_NOTIFICATION_EXTRAS + "=?";
-//				String [] whereArgs = {mPkgCode};
-//				int delCount = mContext.getContentResolver().delete(Downloads.CONTENT_URI, where, whereArgs);
-//				Log.i(TAG, "row deleted of code: "+mPkgCode+" is "+Integer.toString(delCount));
 			}
 			mPkgDBHelper.update(mPkgCode, cv2);
 			PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, status);

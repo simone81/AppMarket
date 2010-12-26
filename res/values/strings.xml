@@ -25,6 +25,7 @@
     
     <!-- app list page -->
     <string name="applist_detail">查看详情</string>
+    <string name="applist_more">更多...</string>
     
     <!-- app update page -->
     <string name="appupdate_update">立即升级</string>

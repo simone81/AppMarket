@@ -30,12 +30,13 @@ import android.widget.AdapterView.OnItemSelectedListener;
 public class AppListPage extends AsyncTaskActivity 
 						 implements OnClickListener, 
 						 OnItemSelectedListener {
+	
 	private static final String TAG = "AppListPage";
+	private static final int PAGE_SIZE = 5;
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
 	private HttpTask mHttpTask = null;
 	
-	private boolean mFirstRun = true;
 	private ListView mListView = null;
 	private AppListAdapter mListAdapter = null;
 	private Set<String> mImageDownloadFlags = new HashSet<String>();
@@ -50,39 +51,41 @@ public class AppListPage extends AsyncTaskActivity
 		mListView.setAdapter(mListAdapter);
 		mListView.setOnItemSelectedListener(this);
 		
-		Button button = ( Button )findViewById( R.id.applist_btn_detail );
+		Button button = (Button)findViewById(R.id.applist_btn_detail);
+		button.setOnClickListener(this);
+		
+		button = ( Button )findViewById(R.id.applist_btn_more);
 		button.setOnClickListener(this);
 		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		
 		mHttpTask = new HttpTask(mHandler);
-	}
-	
-	public void onResume() {
-		super.onResume();
-		if (mFirstRun) {
-			executeTask(mHttpTask);
-			showDialog(WAITING_DIALOG);
-		}
+		executeTask(mHttpTask);
+		showDialog(WAITING_DIALOG);
 	}
 	
 	public void onClick(View v) {
-		int pos = mListView.getSelectedItemPosition();
-		Log.i(TAG, "onClick pos "+Integer.toString(pos));
-		if (ListView.INVALID_POSITION != pos) {
-			Intent intent = new Intent();
-			intent.setClass(AppListPage.this, AppDetailsPage.class);
-			String [] value = {
-				mAppList.get(pos).mAppName,
-				mAppList.get(pos).mAppVersion,
-				mAppList.get(pos).mAppCode,
-				mAppList.get(pos).mAppAuthor,
-				mAppList.get(pos).mAppImageUrl,
-				mAppList.get(pos).mAppDesc,
-			};
-			intent.putExtra("net.behoo.appmarket.AppDetailsPage", value);
-			
-			startActivity( intent );
+		if (v.getId() == R.id.applist_btn_detail) {
+			int pos = mListView.getSelectedItemPosition();
+			Log.i(TAG, "onClick pos "+Integer.toString(pos));
+			if (ListView.INVALID_POSITION != pos) {
+				Intent intent = new Intent();
+				intent.setClass(AppListPage.this, AppDetailsPage.class);
+				String [] value = {
+					mAppList.get(pos).mAppName,
+					mAppList.get(pos).mAppVersion,
+					mAppList.get(pos).mAppCode,
+					mAppList.get(pos).mAppAuthor,
+					mAppList.get(pos).mAppImageUrl,
+					mAppList.get(pos).mAppDesc,
+				};
+				intent.putExtra(AppDetailsPage.EXTRA_KAY, value);
+				startActivity( intent );
+			}
+		}
+		else if (v.getId() == R.id.applist_btn_more){
+			executeTask(mHttpTask);
+			showDialog(WAITING_DIALOG);
 		}
 	}
 	
@@ -157,18 +160,24 @@ public class AppListPage extends AsyncTaskActivity
 		}
 		
 		public boolean doTask() {
+			HttpUtil httpUtil = new HttpUtil();
 	    	try {
-	    		HttpUtil httpUtil = new HttpUtil();
-	    		String url = UrlHelpers.getAppListUrl("", 0, 20);
+	    		String url = UrlHelpers.getAppListUrl(
+	    			ServiceManager.inst().getSyncHandler().getToken(), 
+	    			mAppList.size() + 1, PAGE_SIZE);
 				InputStream stream = httpUtil.httpGet(url);
 				ArrayList<AppInfo> appLib = AppListParser.parse(stream);
 				if (null != appLib) {
+					// merge if we get duplicated application tbd
+					// or the server MUST NOT give duplicated appcode
 					mAppList.addAll(appLib);
 					return true;
 				}
 				return false;
 	    	} catch (Throwable tr) {
 	    		return false;
+	    	} finally {
+	    		httpUtil.disconnect();
 	    	}
 		}
     };
@@ -197,12 +206,10 @@ public class AppListPage extends AsyncTaskActivity
         public View getView(int position, View convertView, ViewGroup parent) {
         	View view = null;
         	if (convertView == null) {
-        		Log.i(TAG, "getView create "+Integer.toString(position));
         		view = mInflater.inflate(R.layout.applist_item_layout, parent, false);
         		view.setFocusable(true);
         	}
         	else {
-        		Log.i(TAG, "getView convertView "+Integer.toString(position));
         		view = convertView;
         	}
         	

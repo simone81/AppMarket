@@ -50,7 +50,14 @@
 	    	android:layout_alignParentBottom="true"
 	    	android:layout_marginLeft="30dip"
 	    	android:layout_marginBottom="15dip" />	
-	    		
+	    
+	    <Button android:id="@+id/applist_btn_more" 
+	    	android:text="@string/applist_more"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_toRightOf="@id/applist_btn_detail"
+	    	android:layout_marginLeft="10dip"
+	    	android:layout_alignTop="@id/applist_btn_detail" />			
 	</RelativeLayout>
 
 </merge>

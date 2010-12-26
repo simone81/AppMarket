@@ -3,6 +3,8 @@ package net.behoo.appmarket.downloadinstall;
 import java.io.InputStream;
 import java.util.ArrayList;
 
+import behoo.sync.ISyncService;
+
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.database.PackageDbHelper;
 import net.behoo.appmarket.downloadinstall.Constants.PackageState;
@@ -24,6 +26,7 @@ public class AppUpdateDemonThread extends Thread {
 	private PackageDbHelper mPkgDBHelper = null;
 	private Object mSyncObject = new Object();
 	private boolean mExit = false;
+	private ISyncService mSyncService = null;
 	
 	public AppUpdateDemonThread(Context context) {	
 		mContext = context;
@@ -71,14 +74,16 @@ public class AppUpdateDemonThread extends Thread {
 			Log.i(TAG, "packages need to be checked "+Integer.toString(codes.size()));
 			
 			// check
+			HttpUtil httpUtil = new HttpUtil();
 			try {
 				String reqStr = UrlHelpers.getUpdateRequestString(codes, versions);
 				if (reqStr != null) {
 					Log.i(TAG, "update request string "+reqStr);
-					HttpUtil httpUtil = new HttpUtil();
-					InputStream stream = httpUtil.httpPost(UrlHelpers.getUpdateUrl(""), reqStr);
-					//InputStream stream = httpUtil.httpGet(UrlHelpers.getUpdateUrl(""));
+					String url = UrlHelpers.getUpdateUrl(mSyncService.getToken());
+					Log.i(TAG, "update url "+url);
+					InputStream stream = httpUtil.httpPost(url, reqStr);
 					ArrayList<AppInfo> appList = AppListParser.parse(stream);
+					Log.i(TAG, "the app count need to upgrade "+Integer.toString(appList.size()));
 					ContentValues cv = new ContentValues();
 					for (int i = 0; i < appList.size(); ++i) {
 						AppInfo appInfo = appList.get(i);
@@ -91,8 +96,10 @@ public class AppUpdateDemonThread extends Thread {
 						mContext.sendBroadcast(intent);
 					}
 				}
-			} catch( Throwable tr) {
+			} catch(Throwable tr) {
 				Log.e(TAG, "check update failed "+tr.getMessage());
+			} finally {
+				httpUtil.disconnect();
 			}
 			
 			// wake up after 30 minutes
@@ -108,8 +115,9 @@ public class AppUpdateDemonThread extends Thread {
 		}
 	}
 	
-	public void checkUpdate() {
+	public void checkUpdate(ISyncService syncService) {
 		synchronized (mSyncObject) {
+			mSyncService = syncService;
 			mSyncObject.notify();
 		}
 	}

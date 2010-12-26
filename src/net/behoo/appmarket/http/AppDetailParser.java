@@ -68,6 +68,7 @@ public class AppDetailParser {
 							appInfo.mAppChangelog = parser.nextText();
 						}
 						else {
+							// some error occurred. maybe the data contains invalid data field
 							done = true;
 						}
                 	}
