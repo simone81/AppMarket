@@ -28,8 +28,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 
 	private Button mInstallButton = null;
 	private InstallButtonGuard mInstallButtonGuard = null;
-	
-	private boolean mFirstRun = true;
+
 	private AppInfo mAppInfo = new AppInfo();
 	private HttpTask mHttpTask = null;
 	
@@ -62,6 +61,8 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
         mInstallButtonGuard.setOnInstallClickListener(this);
         
         mHttpTask = new HttpTask(mHandler);
+        executeTask(mHttpTask);
+        showDialog(WAITING_DIALOG);
     }
     
     public void onInstallClicked(AppInfo appInfo) {
@@ -74,11 +75,6 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
     public void onResume() {
     	super.onResume();
     	registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
-    	if (mFirstRun) {
-    		executeTask(mHttpTask);
-            showDialog(WAITING_DIALOG);
-    		mFirstRun = false;
-    	}
     	mInstallButtonGuard.updateAppState();
     }
     

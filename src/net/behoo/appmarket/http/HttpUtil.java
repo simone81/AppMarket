@@ -32,7 +32,7 @@ public class HttpUtil {
     		mConnection = (HttpURLConnection)url.openConnection();
     		mConnection.setConnectTimeout(TIMEOUT);
     		mConnection.setRequestMethod("POST");
-    		mConnection.setRequestProperty("Content-Type", "text/xml; charset=utf-8");
+    		mConnection.setRequestProperty("Content-Type", "Application/xml; charset=utf-8");
     		
     		mConnection.setDoOutput(true);
     		mConnection.setChunkedStreamingMode(0);
