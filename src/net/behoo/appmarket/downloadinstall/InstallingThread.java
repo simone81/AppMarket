@@ -1,5 +1,7 @@
 package net.behoo.appmarket.downloadinstall;
 
+import java.io.File;
+
 import junit.framework.Assert;
 import net.behoo.appmarket.database.PackageDbHelper;
 import android.content.ContentValues;
@@ -33,31 +35,42 @@ public class InstallingThread extends Thread {
 			try {
 				Log.i(TAG, "being installing file: " + mPkgSrcUri);
 				
+				// update application state
 				ContentValues cv = new ContentValues();
 				cv.put(PackageDbHelper.COLUMN_STATE, Constants.PackageState.installing.name());
 				mPkgDBHelper.update(mPkgCode, cv);
 				PackageStateSender.sendPackageStateBroadcast(mContext, 
 						mPkgCode, Constants.PackageState.installing.name());
 				
+				// installing
 				PackageInstaller installer = new PackageInstaller(mContext);
 				ret = installer.installPackage(Uri.parse(mPkgSrcUri));
 			} catch ( Throwable tr ) {
 				ret = false;
 			}
 			
-			// update the local data record
-			String status = ( ret ? Constants.PackageState.install_succeeded.name()
-					: Constants.PackageState.install_failed.name() );
-			ContentValues cv2 = new ContentValues();
-			cv2.put(PackageDbHelper.COLUMN_STATE, status);
-			if (ret) {
-				PackageParser.Package pkgInfo = PackageUtils.getPackageInfo(Uri.parse(mPkgSrcUri));
-				cv2.put(PackageDbHelper.COLUMN_PKG_NAME, pkgInfo.packageName);
+			try {
+				// update the local data record
+				String status = ( ret ? Constants.PackageState.install_succeeded.name()
+						: Constants.PackageState.install_failed.name() );
+				ContentValues cv2 = new ContentValues();
+				cv2.put(PackageDbHelper.COLUMN_STATE, status);
+				if (ret) {
+					PackageParser.Package pkgInfo = PackageUtils.getPackageInfo(Uri.parse(mPkgSrcUri));
+					cv2.put(PackageDbHelper.COLUMN_PKG_NAME, pkgInfo.packageName);
+				}
+				mPkgDBHelper.update(mPkgCode, cv2);
+				PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, status);
+	
+				// delete the source apk file
+				File srcFile = new File(Uri.parse(mPkgSrcUri).getPath());
+				if (srcFile.exists()) {
+					srcFile.delete();
+				}
+				Log.i(TAG, "ret: "+status+" "+mPkgSrcUri);
+			} catch (Throwable tr) {
+				Log.w(TAG, "update install state and delete src file "+tr.getLocalizedMessage());
 			}
-			mPkgDBHelper.update(mPkgCode, cv2);
-			PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, status);
-
-			Log.i(TAG, "ret: "+status+" "+mPkgSrcUri);
 		}
 	}
 }

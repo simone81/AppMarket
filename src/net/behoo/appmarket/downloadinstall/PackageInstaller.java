@@ -134,8 +134,8 @@ public class PackageInstaller {
 	private boolean makeTempCopyAndInstall(String filePath) {
         // Check if package is already installed. display confirmation dialog if replacing pkg
         try {
-            mAppInfo = mPkgMgr.getApplicationInfo( mPkgInfo.packageName,
-                    PackageManager.GET_UNINSTALLED_PACKAGES );
+            mAppInfo = mPkgMgr.getApplicationInfo(mPkgInfo.packageName,
+                    PackageManager.GET_UNINSTALLED_PACKAGES);
         } catch (NameNotFoundException e) {
             mAppInfo = null;
         }
@@ -163,7 +163,6 @@ public class PackageInstaller {
             fos = mContext.openFileOutput( TMP_INSTALL_FILE_NAME, Context.MODE_WORLD_READABLE );
         } catch (FileNotFoundException e1) {
             Log.e(TAG, "Error opening file " + TMP_INSTALL_FILE_NAME);
-            //throw e1;/// tbd self-defined exception
             return false;
         }
         
@@ -171,7 +170,6 @@ public class PackageInstaller {
             fos.close();
         } catch (IOException e) {
             Log.e(TAG, "Error close file " + TMP_INSTALL_FILE_NAME);
-            //throw e;/// tbd self-defined exception
             return false;
         }
 
@@ -180,13 +178,12 @@ public class PackageInstaller {
         Log.i(TAG, "makeTempCopyAndInstall the source file: "+srcPackageFile.getAbsolutePath());
         if (!FileUtils.copyFile(srcPackageFile, tmpPackageFile)) {
             Log.w(TAG, "Failed to make copy of file: " + srcPackageFile);
-            //throw new NullPointerException();/// tbd self-defined exception
             return false;
         }
         
         Uri pkgURI = Uri.parse("file://" + tmpPackageFile.getPath());
         PackageInstallObserver observer = new PackageInstallObserver();
-        mPkgMgr.installPackage(pkgURI, observer, installFlags, "net.behoo.appmarket");
+        mPkgMgr.installPackage(pkgURI, observer, installFlags, mContext.getPackageName());
        
         // wait until the installing process finished
         boolean bWait = true;

@@ -4,17 +4,34 @@ import java.io.InputStream;
 
 import org.xmlpull.v1.XmlPullParser;
 
+import android.util.Log;
 import android.util.Xml;
 
 import net.behoo.appmarket.data.AppInfo;
 
 public class AppDetailParser {
-	static public AppInfo parse(InputStream stream) {
-		if(null == stream) {
-			throw new IllegalArgumentException();
+	private static final String TAG = "AppDetailParser";
+	
+	private HttpUtil mHttpUtil = new HttpUtil();
+	
+	public AppInfo getAppInfo(String url) {
+		try {
+			InputStream is = mHttpUtil.httpGet(url);
+			return parse(is);
+		} catch (Throwable tr) {
+			tr.printStackTrace();
+		} finally {
+			cancel();
 		}
-		
-		AppInfo appInfo = new AppInfo();
+		return null;
+	}
+	
+	public void cancel() {
+		mHttpUtil.disconnect();
+	}
+	
+	private AppInfo parse(InputStream stream) {	
+		AppInfo appInfo = null;
 		XmlPullParser parser = Xml.newPullParser();
     	try {
     		parser.setInput(stream, null);
@@ -29,6 +46,7 @@ public class AppDetailParser {
                 	tagName = parser.getName();
                 	if( tagName.equalsIgnoreCase("BH_S_App_Detail")) {
                 		bDataValid = true;
+                		appInfo = new AppInfo();
                 	}
                 	else if (bDataValid) {
                 		if (tagName.equalsIgnoreCase("BH_D_App_Name")) {
@@ -87,7 +105,8 @@ public class AppDetailParser {
 	        	
 	        	eventType = parser.next();
 	        }
-    	} catch ( Throwable tr ) {
+    	} catch (Throwable tr) {
+    		Log.w(TAG, "parse "+tr.getLocalizedMessage());
     	}
     	return appInfo;
 	}

@@ -1,6 +1,5 @@
 package net.behoo.appmarket;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +9,6 @@ import behoo.sync.ISyncService;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import net.behoo.appmarket.http.AppListParser;
-import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
 import net.behoo.appmarket.data.AppInfo;
@@ -19,6 +17,7 @@ import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -53,22 +52,15 @@ public class AppMarket extends AsyncTaskActivity
 	
 	private ServiceConnection mSyncServiceConn = new ServiceConnection() {
 		public void onServiceConnected(ComponentName name, IBinder service) {
+			Log.i(TAG, "onServiceConnected");
 			ServiceManager.inst().setSyncHandler(ISyncService.Stub.asInterface(service));
 			
-			try {
-				String token = ServiceManager.inst().getSyncHandler().getToken();
-				if (null != token && token.length() > 0 && mFirstRun) {
-		            executeTask(mHttpTask);
-		            showDialog(WAITING_DIALOG);
-		    		mFirstRun = false;
-				}
-				else {
-					Log.i(TAG, token==null ? "null token" : token);
-				}
-				checkUpdate();
-	        } catch (RemoteException e) {
-	    		Log.w(TAG, "getToken "+e.getLocalizedMessage());
-	    	}
+			if (mFirstRun) {
+			   executeTask(mHttpTask);
+			   showDialog(WAITING_DIALOG);
+			   checkUpdate();
+		       mFirstRun = false;
+			}
 		}
 
 		public void onServiceDisconnected(ComponentName name) {
@@ -147,6 +139,15 @@ public class AppMarket extends AsyncTaskActivity
     	unbindService(mSyncServiceConn);
     }
     
+    protected void onTaskRetry() {
+    	executeTask(mHttpTask);
+    	showDialog(WAITING_DIALOG);
+    }
+    
+    protected void onTaskCanceled(DialogInterface dlg) {
+    	mHttpTask.cancel();
+    }
+    
     public void onInstallClicked(AppInfo appInfo) {
 		// TODO Auto-generated method stub
 		Intent intent = new Intent();
@@ -216,29 +217,32 @@ public class AppMarket extends AsyncTaskActivity
 	}
 	
 	protected void onTaskCompleted(boolean result) {
-		if (mAppLib.size() > 0) {
-			mCurrentSelection = 0;
-		}
-		
-		for (int i = 0; i < mImageViewIds.length; ++i) {
-			ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
-			if (i < mAppLib.size()) {
-				mCodeIndexMap.put(mAppLib.get(i).mAppCode, i);
-				iv.setImageResource(R.drawable.test);
-				iv.setFocusable(true);
-				iv.setOnFocusChangeListener(this);
-				iv.setTag(new Integer(i));
-				iv.setPadding(5, 5, 5, 5);
-				if (i == mCurrentSelection) {
-					iv.requestFocus();
-					
-					updateInstallButtonGuard();
-				}
-				
-				executeImageTask(mAppLib.get(i).mAppImageUrl, mAppLib.get(i).mAppCode);
+		if (result) {
+			if (mAppLib.size() > 0) {
+				mCurrentSelection = 0;
 			}
-			else {
-				iv.setVisibility(View.INVISIBLE);
+			
+			for (int i = 0; i < mImageViewIds.length; ++i) {
+				ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
+				if (i < mAppLib.size()) {
+					mCodeIndexMap.put(mAppLib.get(i).mAppCode, i);
+					iv.setVisibility(View.VISIBLE);
+					iv.setImageResource(R.drawable.test);
+					iv.setFocusable(true);
+					iv.setOnFocusChangeListener(this);
+					iv.setTag(new Integer(i));
+					iv.setPadding(5, 5, 5, 5);
+					if (i == mCurrentSelection) {
+						iv.requestFocus();
+						
+						updateInstallButtonGuard();
+					}
+					
+					executeImageTask(mAppLib.get(i).mAppImageUrl, mAppLib.get(i).mAppCode);
+				}
+				else {
+					iv.setVisibility(View.INVISIBLE);
+				}
 			}
 		}
 	}
@@ -333,29 +337,31 @@ public class AppMarket extends AsyncTaskActivity
 	
 	private class HttpTask extends ProtocolDownloadTask {
 		
+		private AppListParser mAppListProxy = new AppListParser();
+		
 		public HttpTask(Handler handler) {
 			super(handler);
 		}
 		
+		public void cancel() {
+			mAppListProxy.cancel();
+		}
+		
 		protected boolean doTask() {
-			HttpUtil httpUtil = new HttpUtil();
 			try {
 	    		String url = UrlHelpers.getPromotionUrl(
 	    				ServiceManager.inst().getSyncHandler().getToken());
 	    		Log.i(TAG, "doTask "+url);
-				InputStream stream = httpUtil.httpGet(url);
-				ArrayList<AppInfo> appLib = AppListParser.parse(stream);
+	    		
+	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url);
 				if (null != appLib) {
 					mAppLib = appLib;
 					return true;
 				}
-				return false;
-	    	} catch (Throwable tr) {
-	    		Log.i(TAG, "doTask "+tr.getLocalizedMessage());
-	    		return false;
-	    	} finally {
-	    		httpUtil.disconnect();
-	    	}
+			} catch (RemoteException e) {
+				Log.w(TAG, "doTask "+e.getLocalizedMessage());
+			}
+			return false;
 		}
 	}
 }

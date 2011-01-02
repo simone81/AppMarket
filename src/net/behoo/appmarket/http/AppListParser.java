@@ -13,23 +13,27 @@ import net.behoo.appmarket.data.AppInfo;
 public class AppListParser {
 	private static final String TAG = "AppListParser";
 	
-	static public ArrayList<AppInfo> parse(InputStream stream) {
-		if (null == stream)
-			throw new NullPointerException("can't parse null input stream");
-		
-		// for testing tbd
-//		try {
-//			BufferedReader r = new BufferedReader(new InputStreamReader(stream));
-//			StringBuilder total = new StringBuilder();
-//			String line;
-//			while ((line = r.readLine()) != null) {
-//			    total.append(line);
-//			}
-//		} catch (IOException e) {
-//		}
-		
+	private HttpUtil mHttpUtil = new HttpUtil();
+	
+	public ArrayList<AppInfo> getAppList(String url) {
+		try {
+			InputStream is = mHttpUtil.httpGet(url);
+			return parse(is);
+		} catch (Throwable tr) {
+			Log.w(TAG, "getAppList "+tr.getLocalizedMessage());
+		} finally {
+			cancel();
+		}
+		return null;
+	}
+	
+	public void cancel() {
+		mHttpUtil.disconnect();
+	}
+	
+	public static ArrayList<AppInfo> parse(InputStream stream) {
 		String appCount = "0";
-		ArrayList<AppInfo> appLib = new ArrayList<AppInfo>();
+		ArrayList<AppInfo> appLib = null;
     	XmlPullParser parser = Xml.newPullParser();
     	try {
     		parser.setInput(stream, null);
@@ -44,7 +48,7 @@ public class AppListParser {
                 	tagName = parser.getName();
                 	if(tagName.equalsIgnoreCase("BH_S_App_Promotion_List")
                 	   || tagName.equalsIgnoreCase("BH_S_App_List")) {
-                		// do nothing
+                		appLib = new ArrayList<AppInfo>();
                 		if (parser.getAttributeCount() == 1) {
                 			appCount = parser.getAttributeValue(parser.getAttributeNamespace(0), parser.getAttributeName(0));
                 		}
@@ -75,7 +79,7 @@ public class AppListParser {
                 	break;
                 case XmlPullParser.END_TAG:
                 	tagName = parser.getName();
-                	if (tagName.equalsIgnoreCase("BH_S_Application") && null != appInfo) {
+                	if (tagName.equalsIgnoreCase("BH_S_Application") && null != appInfo && null != appLib) {
                 		Log.i("AppListParser", "code "+appInfo.mAppCode);
                 		appInfo.setSummaryInit(true);
                 		appLib.add(appInfo);
@@ -90,8 +94,8 @@ public class AppListParser {
 	        	
 	        	eventType = parser.next();
 	        }
-    	} catch ( Throwable tr ) {
-    		Log.i(TAG, "exception "+tr.getMessage());
+    	} catch (Throwable tr) {
+    		Log.i(TAG, "parse "+tr.getMessage());
     	}
     	Log.i(TAG, "app count by protocol "+appCount+" and real count is "+Integer.toString(appLib.size()));
     	return appLib;

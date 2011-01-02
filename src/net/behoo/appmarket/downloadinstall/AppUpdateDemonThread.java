@@ -77,25 +77,27 @@ public class AppUpdateDemonThread extends Thread {
 			HttpUtil httpUtil = new HttpUtil();
 			try {
 				String reqStr = UrlHelpers.getUpdateRequestString(codes, versions);
-				if (reqStr != null) {
-					Log.i(TAG, "update request string "+reqStr);
-					String url = UrlHelpers.getUpdateUrl(mSyncService.getToken());
-					Log.i(TAG, "update url "+url);
-					InputStream stream = httpUtil.httpPost(url, reqStr);
-					ArrayList<AppInfo> appList = AppListParser.parse(stream);
-					Log.i(TAG, "the app count need to upgrade "+Integer.toString(appList.size()));
-					ContentValues cv = new ContentValues();
-					for (int i = 0; i < appList.size(); ++i) {
-						AppInfo appInfo = appList.get(i);
-						cv.put(PackageDbHelper.COLUMN_STATE, PackageState.need_update.name());
-						mPkgDBHelper.update(appInfo.mAppCode, cv);
-					}
-					
-					if (0 < appList.size()) {
-						Intent intent = new Intent(Constants.ACTION_UPDATE_STATE);
-						mContext.sendBroadcast(intent);
-					}
+				Log.i(TAG, "update request string "+reqStr);
+				
+				String url = UrlHelpers.getUpdateUrl(mSyncService.getToken());
+				Log.i(TAG, "update url "+url);
+				
+				InputStream stream = httpUtil.httpPost(url, reqStr);
+				ArrayList<AppInfo> appList = AppListParser.parse(stream);
+				Log.i(TAG, "the app count need to upgrade "+Integer.toString(appList.size()));
+				
+				ContentValues cv = new ContentValues();
+				for (int i = 0; i < appList.size(); ++i) {
+					AppInfo appInfo = appList.get(i);
+					cv.put(PackageDbHelper.COLUMN_STATE, PackageState.need_update.name());
+					mPkgDBHelper.update(appInfo.mAppCode, cv);
 				}
+				
+				if (0 < appList.size()) {
+					Intent intent = new Intent(Constants.ACTION_UPDATE_STATE);
+					mContext.sendBroadcast(intent);
+				}
+				
 			} catch(Throwable tr) {
 				Log.e(TAG, "check update failed "+tr.getMessage());
 			} finally {

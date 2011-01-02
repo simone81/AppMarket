@@ -1,14 +1,13 @@
 package net.behoo.appmarket;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
-import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -93,14 +92,25 @@ public class AppListPage extends AsyncTaskActivity
 	public void onNothingSelected(AdapterView<?> view) {
 	}
 	
+	protected void onTaskRetry() {
+    	executeTask(mHttpTask);
+    	showDialog(WAITING_DIALOG);
+    }
+	
+	protected void onTaskCanceled(DialogInterface dlg) {
+    	mHttpTask.cancel();
+    }
+	
 	protected void onTaskCompleted(boolean result) {
 		Log.i(TAG, String.format("onTaskComplete ret: %d, count: %d", result?1:0, mAppList.size()));
-		mListAdapter.notifyDataSetChanged();
-		if (mListView.getCount() > 0) {
-			mListView.setSelection(0);
+		if (result) {
+			mListAdapter.notifyDataSetChanged();
+			if (mListView.getCount() > 0) {
+				mListView.setSelection(0);
+			}
+			mListView.requestFocus();
+			updateUIState();
 		}
-		mListView.requestFocus();
-		updateUIState();
 	}
 	
 	protected void onImageCompleted(boolean result, String url, String appcode) {
@@ -151,30 +161,34 @@ public class AppListPage extends AsyncTaskActivity
 	
 	private class HttpTask extends ProtocolDownloadTask {
 		
+		private AppListParser mAppListProxy = new AppListParser();
+		
 		public HttpTask(Handler handler) {
 			super(handler);
 		}
 		
+		public void cancel() {
+			mAppListProxy.cancel();
+		}
+		
 		public boolean doTask() {
-			HttpUtil httpUtil = new HttpUtil();
 	    	try {
 	    		String url = UrlHelpers.getAppListUrl(
 	    			ServiceManager.inst().getSyncHandler().getToken(), 
 	    			mAppList.size() + 1, PAGE_SIZE);
-				InputStream stream = httpUtil.httpGet(url);
-				ArrayList<AppInfo> appLib = AppListParser.parse(stream);
+	    		Log.i(TAG, "doTask "+url);
+	    		
+	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url);
 				if (null != appLib) {
 					// merge if we get duplicated application tbd
 					// or the server MUST NOT give duplicated appcode
 					mAppList.addAll(appLib);
 					return true;
 				}
-				return false;
 	    	} catch (Throwable tr) {
-	    		return false;
-	    	} finally {
-	    		httpUtil.disconnect();
-	    	}
+	    		Log.w(TAG, "doTask "+tr.getLocalizedMessage());
+	    	} 
+	    	return false;
 		}
     };
     

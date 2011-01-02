@@ -1,16 +1,14 @@
 package net.behoo.appmarket;
 
-import java.io.InputStream;
-
 import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.http.AppDetailParser;
-import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -83,6 +81,15 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
     	unregisterReceiver(mReceiver);
     }
 	
+    protected void onTaskCanceled(DialogInterface dlg) {
+    	mHttpTask.cancel();
+    }
+    
+    protected void onTaskRetry() {
+    	executeTask(mHttpTask);
+    	showDialog(WAITING_DIALOG);
+    }
+    
 	protected void onTaskCompleted(boolean result) {
 		if (result) {
 			updateUIState();
@@ -136,31 +143,36 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	
 	private class HttpTask extends ProtocolDownloadTask {
 		
+		private AppDetailParser mDataProxy = new AppDetailParser();
+		
 		public HttpTask(Handler handler) {
 			super(handler);
 		}
 		
+		public void cancel() {
+			mDataProxy.cancel();
+		}
+		
 		protected boolean doTask() {
-			HttpUtil httpUtil = new HttpUtil();
 			try {
 				String url = UrlHelpers.getAppDetailUrl(
 						ServiceManager.inst().getSyncHandler().getToken(), mAppInfo.mAppCode);
 				Log.i(TAG, "doTask "+url);
 				
-				InputStream stream = httpUtil.httpGet(url);
-				AppInfo appInfo = AppDetailParser.parse(stream);
-				mAppInfo.mAppChangelog = appInfo.mAppChangelog;
-				mAppInfo.mAppDesc = appInfo.mAppDesc;
-				mAppInfo.mAppRemoteCntlScore = appInfo.mAppRemoteCntlScore;
-				mAppInfo.mAppReview = appInfo.mAppReview;
-				mAppInfo.mAppSize = appInfo.mAppSize;
-				mAppInfo.mAppScreenShorts = appInfo.mAppScreenShorts;
-				return true;
+				AppInfo appInfo = mDataProxy.getAppInfo(url);
+				if (null != appInfo) {
+					mAppInfo.mAppChangelog = appInfo.mAppChangelog;
+					mAppInfo.mAppDesc = appInfo.mAppDesc;
+					mAppInfo.mAppRemoteCntlScore = appInfo.mAppRemoteCntlScore;
+					mAppInfo.mAppReview = appInfo.mAppReview;
+					mAppInfo.mAppSize = appInfo.mAppSize;
+					mAppInfo.mAppScreenShorts = appInfo.mAppScreenShorts;
+					return true;
+				}
 	    	} catch (Throwable tr) {
-	    		return false;
-	    	} finally {
-	    		httpUtil.disconnect();
-	    	}
+	    		Log.i(TAG, "doTask "+tr.getLocalizedMessage());
+	    	} 
+	    	return false;
 		}
     }
 }
