@@ -251,6 +251,7 @@ public class DownloadInstallService extends Service {
 		Cursor c = mPkgDBHelper.select(columns, where, whereArgs, null);
 		if (null != c) {
 			if (1 == c.getCount()) {
+				c.moveToFirst();
 				int pkgNameId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_PKG_NAME);
 				int downloadUriId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_DOWNLOAD_URI);
 				String pkgName = c.getString(pkgNameId);

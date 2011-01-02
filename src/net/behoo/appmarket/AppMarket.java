@@ -94,7 +94,7 @@ public class AppMarket extends AsyncTaskActivity
     
 	private BroadcastReceiver mUpdateReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
-			// do something
+			// do something 
 		}
 	};
 	

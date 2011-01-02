@@ -30,6 +30,10 @@ public class UninstallThread extends Thread {
 			
 			mPkgDBHelper.delete(mPkgCode);
 			mContext.getContentResolver().delete(Uri.parse(mDownloadUri), null, null);
+			
+			// tbd add uninstalling state
+			PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, 
+				Constants.PackageState.unknown.name());
 		} catch (Throwable tr) {
 			Log.i(TAG, "run "+tr.getLocalizedMessage());
 		}
