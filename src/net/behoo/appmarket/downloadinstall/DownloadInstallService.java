@@ -207,7 +207,7 @@ public class DownloadInstallService extends Service {
 			        valuesLocal.put(PackageDbHelper.COLUMN_VERSION, appInfo.mAppVersion);
 			        valuesLocal.put(PackageDbHelper.COLUMN_APP_NAME, appInfo.mAppName);
 			        valuesLocal.put(PackageDbHelper.COLUMN_AUTHOR, appInfo.mAppAuthor);
-			        valuesLocal.put(PackageDbHelper.COLUMN_DESC, appInfo.mAppDesc);
+			        valuesLocal.put(PackageDbHelper.COLUMN_DESC, appInfo.mAppShortDesc);
 			        valuesLocal.put(PackageDbHelper.COLUMN_SRC_PATH, "");
 			        valuesLocal.put(PackageDbHelper.COLUMN_PKG_NAME, "");
 			        valuesLocal.put(PackageDbHelper.COLUMN_STATE, Constants.PackageState.downloading.name());
