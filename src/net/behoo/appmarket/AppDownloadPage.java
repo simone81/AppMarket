@@ -72,11 +72,12 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.download_page);
 		
+		String order = "_id"+" DESC";
 		mDownloadCursor = managedQuery(Downloads.CONTENT_URI, 
                 new String [] {"_id", Downloads.COLUMN_TITLE, Downloads.COLUMN_STATUS,
                 Downloads.COLUMN_TOTAL_BYTES, Downloads.COLUMN_CURRENT_BYTES, 
                 Downloads._DATA, Downloads.COLUMN_DESCRIPTION}, 
-                null, null);
+                null, null, order);
 		
 		mInstallButton = (Button)findViewById(R.id.downloadpage_btn_to_install);
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
