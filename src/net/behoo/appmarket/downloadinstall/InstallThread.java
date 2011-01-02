@@ -12,7 +12,7 @@ import android.provider.Downloads;
 import android.content.pm.PackageParser;
 import android.content.pm.PackageParser.Package;
 
-public class InstallingThread extends Thread {
+public class InstallThread extends Thread {
 	
 	private static final String TAG = "InstallingThread";
 	private static final Object SYNC_OBJ = new Object();
@@ -22,7 +22,7 @@ public class InstallingThread extends Thread {
 	private String mPkgSrcUri = null;
 	private PackageDbHelper mPkgDBHelper = null;
 	
-	public InstallingThread(Context context, String code, String uri) {
+	public InstallThread(Context context, String code, String uri) {
 		mContext = context;
 		mPkgCode = code;
 		mPkgSrcUri = uri;

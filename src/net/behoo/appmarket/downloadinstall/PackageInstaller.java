@@ -83,7 +83,9 @@ public class PackageInstaller {
 		}
 		
 		if (null != mAppInfo) {
-			// wait unitl the freeing process finished
+			PackageDeleteObserver observer = new PackageDeleteObserver();
+			mPkgMgr.deletePackage(pkgName, observer, 0);
+			
 	        boolean bWait = true;
 	        while (bWait){
 	        	try {

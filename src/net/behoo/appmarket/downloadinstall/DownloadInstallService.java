@@ -91,7 +91,7 @@ public class DownloadInstallService extends Service {
 			
 			// the download has completed successfully!
 			if (bDownloadRet) {
-				InstallingThread thrd = new InstallingThread(context, code, filename);
+				InstallThread thrd = new InstallThread(context, code, filename);
 				thrd.start();
 			}
 		}
@@ -243,6 +243,31 @@ public class DownloadInstallService extends Service {
 		mUpdateDaemonThread.checkUpdate(syncService);
 	}
 	
+	public boolean uninstall(String code) {
+		String [] columns = {PackageDbHelper.COLUMN_PKG_NAME,
+				PackageDbHelper.COLUMN_DOWNLOAD_URI};
+		String where = PackageDbHelper.COLUMN_CODE+"=?";
+		String [] whereArgs = {code};
+		Cursor c = mPkgDBHelper.select(columns, where, whereArgs, null);
+		if (null != c) {
+			if (1 == c.getCount()) {
+				int pkgNameId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_PKG_NAME);
+				int downloadUriId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_DOWNLOAD_URI);
+				String pkgName = c.getString(pkgNameId);
+				String downloadUri = c.getString(downloadUriId);
+				Log.i(TAG, "uninstall code: "+code+" uri: "+downloadUriId);
+				UninstallThread thrd = new UninstallThread(this, code, pkgName, downloadUri);
+				thrd.start();
+			}
+			else {
+				Log.e(TAG, "uninstall: mulit records of one application");
+			}
+			c.close();
+			return true;
+		}
+		return false;
+	}
+	
 	public ArrayList<AppInfo> getUpdateList() {
 		String where = PackageDbHelper.COLUMN_STATE + "=?";
 		String [] whereArgs = {Constants.PackageState.need_update.name()};
@@ -297,10 +322,6 @@ public class DownloadInstallService extends Service {
 			Log.i(TAG, "getAppState "+tr.getMessage());
 			return PackageState.unknown;
 		}
-	}
-	
-	public boolean install( String uri ) {
-		return true;
 	}
 	
 	private URI getURI(String url) {

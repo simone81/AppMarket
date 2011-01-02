@@ -62,21 +62,24 @@ public class InstallButtonGuard implements OnClickListener {
 		case install_failed:	
 		case download_failed:
 			try {
-			String url = UrlHelpers.getDownloadUrl(
-					ServiceManager.inst().getSyncHandler().getToken(), 
-					mAppInfo.mAppCode);
-			mService.downloadAndInstall(url, AppInfo.MIMETYPE, mAppInfo);
-			if (null != mListener) {
-				mListener.onInstallClicked(mAppInfo);
-			}
+				String url = UrlHelpers.getDownloadUrl(
+						ServiceManager.inst().getSyncHandler().getToken(), 
+						mAppInfo.mAppCode);
+				mService.downloadAndInstall(url, AppInfo.MIMETYPE, mAppInfo);
+				if (null != mListener) {
+					mListener.onInstallClicked(mAppInfo);
+				}
 			} catch (RemoteException e) {
-				Log.i(TAG, "onClick "+e.getLocalizedMessage());
+				Log.i(TAG, "onClick install "+e.getLocalizedMessage());
 			}
+			break;
+		case install_succeeded:	
+			// tbd uninstall
+			mService.uninstall(mAppInfo.mAppCode);
 			break;
 		case downloading:
 		case download_succeeded:
 		case installing:
-		case install_succeeded:	
 		default:
 			Log.e(TAG, "the button under these states should not be clicked");
 			break;
@@ -114,8 +117,9 @@ public class InstallButtonGuard implements OnClickListener {
 			mButton.setEnabled(false);
 			break;
 		case install_succeeded:
+			// tbd
 			mButton.setText(R.string.downloadpage_install_success);
-			mButton.setEnabled(false);
+			mButton.setEnabled(true);
 			break;
 		case need_update:
 			mButton.setText(R.string.downloadpage_update);
