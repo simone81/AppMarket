@@ -34,14 +34,6 @@
 	    	android:layout_below="@id/detail_tv_screenshot"
 	    	android:layout_marginTop="10dip"/>
     	
-    	<ImageView android:id="@+id/detail_screenshort_2" 
-	    	android:src="@drawable/test"
-	    	android:layout_width="wrap_content"
-	    	android:layout_height="wrap_content"
-	    	android:layout_toRightOf="@id/detail_screenshort_1"
-	    	android:layout_marginLeft="20dip"
-	    	android:layout_alignTop="@id/detail_screenshort_1"/>
-    	
     	<!-- remote control -->
 	    <TextView android:id="@+id/detail_remotecntl_title" 
 	    	style="@style/TextStyleNormal"
@@ -52,14 +44,24 @@
 	    	android:layout_below="@id/detail_screenshort_1"
 	    	android:layout_marginTop="20dip"/>
 	    
+	    <RatingBar android:id="@+id/detail_ratingbar"
+			style="@style/CustomRatingBar"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_below="@id/detail_remotecntl_title"
+	        android:layout_marginTop="5dip"
+	        android:layout_marginLeft="@dimen/screen_horz_margin"
+	        android:numStars="4"
+	        android:stepSize="1.0"/>
+        
 	    <TextView android:id="@+id/detail_rc_desc" 
 	    	style="@style/TextStyleSmall"
-	    	android:layout_width="wrap_content"
 	    	android:text="@string/appdetails_remotecntl"
+	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"
-	    	android:layout_marginLeft="@dimen/screen_horz_margin"
-	    	android:layout_below="@id/detail_remotecntl_title"
-	    	android:layout_marginTop="5dip"/>
+	    	android:layout_toRightOf="@id/detail_ratingbar"
+	    	android:layout_marginLeft="5dip"
+	    	android:layout_alignBottom="@id/detail_ratingbar"/>
 	    
 	    <!-- review -->
 	    <TextView android:id="@+id/detail_review_title" 

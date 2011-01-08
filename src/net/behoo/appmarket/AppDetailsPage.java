@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickListener {
@@ -32,9 +33,10 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	
 	private Integer[] mRemoteCntl = {
 		R.string.appdetails_rc_desc1,
+		R.string.appdetails_rc_desc1,
 		R.string.appdetails_rc_desc2,
 		R.string.appdetails_rc_desc3,
-		R.string.appdetails_rc_desc4
+		R.string.appdetails_rc_desc4,
 	};
     
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -94,14 +96,21 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		if (result) {
 			updateUIState();
 			executeImageTask(mAppInfo.mAppImageUrl, mAppInfo.mAppCode);
+			executeImageTask(mAppInfo.mAppScreenShorts, mAppInfo.mAppCode);
 		}
 	}
 	
 	protected void onImageCompleted(boolean result, String url, String appcode) {
 		if (result) {
 			if (null != ImageLib.inst().getDrawable(url)) {
-				ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
-				iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+				if (0 == url.compareTo(mAppInfo.mAppImageUrl)) {
+					ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
+					iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+				}
+				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts)) {
+					ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_1);
+					iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+				}
 			}
 		}
 	}
@@ -125,17 +134,18 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		iv = (ImageView)findViewById(R.id.detail_screenshort_1);
 		iv.setImageResource(R.drawable.test);
 		
-		iv = (ImageView)findViewById(R.id.detail_screenshort_2);
-		iv.setImageResource(R.drawable.test);
-		
 		tv = (TextView)findViewById(R.id.detail_review_desc);
 		tv.setText(mAppInfo.mAppReview);
 		
 		tv = (TextView)findViewById(R.id.detail_rc_desc);
+		
 		int score = 0;
 		try {
 		    score = Integer.parseInt(mAppInfo.mAppRemoteCntlScore);
-		    tv.setText(mRemoteCntl[score%4]);
+		    tv.setText(mRemoteCntl[score%5]);
+		    
+		    RatingBar rb = (RatingBar)findViewById(R.id.detail_ratingbar);
+		    rb.setRating(score%5);
 		} catch(NumberFormatException nfe) {
 		   Log.w(TAG, "Could not parse " + nfe);
 		} 	
