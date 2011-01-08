@@ -1,13 +1,10 @@
 package net.behoo.appmarket.http;
 
-import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-
-import org.apache.http.protocol.HTTP;
 
 import android.util.Log;
 
@@ -32,6 +29,7 @@ public class HttpUtil {
     	    return mConnection.getInputStream();
     	} catch (Throwable tr) {
     		Log.w(TAG, "httpGet "+tr.getLocalizedMessage());
+    		tr.printStackTrace();
     	} 
     	return null;
     }
@@ -45,17 +43,22 @@ public class HttpUtil {
     		mConnection.setReadTimeout(READ_TIMEOUT);
     		mConnection.setRequestMethod("POST");
     		mConnection.setRequestProperty("Content-Type", "Application/xml; charset=utf-8");
+    		mConnection.setRequestProperty("Content-Length", 
+    				""+Integer.toString(requestStr.getBytes().length));
     		
+    		mConnection.setDoInput(true);
     		mConnection.setDoOutput(true);
-    		mConnection.setChunkedStreamingMode(0);
+    		mConnection.setFixedLengthStreamingMode(requestStr.getBytes().length);
 
-    		OutputStream out = new BufferedOutputStream(mConnection.getOutputStream());
-    		byte [] data = requestStr.getBytes(HTTP.UTF_8);
-    		out.write(data);
+    		DataOutputStream out = new DataOutputStream(mConnection.getOutputStream());
+    		out.writeBytes(requestStr);
+			out.flush();
+			out.close();
 
     		return mConnection.getInputStream();
     	} catch (Throwable tr) { 
     		Log.w(TAG, "httpGet "+tr.getLocalizedMessage());
+    		tr.printStackTrace();
     	}
     	return null;
     }

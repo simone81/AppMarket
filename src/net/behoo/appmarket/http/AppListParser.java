@@ -32,6 +32,10 @@ public class AppListParser {
 	}
 	
 	public static ArrayList<AppInfo> parse(InputStream stream) {
+		if (null == stream) {
+			throw new NullPointerException("null stream is not expected");
+		}
+		
 		String appCount = "0";
 		ArrayList<AppInfo> appLib = null;
     	XmlPullParser parser = Xml.newPullParser();

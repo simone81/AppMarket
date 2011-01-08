@@ -99,7 +99,7 @@ public class AppUpdateDemonThread extends Thread {
 				}
 				
 			} catch(Throwable tr) {
-				Log.e(TAG, "check update failed "+tr.getMessage());
+				Log.w(TAG, "check update failed "+tr.getMessage());
 			} finally {
 				httpUtil.disconnect();
 			}
