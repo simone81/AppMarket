@@ -50,6 +50,7 @@
 	<string name="downloadpage_install_failure">安装失败</string>
 	<string name="downloadpage_retry">重试</string>
 	<string name="downloadpage_update">立即升级</string>
+	<string name="downloadpage_beginning">开始中</string>
 	
 	<!-- alert dialog when getting data from server error -->
 	<string name="dlg_httptask_error_hint">数据获取失败</string>
