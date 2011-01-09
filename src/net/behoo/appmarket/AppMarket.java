@@ -103,18 +103,15 @@ public class AppMarket extends AsyncTaskActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.app_market);
         
-        TextView tv = (TextView)findViewById(R.id.market_subtitle);
-        tv.setText(R.string.market_promotion);
+        mButtonInstall = (Button)findViewById(R.id.main_btn_install);
         
-        mButtonInstall = ( Button )findViewById(R.id.main_btn_install);
-        
-        mButtonUpdate = ( Button )findViewById(R.id.main_btn_download_page);
+        mButtonUpdate = (Button)findViewById(R.id.main_btn_download_page);
         mButtonUpdate.setOnClickListener(this);
         
-        mButtonDownloadMgr = ( Button )findViewById(R.id.main_btn_update_page);
+        mButtonDownloadMgr = (Button)findViewById(R.id.main_btn_update_page);
         mButtonDownloadMgr.setOnClickListener(this);
         
-        mButtonAppList = ( Button )findViewById(R.id.main_btn_applist_page);
+        mButtonAppList = (Button)findViewById(R.id.main_btn_applist_page);
         mButtonAppList.setOnClickListener(this);
         
         startService(new Intent(this, DownloadInstallService.class));

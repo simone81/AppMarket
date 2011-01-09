@@ -1,29 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="TextStyleLarge">
-        <item name="android:textSize">20sp</item>
-        <item name="android:textColor">#F0F0F0</item>
-    </style>
-    
-    <style name="TextStyleNormal">
-        <item name="android:textSize">18sp</item>
-        <item name="android:textColor">#F0F0F0</item>
-    </style>
-    
-    <style name="TextStyleSmall">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">#F0F0F0</item>
     </style>
     
+    <style name="TextStyleNormal">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#F0F0F0</item>
+    </style>
+    
+    <style name="TextStyleSmall">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#F0F0F0</item>
+    </style>
+    
+    <style name="ButtonTextNormal" parent="@android:style/Widget.Button">
+        <item name="android:textColor">#82b72f</item>
+    </style>
+    
     <style name="AppTheme" parent="@android:style/Theme.NoTitleBar.Fullscreen">
     	<!-- a solid or transluent color image needed -->
-    	<item name="android:windowBackground">@drawable/theme_background_color</item> 
+    	<item name="android:windowBackground">@drawable/app_background</item> 
     </style>
     
     <style name="CustomRatingBar" parent="@android:style/Widget.RatingBar.Small">
 		<item name="android:progressDrawable">@drawable/custom_ratingbar_small</item>
-    	<item name="android:minHeight">20dip</item>
-    	<item name="android:maxHeight">20dip</item>
+    	<item name="android:minHeight">16dip</item>
+    	<item name="android:maxHeight">16dip</item>
 	</style>
 </resources>
 

@@ -55,6 +55,14 @@ public class AppListPage extends AsyncTaskActivity
 		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		
+		AppInfo app = new AppInfo();
+		app.mAppName="aaaa";
+		app.mAppCode="12345678";
+		app.mAppScreenShorts="a;lkdjflkasjdflkajsdlkf;jasdlkfjals;kjfd;lkasjfdlkajsflkasjfd;lkasjfdasdfasfd";
+		app.mAppAuthor="234";
+		app.mAppVersion="1.0";
+		mAppList.add(app);
+		
 		mHttpTask = new HttpTask(mHandler);
 		executeTask(mHttpTask);
 		showDialog(WAITING_DIALOG);

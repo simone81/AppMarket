@@ -7,12 +7,6 @@
     <include layout="@layout/app_summary_layout"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"/>		
-	
-	<!-- the market title -->
-	<include layout="@layout/market_title_layout"
-		android:layout_gravity="top|right"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"/>	
 			 		 
 	<RelativeLayout android:layout_width="fill_parent"
 	    android:layout_height="fill_parent">

@@ -35,7 +35,7 @@ abstract public class AsyncTaskActivity extends Activity
         		Log.w(TAG, "handleMessage "+"MSG_PROTOCOL_FAILURE");
         		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
         		AsyncTaskActivity.this.onTaskCompleted(false);
-        		showDialog(TASK_ERROR_DIALOG);
+        		//showDialog(TASK_ERROR_DIALOG);
         		break;
         	case DownloadConstants.MSG_IMG_SUCCEED: {
         		Bundle data = msg.getData();
