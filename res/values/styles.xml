@@ -15,6 +15,11 @@
         <item name="android:textColor">#F0F0F0</item>
     </style>
     
+    <style name="ListItemTextNormal">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#82b72f</item>
+    </style>
+    
     <style name="ButtonTextNormal" parent="@android:style/Widget.Button">
         <item name="android:textColor">#82b72f</item>
     </style>

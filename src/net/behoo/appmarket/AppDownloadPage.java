@@ -43,6 +43,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	private Button mInstallButton = null;
 	private ImageView mAppImage = null;
 	private ProgressBar mDownloadProgressBar = null;
+	private TextView mTextViewSize = null;
 	
 	private Map<String, AppInfo> mCodeAppInfoMap = new HashMap<String, AppInfo>();
 	private Cursor mDownloadCursor = null;
@@ -63,6 +64,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 			case install_failed:
 			case install_succeeded:
 			case need_update:
+			case download_failed:
 				mListApater.notifyDataSetChanged();
 				break;
 			default:
@@ -73,7 +75,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.download_page);
+		setContentView(R.layout.app_download_page);
 		
 		String order = "_id"+" DESC";
 		mDownloadCursor = managedQuery(Downloads.CONTENT_URI, 
@@ -85,6 +87,8 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		mInstallButton = (Button)findViewById(R.id.downloadpage_btn_to_install);
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		mDownloadProgressBar = (ProgressBar)findViewById(R.id.downloadpage_progress);
+		
+		mTextViewSize = (TextView)findViewById(R.id.main_app_size);
 		
 		initList();
 		createInstallButtonGuard();
@@ -155,7 +159,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	
 	private void initList() {
 		mListView = (ListView)findViewById(R.id.downloadpage_list);
-		mListApater = new ListAdapter(this, android.R.layout.simple_list_item_1, mDownloadCursor);
+		mListApater = new ListAdapter(this, R.layout.applist_item_layout, mDownloadCursor);
 		mListView.setAdapter(mListApater);
 		mListView.setOnItemSelectedListener(this);
 		mListView.requestFocus();
@@ -195,49 +199,70 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 			bIsSelected = (0 == selCode.compareTo(code));
 		}
 		else {
-			mDownloadProgressBar.setVisibility(View.INVISIBLE);
+			mDownloadProgressBar.setVisibility(View.GONE);
+			mTextViewSize.setVisibility(View.GONE);
 		}
 		
 		AppInfo appInfo = mCodeAppInfoMap.get(code);
-		StringBuilder sb = new StringBuilder();
-		sb.append(appInfo.mAppName);
-		sb.append(' ');
+		TextView titleView = (TextView)view.findViewById(R.id.applist_item_title);
+		titleView.setText(appInfo.mAppName);
 		
-		TextView tv = (TextView)view;
+		TextView subTitleView = (TextView)view.findViewById(R.id.applist_item_subtitle);
 		// update the item view of the list view
 		if (completed) {
 			// display string according to the state of the local database
 			Constants.PackageState state = 
 				ServiceManager.inst().getDownloadHandler().getAppState(code);
-			sb.append(state.name());
-			tv.setText(sb.toString());
+			subTitleView.setText(getStateStringId(state));
 			
 			if (bIsSelected) {
-				mDownloadProgressBar.setVisibility(View.INVISIBLE);
+				mDownloadProgressBar.setVisibility(View.GONE);
+				mTextViewSize.setVisibility(View.GONE);
 			}
 		}
 		else if (0 < totalBytes) {
 			// 10% for installation
 			long progress = currentBytes*90/totalBytes;
+			StringBuilder sb = new StringBuilder();
 			sb.append(progress);
 			sb.append('%');
-        	tv.setText(sb.toString());
+			subTitleView.setText(sb.toString());
         	
         	if (bIsSelected) {
         		mDownloadProgressBar.setVisibility(View.VISIBLE);
         		mDownloadProgressBar.setIndeterminate(false);
         		mDownloadProgressBar.setProgress((int)progress);
+        		
+        		mTextViewSize.setVisibility(View.VISIBLE);
+        		mTextViewSize.setText(Formatter.formatFileSize(this, totalBytes));
         	}
 		}
 		else {
 			Log.w(TAG, "bindView: the apk's length is not known!");
-			sb.append(getString(R.string.downloadpage_beginning));
-			tv.setText(sb.toString());
+			subTitleView.setText(R.string.downloadpage_beginning);
 			if (bIsSelected) {
         		mDownloadProgressBar.setVisibility(View.VISIBLE);
         		mDownloadProgressBar.setIndeterminate(true);
+        		
+        		mTextViewSize.setVisibility(View.GONE);
         	}
 		}
+	}
+	
+	private int getStateStringId(Constants.PackageState state) {
+		switch (state) {
+		case installing:
+			return R.string.downloadpage_installing;
+		case install_failed:
+			return R.string.downloadpage_install_failure;
+		case install_succeeded:
+			return R.string.downloadpage_install_success;
+		case need_update:
+			return R.string.downloadpage_update;
+		case download_failed:
+			return R.string.downloadpage_download_failure;
+		}
+		return R.string.downloadpage_install_failure;
 	}
 	
 	private class ListAdapter extends ResourceCursorAdapter {   

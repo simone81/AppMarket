@@ -83,7 +83,7 @@ public class AppUpdateDemonThread extends Thread {
 				Log.i(TAG, "update url "+url);
 				
 				InputStream stream = httpUtil.httpPost(url, reqStr);
-				ArrayList<AppInfo> appList = AppListParser.parse(stream);
+				ArrayList<AppInfo> appList = AppListParser.parse(stream, codes.size());
 				Log.i(TAG, "the app count need to upgrade "+Integer.toString(appList.size()));
 				
 				ContentValues cv = new ContentValues();

@@ -168,15 +168,22 @@ public class AppUpdatePage extends AsyncTaskActivity
         }
 
         public View getView(int position, View convertView, ViewGroup parent) {
-            TextView text;
-            
-            if (convertView == null) {
-                text = (TextView)mInflater.inflate(android.R.layout.simple_list_item_1, parent, false);
-            } else {
-                text = (TextView)convertView;
-            }
-            text.setText(mAppLib.get(position).mAppName);
-            return text;
+        	View view = null;
+        	if (convertView == null) {
+        		view = mInflater.inflate(R.layout.applist_item_layout, parent, false);
+        		view.setFocusable(true);
+        	}
+        	else {
+        		view = convertView;
+        	}
+
+        	// update state
+            AppInfo appInfo = mAppLib.get(position);
+            TextView titleView = (TextView)view.findViewById(R.id.applist_item_title);
+            titleView.setText(appInfo.mAppName);
+            TextView subTitleView = (TextView)view.findViewById(R.id.applist_item_subtitle);
+            subTitleView.setText(appInfo.mAppAuthor);
+            return view;
         }
 	}
 }

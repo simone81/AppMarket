@@ -55,14 +55,6 @@ public class AppListPage extends AsyncTaskActivity
 		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		
-		AppInfo app = new AppInfo();
-		app.mAppName="aaaa";
-		app.mAppCode="12345678";
-		app.mAppScreenShorts="a;lkdjflkasjdflkajsdlkf;jasdlkfjals;kjfd;lkasjfdlkajsflkasjfd;lkasjfdasdfasfd";
-		app.mAppAuthor="234";
-		app.mAppVersion="1.0";
-		mAppList.add(app);
-		
 		mHttpTask = new HttpTask(mHandler);
 		executeTask(mHttpTask);
 		showDialog(WAITING_DIALOG);
@@ -186,7 +178,7 @@ public class AppListPage extends AsyncTaskActivity
 	    			mAppList.size() + 1, PAGE_SIZE);
 	    		Log.i(TAG, "doTask "+url);
 	    		
-	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url);
+	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url, PAGE_SIZE);
 				if (null != appLib) {
 					// merge if we get duplicated application tbd
 					// or the server MUST NOT give duplicated appcode
@@ -233,8 +225,10 @@ public class AppListPage extends AsyncTaskActivity
         	
         	// update state
             AppInfo appInfo = mAppList.get(position);
-            TextView tv = (TextView)view.findViewById(R.id.applist_item_title);
-            tv.setText(appInfo.mAppName);
+            TextView titleView = (TextView)view.findViewById(R.id.applist_item_title);
+            titleView.setText(appInfo.mAppName);
+            TextView subTitleView = (TextView)view.findViewById(R.id.applist_item_subtitle);
+            subTitleView.setText(appInfo.mAppAuthor);
             
             return view;
         }

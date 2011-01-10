@@ -117,7 +117,6 @@ public class InstallButtonGuard implements OnClickListener {
 			mButton.setEnabled(false);
 			break;
 		case install_succeeded:
-			// tbd
 			mButton.setText(R.string.downloadpage_install_success);
 			mButton.setEnabled(true);
 			break;

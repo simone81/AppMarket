@@ -37,6 +37,7 @@ public class AppMarket extends AsyncTaskActivity
 					   implements OnClickListener, OnFocusChangeListener, OnInstallClickListener {
 	
 	private static final String TAG = "AppMarket";
+	private static final int APP_PROMOTION_NUM = 6;
 	
 	private Button mButtonInstall = null;
 	private Button mButtonAppList = null;
@@ -329,7 +330,7 @@ public class AppMarket extends AsyncTaskActivity
 		R.id.main_appimage_1, 	R.id.main_appimage_2, 
 		R.id.main_appimage_3, 	R.id.main_appimage_4, 
 		R.id.main_appimage_5, 	R.id.main_appimage_6, 
-		R.id.main_appimage_7, 	R.id.main_appimage_8, 
+		//R.id.main_appimage_7, 	R.id.main_appimage_8, 
 	};
 	
 	private class HttpTask extends ProtocolDownloadTask {
@@ -350,13 +351,14 @@ public class AppMarket extends AsyncTaskActivity
 	    				ServiceManager.inst().getSyncHandler().getToken());
 	    		Log.i(TAG, "doTask "+url);
 	    		
-	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url);
+	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url, APP_PROMOTION_NUM);
 				if (null != appLib) {
 					mAppLib = appLib;
 					return true;
 				}
 			} catch (RemoteException e) {
 				Log.w(TAG, "doTask "+e.getLocalizedMessage());
+				return false;
 			}
 			return false;
 		}

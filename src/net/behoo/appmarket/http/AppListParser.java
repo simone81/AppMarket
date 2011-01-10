@@ -15,10 +15,10 @@ public class AppListParser {
 	
 	private HttpUtil mHttpUtil = new HttpUtil();
 	
-	public ArrayList<AppInfo> getAppList(String url) {
+	public ArrayList<AppInfo> getAppList(String url, int maxCount) {
 		try {
 			InputStream is = mHttpUtil.httpGet(url);
-			return parse(is);
+			return parse(is, maxCount);
 		} catch (Throwable tr) {
 			Log.w(TAG, "getAppList "+tr.getLocalizedMessage());
 		} finally {
@@ -31,12 +31,13 @@ public class AppListParser {
 		mHttpUtil.disconnect();
 	}
 	
-	public static ArrayList<AppInfo> parse(InputStream stream) {
+	public static ArrayList<AppInfo> parse(InputStream stream, int maxCount) {
 		if (null == stream) {
 			throw new NullPointerException("null stream is not expected");
 		}
 		
-		String appCount = "0";
+		String numOfApp = "0";
+		int appCounter = 0;
 		ArrayList<AppInfo> appLib = null;
     	XmlPullParser parser = Xml.newPullParser();
     	try {
@@ -54,11 +55,12 @@ public class AppListParser {
                 	   || tagName.equalsIgnoreCase("BH_S_App_List")) {
                 		appLib = new ArrayList<AppInfo>();
                 		if (parser.getAttributeCount() == 1) {
-                			appCount = parser.getAttributeValue(parser.getAttributeNamespace(0), parser.getAttributeName(0));
+                			numOfApp = parser.getAttributeValue(parser.getAttributeNamespace(0), parser.getAttributeName(0));
                 		}
                 	}
-                	else if(tagName.equalsIgnoreCase("BH_S_Application")) {
+                	else if(tagName.equalsIgnoreCase("BH_S_Application") && appCounter < maxCount) {
                 		appInfo = new AppInfo();
+                		++appCounter;
                 	}
                 	else if (null != appInfo){
                 		if (tagName.equalsIgnoreCase("BH_D_App_Name")) {
@@ -101,7 +103,7 @@ public class AppListParser {
     	} catch (Throwable tr) {
     		Log.i(TAG, "parse "+tr.getMessage());
     	}
-    	Log.i(TAG, "app count by protocol "+appCount+" and real count is "+Integer.toString(appLib.size()));
+    	Log.i(TAG, "app count by protocol "+numOfApp+" and real count is "+Integer.toString(appLib.size()));
     	return appLib;
 	}
 }

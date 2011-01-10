@@ -33,17 +33,6 @@
 	    	android:layout_marginLeft="10dip"
 	    	android:layout_alignTop="@id/detail_right_bkgnd"
 	    	android:layout_marginTop="5dip" />
-	    	
-	    <TextView android:id="@+id/detail_review_desc" 
-	    	style="@style/TextStyleSmall"
-	    	android:layout_width="wrap_content"
-	    	android:layout_height="wrap_content"
-	    	android:layout_alignLeft="@id/detail_review_title"
-	    	android:layout_below="@+id/detail_review_title"
-	    	android:layout_marginTop="10dip"
-	    	android:layout_alignRight="@id/detail_right_bkgnd"
-	    	android:layout_marginRight="10dip"
-	    	android:ellipsize="end"/>
 	    
 	    <!-- install button -->	
 	    <Button android:id="@+id/detail_btn_install" 
@@ -56,7 +45,20 @@
 	    	android:layout_marginRight="10dip"
 	    	android:layout_alignBottom="@id/detail_right_bkgnd"
 	    	android:layout_marginBottom="5dip" />
-	    				
+	    	
+	    <!-- review details -->
+	    <TextView android:id="@+id/detail_review_desc" 
+	    	style="@style/TextStyleSmall"
+	    	android:layout_width="0dip"
+	    	android:layout_height="0dip"
+	    	android:layout_alignLeft="@id/detail_review_title"
+	    	android:layout_below="@+id/detail_review_title"
+	    	android:layout_marginTop="5dip"
+	    	android:layout_alignRight="@id/detail_right_bkgnd"
+	    	android:layout_marginRight="10dip"
+	    	android:layout_above="@id/detail_btn_install"
+	    	android:layout_marginBottom="10dip" />
+	    					
 	    <!-- left background -->
 	    <ImageView android:id="@+id/detail_left_bkgnd" 
     		android:src="@drawable/app_list_left_bg"

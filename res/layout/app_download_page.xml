@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">	
+			 		 
+	<RelativeLayout android:layout_width="fill_parent"
+	    android:layout_height="fill_parent">
+	    
+	    <!-- title image -->
+    	<ImageView android:id="@+id/downloadpage_iv_title" 
+    		android:src="@drawable/download_title"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignParentRight="true"
+	    	android:layout_marginRight="@dimen/screen_horz_margin"
+	    	android:layout_marginTop="40dip" />
+	    
+	    <!-- right background -->
+	    <ImageView android:id="@+id/download_right_bkgnd" 
+    		android:src="@drawable/app_list_right_bg"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignRight="@id/downloadpage_iv_title"
+	    	android:layout_below="@id/downloadpage_iv_title" />
+		<!-- application list view -->
+	    <ListView android:id="@+id/downloadpage_list" 
+	    	android:layout_width="0dip"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignLeft="@id/download_right_bkgnd"
+	    	android:layout_alignRight="@id/download_right_bkgnd"
+	    	android:layout_alignBottom="@id/download_right_bkgnd"
+	    	android:layout_alignTop="@id/download_right_bkgnd" />
+	    		
+		<!-- left background -->
+	    <ImageView android:id="@+id/download_left_bkgnd" 
+    		android:src="@drawable/app_list_left_bg"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_toLeftOf="@id/download_right_bkgnd"
+	    	android:layout_marginRight="10dip"
+	    	android:layout_alignTop="@id/download_right_bkgnd"
+			android:focusable="false" />
+	    
+	    <!-- summary -->
+	    <include android:id="@+id/the_summary_layout"
+	    	layout="@layout/app_summary_layout"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" 
+			android:layout_alignLeft="@id/download_left_bkgnd"
+			android:layout_alignTop="@id/download_left_bkgnd"
+			android:layout_marginLeft="20dip"
+			android:layout_marginTop="5dip" />   
+	    
+	    <Button android:id="@+id/downloadpage_btn_to_install" 
+	    	android:text="@string/appupdate_update"
+	    	style="@style/ButtonTextNormal"
+			android:background="@drawable/large_button_selector"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignRight="@id/download_left_bkgnd"
+	    	android:layout_marginRight="20dip"
+			android:layout_alignBottom="@id/download_left_bkgnd"
+	    	android:layout_marginBottom="10dip" />	
+	    
+	    <ProgressBar android:id="@+id/downloadpage_progress"
+	        style="?android:attr/progressBarStyleHorizontal"
+	        android:layout_width="0dip"
+	        android:layout_height="wrap_content"
+	        android:layout_above="@id/downloadpage_btn_to_install"
+	        android:layout_marginBottom="5dip"
+	        android:layout_alignLeft="@id/the_summary_layout"
+	        android:layout_alignRight="@id/download_left_bkgnd"
+	        android:layout_marginRight="20dip" />
+	    
+		<!-- description -->
+	    <TextView android:id="@+id/downloadpage_desc" 
+	    	style="@style/TextStyleSmall"
+	    	android:layout_width="0dip"
+	    	android:layout_height="0dip"
+	    	android:layout_below="@id/the_summary_layout"
+	    	android:layout_alignLeft="@id/the_summary_layout"
+	    	android:layout_alignRight="@id/download_left_bkgnd"
+	    	android:layout_marginRight="10dip"
+	    	android:layout_above="@id/downloadpage_progress"
+	    	android:layout_marginBottom="5dip" />    
+	    			
+	</RelativeLayout>
+
+</merge>

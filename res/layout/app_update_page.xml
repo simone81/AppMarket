@@ -2,47 +2,77 @@
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
-    
-    <!-- summary -->
-    <include layout="@layout/app_summary_layout"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"/>		
-			 		 
+
 	<RelativeLayout android:layout_width="fill_parent"
 	    android:layout_height="fill_parent">
 	    
-	    <!-- the anchor -->
-	    <LinearLayout android:id="@+id/app_update_anchor" 
-	    	android:layout_width="1dip"
-	    	android:layout_height="1dip"
-	    	android:layout_centerHorizontal="true"
-	    	android:layout_marginTop="100dip"/>
-	    	
-	    <TextView android:id="@+id/app_update_desc" 
-	    	style="@style/TextStyleSmall"
-	    	android:layout_width="250dip"
-	    	android:layout_height="120dip"
-	    	android:layout_marginLeft="@dimen/screen_horz_margin"
-	    	android:layout_alignTop="@id/app_update_anchor"
-	    	android:editable="false"/>
-	    	
-	    <ListView android:id="@+id/app_update_list" 
-	    	android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-	    	android:layout_toRightOf="@id/app_update_anchor"
-	    	android:layout_marginRight="@dimen/screen_horz_margin"
-	    	android:layout_marginBottom="@dimen/screen_vert_margin"
-	    	android:layout_marginLeft="10dip"
-	    	android:layout_alignTop="@id/app_update_anchor"/>	
-	    
-	    <Button android:id="@+id/appupdate_btn_update" 
-	    	android:text="@string/appupdate_update"
+	    <!-- title image -->
+    	<ImageView android:id="@+id/app_update_iv_title" 
+    		android:src="@drawable/update_title"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"
-	    	android:layout_alignParentBottom="true"
-	    	android:layout_marginLeft="30dip"
-	    	android:layout_marginBottom="15dip" />	
-	    		
+	    	android:layout_alignParentRight="true"
+	    	android:layout_marginRight="@dimen/screen_horz_margin"
+	    	android:layout_marginTop="40dip" />	
+	    
+	    <!-- right background -->
+	    <ImageView android:id="@+id/app_update_right_bkgnd" 
+    		android:src="@drawable/app_list_right_bg"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignRight="@id/app_update_iv_title"
+	    	android:layout_below="@id/app_update_iv_title" />
+		<!-- application list view -->
+	    <ListView android:id="@+id/app_update_list" 
+	    	android:layout_width="0dip"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignLeft="@id/app_update_right_bkgnd"
+	    	android:layout_alignRight="@id/app_update_right_bkgnd"
+	    	android:layout_alignBottom="@id/app_update_right_bkgnd"
+	    	android:layout_alignTop="@id/app_update_right_bkgnd" />
+	    
+	    <!-- left background -->
+	    <ImageView android:id="@+id/app_update_left_bkgnd" 
+    		android:src="@drawable/app_list_left_bg"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_toLeftOf="@id/app_update_right_bkgnd"
+	    	android:layout_marginRight="10dip"
+	    	android:layout_alignTop="@id/app_update_right_bkgnd"
+			android:focusable="false" />
+		
+		<!-- summary -->
+	    <include android:id="@+id/the_summary_layout"
+	    	layout="@layout/app_summary_layout"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" 
+			android:layout_alignLeft="@id/app_update_left_bkgnd"
+			android:layout_alignTop="@id/app_update_left_bkgnd"
+			android:layout_marginLeft="20dip"
+			android:layout_marginTop="5dip" />    
+		
+		<Button android:id="@+id/appupdate_btn_update" 
+	    	android:text="@string/appupdate_update"
+	    	style="@style/ButtonTextNormal"
+			android:background="@drawable/large_button_selector"
+	    	android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content"
+	    	android:layout_alignRight="@id/app_update_left_bkgnd"
+	    	android:layout_marginRight="20dip"
+			android:layout_alignBottom="@id/app_update_left_bkgnd"
+	    	android:layout_marginBottom="10dip" />
+	    
+	    <!-- description -->
+	    <TextView android:id="@+id/app_update_desc" 
+	    	style="@style/TextStyleSmall"
+	    	android:layout_width="0dip"
+	    	android:layout_height="0dip"
+	    	android:layout_below="@id/the_summary_layout"
+	    	android:layout_alignLeft="@id/the_summary_layout"
+	    	android:layout_alignRight="@id/app_update_left_bkgnd"
+	    	android:layout_marginRight="10dip"
+	    	android:layout_above="@id/appupdate_btn_update"
+	    	android:layout_marginBottom="10dip" />	
 	</RelativeLayout>
 
 </merge>

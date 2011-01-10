@@ -50,20 +50,8 @@
 			android:layout_alignTop="@id/app_list_left_bkgnd"
 			android:layout_marginLeft="20dip"
 			android:layout_marginTop="5dip" />	
-			
-	    <!-- description -->
-	    <TextView android:id="@+id/app_list_desc" 
-	    	style="@style/TextStyleSmall"
-	    	android:text="a;lkdflkasdfl;kaslkdlaksdjflkasjdflkajsdlkfjaslkdjf;lkasjfdlkajsfdlkjasldkfjalskjfdlksajdflkjasfdlkjaslkfdjlsakjflkajsfdlkajsf"
-	    	android:layout_width="0dip"
-	    	android:layout_height="60dip"
-	    	android:layout_below="@id/the_summary_layout"
-	    	android:layout_alignLeft="@id/the_summary_layout"
-	    	android:layout_alignRight="@id/app_list_left_bkgnd"
-	    	android:layout_marginRight="10dip"
-	    	android:maxLines="5"
-	    	android:ellipsize="end" />
-	    	
+	    
+	    <!-- check detai & more buttons -->	
 	    <Button android:id="@+id/applist_btn_detail" 
 	    	android:text="@string/applist_detail"
 	    	style="@style/ButtonTextNormal"
@@ -82,7 +70,19 @@
 	    	android:layout_height="wrap_content"
 	    	android:layout_toRightOf="@id/applist_btn_detail"
 	    	android:layout_marginLeft="10dip"
-	    	android:layout_alignTop="@id/applist_btn_detail" />			
+	    	android:layout_alignTop="@id/applist_btn_detail" />	
+	    	
+	    <!-- description -->
+	    <TextView android:id="@+id/app_list_desc" 
+	    	style="@style/TextStyleSmall"
+	    	android:layout_width="0dip"
+	    	android:layout_height="0dip"
+	    	android:layout_below="@id/the_summary_layout"
+	    	android:layout_alignLeft="@id/the_summary_layout"
+	    	android:layout_alignRight="@id/app_list_left_bkgnd"
+	    	android:layout_marginRight="10dip"
+	    	android:layout_above="@id/applist_btn_detail"
+	    	android:layout_marginBottom="10dip" />		
 	</RelativeLayout>
 
 </merge>

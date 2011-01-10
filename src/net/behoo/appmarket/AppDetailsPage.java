@@ -13,7 +13,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.format.Formatter;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RatingBar;
@@ -49,7 +51,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.details_page); 
+        setContentView(R.layout.app_details_page); 
         
         // get the summary application information
         String [] value = getIntent().getStringArrayExtra("net.behoo.appmarket.AppDetailsPage");
@@ -125,6 +127,17 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		tv = (TextView)findViewById(R.id.main_app_version);
 		tv.setText(mAppInfo.mAppVersion);
 		
+		tv = (TextView)findViewById(R.id.main_app_size);
+		Log.i(TAG, "updateUIState size: "+mAppInfo.mAppSize);
+		if (mAppInfo.mAppSize.length() > 0 && null != mAppInfo.mAppSize) {
+			tv.setVisibility(View.VISIBLE);
+			int size = Integer.valueOf(mAppInfo.mAppSize).intValue();
+			tv.setText(Formatter.formatFileSize(this, size));
+		}
+		else {
+			tv.setVisibility(View.GONE);
+		}
+		
 		ImageView iv = null;
 		if (null != ImageLib.inst().getDrawable(mAppInfo.mAppImageUrl)) {
 			iv = (ImageView)findViewById(R.id.main_app_logo);
@@ -138,7 +151,6 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		tv.setText(mAppInfo.mAppReview);
 		
 		tv = (TextView)findViewById(R.id.detail_rc_desc);
-		
 		int score = 0;
 		try {
 		    score = Integer.parseInt(mAppInfo.mAppRemoteCntlScore);
