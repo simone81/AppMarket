@@ -38,7 +38,7 @@
 	    	android:layout_height="wrap_content"
 	    	android:layout_toLeftOf="@id/download_right_bkgnd"
 	    	android:layout_marginRight="10dip"
-	    	android:layout_alignTop="@id/download_right_bkgnd"
+	    	android:layout_alignTop="@id/downloadpage_iv_title"
 			android:focusable="false" />
 	    
 	    <!-- summary -->

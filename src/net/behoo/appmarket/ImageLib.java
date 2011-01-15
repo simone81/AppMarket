@@ -5,12 +5,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import android.graphics.drawable.Drawable;
+import android.graphics.Bitmap;
 
 public class ImageLib {
 	private static ImageLib mImageLib = null;
 	
-	private Map<String, Drawable> mRealLib = new HashMap<String, Drawable>();
+	private Map<String, Bitmap> mRealLib = new HashMap<String, Bitmap>();
 	private Set<String> mDownloadFlags = new HashSet<String>();
 	
 	public static ImageLib inst() {
@@ -20,7 +20,7 @@ public class ImageLib {
 		return mImageLib;
 	}
 	
-	public Drawable getDrawable(String url) {
+	public Bitmap getBitmap(String url) {
 		synchronized (this) {
 			if (mRealLib.containsKey(url)) {
 				return mRealLib.get(url);
@@ -29,9 +29,9 @@ public class ImageLib {
 		}
 	}
 	
-	public void setDrawable(String url, Drawable d) {
+	public void setBitmap(String url, Bitmap bm) {
 		synchronized (this) {
-			mRealLib.put(url, d);
+			mRealLib.put(url, bm);
 		}
 	}
 	

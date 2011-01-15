@@ -133,16 +133,16 @@ public class AppUpdatePage extends AsyncTaskActivity
 	}
 	
 	private void updateImage(AppInfo appInfo) {
-		if (null == ImageLib.inst().getDrawable(appInfo.mAppImageUrl)) {
+		if (null == ImageLib.inst().getBitmap(appInfo.mAppImageUrl)) {
 			if (false == ImageLib.inst().isImageDownloading(appInfo.mAppImageUrl)) {
 				executeImageTask(appInfo.mAppImageUrl, appInfo.mAppCode);
 			}
 			else {
-				mAppImage.setImageResource(R.drawable.test);
+				mAppImage.setImageResource(R.drawable.appicon_default);
 			}
 		}
 		else {
-			mAppImage.setImageDrawable(ImageLib.inst().getDrawable(appInfo.mAppImageUrl));
+			mAppImage.setImageBitmap(ImageLib.inst().getBitmap(appInfo.mAppImageUrl));
 		}
 	}
 	

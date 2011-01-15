@@ -225,7 +225,7 @@ public class AppMarket extends AsyncTaskActivity
 				if (i < mAppLib.size()) {
 					mCodeIndexMap.put(mAppLib.get(i).mAppCode, i);
 					iv.setVisibility(View.VISIBLE);
-					iv.setImageResource(R.drawable.test);
+					iv.setImageResource(R.drawable.appicon_default);
 					iv.setFocusable(true);
 					iv.setOnFocusChangeListener(this);
 					iv.setTag(new Integer(i));
@@ -249,11 +249,9 @@ public class AppMarket extends AsyncTaskActivity
 		if (result) {
 			Integer i = mCodeIndexMap.get(appcode);
 			Log.i(TAG, "onImageCompleted "+appcode+" "+Integer.toString(i)+" "+mCurrentSelection.toString());
-			if (0 <= i && i < mAppLib.size()) {
-				ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
-				if (null != ImageLib.inst().getDrawable(url)) {
-					iv.setImageDrawable(ImageLib.inst().getDrawable(url));
-				}
+			ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
+			if (null != ImageLib.inst().getBitmap(url)) {
+				iv.setImageBitmap(ImageLib.inst().getBitmap(url));
 			}
 			
 			if (0 == i.compareTo(mCurrentSelection)) {
@@ -311,9 +309,12 @@ public class AppMarket extends AsyncTaskActivity
 	private void updateImage(int index) {
 		if (index >= 0 && index < mImageViewIds.length) {
 			String url = mAppLib.get(index).mAppImageUrl;
-			if (null != ImageLib.inst().getDrawable(url)) {
-				ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
-				iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+			ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
+			if (null != ImageLib.inst().getBitmap(url)) {
+				iv.setImageBitmap(ImageLib.inst().getBitmap(url));
+			}
+			else {
+				iv.setImageResource(R.drawable.appicon_default);
 			}
 		}
 	}
@@ -330,7 +331,6 @@ public class AppMarket extends AsyncTaskActivity
 		R.id.main_appimage_1, 	R.id.main_appimage_2, 
 		R.id.main_appimage_3, 	R.id.main_appimage_4, 
 		R.id.main_appimage_5, 	R.id.main_appimage_6, 
-		//R.id.main_appimage_7, 	R.id.main_appimage_8, 
 	};
 	
 	private class HttpTask extends ProtocolDownloadTask {

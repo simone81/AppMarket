@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,10 +24,11 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.view.View.OnKeyListener;
 
 public class AppListPage extends AsyncTaskActivity 
 						 implements OnClickListener, 
-						 OnItemSelectedListener {
+						 OnItemSelectedListener, OnKeyListener {
 	
 	private static final String TAG = "AppListPage";
 	private static final int PAGE_SIZE = 5;
@@ -38,6 +40,8 @@ public class AppListPage extends AsyncTaskActivity
 	private AppListAdapter mListAdapter = null;
 	private ImageView mAppImage = null;
 	
+	private boolean mContinueDownload = true;
+	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.app_list_page);
@@ -46,15 +50,13 @@ public class AppListPage extends AsyncTaskActivity
 		mListView = (ListView)findViewById(R.id.app_list);
 		mListView.setAdapter(mListAdapter);
 		mListView.setOnItemSelectedListener(this);
+		mListView.setOnKeyListener(this);
 		
 		Button button = (Button)findViewById(R.id.applist_btn_detail);
 		button.setOnClickListener(this);
 		
-		button = ( Button )findViewById(R.id.applist_btn_more);
-		button.setOnClickListener(this);
-		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
-		
+			
 		mHttpTask = new HttpTask(mHandler);
 		executeTask(mHttpTask);
 		showDialog(WAITING_DIALOG);
@@ -79,11 +81,20 @@ public class AppListPage extends AsyncTaskActivity
 				startActivity( intent );
 			}
 		}
-		else if (v.getId() == R.id.applist_btn_more){
-			executeTask(mHttpTask);
-			showDialog(WAITING_DIALOG);
-		}
 	}
+
+	public boolean onKey(View v, int keyCode, KeyEvent event) {
+		// TODO Auto-generated method stub
+		if (KeyEvent.KEYCODE_DPAD_DOWN == keyCode 
+				&& mListView.getSelectedItemPosition() == mListView.getCount()-1) {
+			if (mContinueDownload && event.getAction() == KeyEvent.ACTION_DOWN) {
+				executeTask(mHttpTask);
+				showDialog(WAITING_DIALOG);
+			}
+			return true;
+		}
+		return false;
+	} 
 	
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		updateUIState();
@@ -148,14 +159,14 @@ public class AppListPage extends AsyncTaskActivity
 	}
 	
 	private void updateImage(AppInfo appInfo) {
-		if (null == ImageLib.inst().getDrawable(appInfo.mAppImageUrl)) {
-			mAppImage.setImageResource(R.drawable.test);
+		if (null == ImageLib.inst().getBitmap(appInfo.mAppImageUrl)) {
+			mAppImage.setImageResource(R.drawable.appicon_default);
 			if (false == ImageLib.inst().isImageDownloading(appInfo.mAppImageUrl)) {
 				executeImageTask(appInfo.mAppImageUrl, appInfo.mAppCode);
 			}
 		}
 		else {
-			mAppImage.setImageDrawable(ImageLib.inst().getDrawable(appInfo.mAppImageUrl));
+			mAppImage.setImageBitmap(ImageLib.inst().getBitmap(appInfo.mAppImageUrl));
 		}
 	}
 	
@@ -183,6 +194,7 @@ public class AppListPage extends AsyncTaskActivity
 					// merge if we get duplicated application tbd
 					// or the server MUST NOT give duplicated appcode
 					mAppList.addAll(appLib);
+					mContinueDownload = (appLib.size() > 0);
 					return true;
 				}
 	    	} catch (Throwable tr) {
@@ -232,5 +244,5 @@ public class AppListPage extends AsyncTaskActivity
             
             return view;
         }
-    }  
+    }
 }

@@ -34,10 +34,9 @@
     <string name="appdetails_screenshot">内容截图</string>
     <string name="appdetails_remotecntl">遥控器兼容度</string>
 	<string name="appdetails_rc_desc1">基本无法操作</string>
-	<string name="appdetails_rc_desc2">操作不太方便</string>
-	<string name="appdetails_rc_desc3">可以操作</string>
-	<string name="appdetails_rc_desc4">操作比较顺畅</string>
-	<string name="appdetails_rc_desc5">非常适合</string>
+	<string name="appdetails_rc_desc2">可以操作</string>
+	<string name="appdetails_rc_desc3">操作比较顺畅</string>
+	<string name="appdetails_rc_desc4">非常适合</string>
 	<string name="appdetails_review_title">壁虎评语</string>
 	
 	<!-- download install page -->

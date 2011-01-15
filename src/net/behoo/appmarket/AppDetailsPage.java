@@ -104,14 +104,14 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	
 	protected void onImageCompleted(boolean result, String url, String appcode) {
 		if (result) {
-			if (null != ImageLib.inst().getDrawable(url)) {
+			if (null != ImageLib.inst().getBitmap(url)) {
 				if (0 == url.compareTo(mAppInfo.mAppImageUrl)) {
 					ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
-					iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
 				}
 				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts)) {
 					ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_1);
-					iv.setImageDrawable(ImageLib.inst().getDrawable(url));
+					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
 				}
 			}
 		}
@@ -131,7 +131,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		Log.i(TAG, "updateUIState size: "+mAppInfo.mAppSize);
 		if (mAppInfo.mAppSize.length() > 0 && null != mAppInfo.mAppSize) {
 			tv.setVisibility(View.VISIBLE);
-			int size = Integer.valueOf(mAppInfo.mAppSize).intValue();
+			int size = Integer.valueOf(mAppInfo.mAppSize).intValue()*1024;
 			tv.setText(Formatter.formatFileSize(this, size));
 		}
 		else {
@@ -139,13 +139,13 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		}
 		
 		ImageView iv = null;
-		if (null != ImageLib.inst().getDrawable(mAppInfo.mAppImageUrl)) {
+		if (null != ImageLib.inst().getBitmap(mAppInfo.mAppImageUrl)) {
 			iv = (ImageView)findViewById(R.id.main_app_logo);
-			iv.setImageDrawable(ImageLib.inst().getDrawable(mAppInfo.mAppImageUrl));
+			iv.setImageBitmap(ImageLib.inst().getBitmap(mAppInfo.mAppImageUrl));
 		}
 		
 		iv = (ImageView)findViewById(R.id.detail_screenshort_1);
-		iv.setImageResource(R.drawable.test);
+		iv.setImageResource(R.drawable.appicon_default);
 		
 		tv = (TextView)findViewById(R.id.detail_review_desc);
 		tv.setText(mAppInfo.mAppReview);

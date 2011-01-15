@@ -3,7 +3,8 @@ package net.behoo.appmarket.http;
 import java.io.InputStream;
 
 import net.behoo.appmarket.ImageLib;
-import android.graphics.drawable.Drawable;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -28,8 +29,8 @@ public class ImageDownloadTask implements Runnable {
 		try {
 			if (null != mImageUrl && mImageUrl.length() > 0) {
 				InputStream stream = httpUtil.httpGet(UrlHelpers.getImageUrl(mImageUrl));
-				Drawable drawable = Drawable.createFromStream(stream, "src");
-				ImageLib.inst().setDrawable(mImageUrl, drawable);
+				Bitmap bm = BitmapFactory.decodeStream(stream);
+				ImageLib.inst().setBitmap(mImageUrl, bm);
 				ret = true;
 			}
 			else {

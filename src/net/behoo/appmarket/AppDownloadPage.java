@@ -46,6 +46,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	private TextView mTextViewSize = null;
 	
 	private Map<String, AppInfo> mCodeAppInfoMap = new HashMap<String, AppInfo>();
+	private Map<String, String> mCodeSizeMap = new HashMap<String, String>();
 	private Cursor mDownloadCursor = null;
 	
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -88,6 +89,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		mDownloadProgressBar = (ProgressBar)findViewById(R.id.downloadpage_progress);
 		
+		mDownloadProgressBar.setVisibility(View.GONE);
 		mTextViewSize = (TextView)findViewById(R.id.main_app_size);
 		
 		initList();
@@ -115,7 +117,10 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	
 	private void updateUIState() {
 		int pos = mListView.getSelectedItemPosition();
-		if (ListView.INVALID_POSITION != pos) {
+		if (0 == mListView.getChildCount()) {
+			
+		}
+		else if (ListView.INVALID_POSITION != pos) {
 			String code = (String)mListView.getItemAtPosition(pos);
 			if (null != code) {
 				AppInfo appInfo = mCodeAppInfoMap.get(code);
@@ -129,6 +134,13 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 				tv = (TextView)findViewById(R.id.main_app_version);
 				tv.setText(appInfo.mAppVersion);
 				
+				if (mCodeSizeMap.containsKey(appInfo.mAppCode)) {
+					mTextViewSize.setVisibility(View.VISIBLE);
+					mTextViewSize.setText(mCodeSizeMap.get(appInfo.mAppCode));
+				}
+				else {
+					mTextViewSize.setVisibility(View.GONE);
+				}
 				tv = (TextView)findViewById(R.id.downloadpage_desc);
 				tv.setText(appInfo.mAppShortDesc);
 				
@@ -144,16 +156,16 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	}
 	
 	private void updateImage(AppInfo appInfo) {
-		if (null == ImageLib.inst().getDrawable(appInfo.mAppImageUrl)) {
+		if (null == ImageLib.inst().getBitmap(appInfo.mAppImageUrl)) {
 			if (false == ImageLib.inst().isImageDownloading(appInfo.mAppImageUrl)) {
 				executeImageTask(appInfo.mAppImageUrl, appInfo.mAppCode);
 			}
 			else {
-				mAppImage.setImageResource(R.drawable.test);
+				mAppImage.setImageResource(R.drawable.appicon_default);
 			}
 		}
 		else {
-			mAppImage.setImageDrawable(ImageLib.inst().getDrawable(appInfo.mAppImageUrl));
+			mAppImage.setImageBitmap(ImageLib.inst().getBitmap(appInfo.mAppImageUrl));
 		}
 	}
 	
@@ -197,6 +209,9 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		if (ListView.INVALID_POSITION != pos) {
 			String selCode = (String)mListView.getItemAtPosition(pos);
 			bIsSelected = (0 == selCode.compareTo(code));
+			if ((completed || totalBytes > 0) && !mCodeSizeMap.containsKey(code)) {
+				mCodeSizeMap.put(code, Formatter.formatFileSize(this, totalBytes));
+			}
 		}
 		else {
 			mDownloadProgressBar.setVisibility(View.GONE);
@@ -217,7 +232,8 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 			
 			if (bIsSelected) {
 				mDownloadProgressBar.setVisibility(View.GONE);
-				mTextViewSize.setVisibility(View.GONE);
+				mTextViewSize.setVisibility(View.VISIBLE);
+				mTextViewSize.setText(Formatter.formatFileSize(this, totalBytes));
 			}
 		}
 		else if (0 < totalBytes) {
@@ -261,8 +277,13 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 			return R.string.downloadpage_update;
 		case download_failed:
 			return R.string.downloadpage_download_failure;
+		case download_succeeded:
+		case downloading:
+			return R.string.downloadpage_download_success;
+		default:
+			Log.i(TAG, "getStateStringId "+state.name());
+			return R.string.downloadpage_install_failure;
 		}
-		return R.string.downloadpage_install_failure;
 	}
 	
 	private class ListAdapter extends ResourceCursorAdapter {   
@@ -298,13 +319,13 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         	addAppInfo(code);
         	
     		int status = cursor.getInt(mStatusId);
+    		long totalBytes = cursor.getLong(mTotalBytesId);
+    		long currentBytes = cursor.getLong(mCurBytesId);
     		if (Downloads.isStatusCompleted(status)) {
     			// hide the progress bar, update the 
-    			updateAppStatesUIs(view, code, true, 0, 0);
+    			updateAppStatesUIs(view, code, true, totalBytes, totalBytes);
     		}
-    		else {
-    			long totalBytes = cursor.getLong(mTotalBytesId);
-        		long currentBytes = cursor.getLong(mCurBytesId); 
+    		else { 
     			updateAppStatesUIs(view, code, false, currentBytes, totalBytes);		
     		}
         }

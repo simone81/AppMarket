@@ -38,7 +38,7 @@
 	    	android:layout_height="wrap_content"
 	    	android:layout_toLeftOf="@id/app_list_right_bkgnd"
 	    	android:layout_marginRight="10dip"
-	    	android:layout_alignTop="@id/app_list"
+	    	android:layout_alignTop="@id/app_list_iv_title"
 			android:focusable="false" />
 		
 		<!-- summary -->
@@ -58,19 +58,10 @@
 			android:background="@drawable/large_button_selector"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"
-	    	android:layout_alignLeft="@id/the_summary_layout"
+	    	android:layout_alignRight="@id/app_list_left_bkgnd"
+	    	android:layout_marginRight="20dip"
 			android:layout_alignBottom="@id/app_list_left_bkgnd"
-	    	android:layout_marginBottom="5dip" />	
-	    
-	    <Button android:id="@+id/applist_btn_more" 
-	    	android:text="@string/applist_more"
-	    	style="@style/ButtonTextNormal"
-			android:background="@drawable/large_button_selector"
-	    	android:layout_width="wrap_content"
-	    	android:layout_height="wrap_content"
-	    	android:layout_toRightOf="@id/applist_btn_detail"
-	    	android:layout_marginLeft="10dip"
-	    	android:layout_alignTop="@id/applist_btn_detail" />	
+	    	android:layout_marginBottom="10dip" />	
 	    	
 	    <!-- description -->
 	    <TextView android:id="@+id/app_list_desc" 

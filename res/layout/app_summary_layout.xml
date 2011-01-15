@@ -6,7 +6,7 @@
 	android:layout_height="wrap_content">
   
 	<ImageView android:id="@+id/main_app_logo" 
-    	android:src="@drawable/test"
+    	android:src="@drawable/appicon_default"
     	android:layout_width="55dip"
     	android:layout_height="55dip"/>
 	

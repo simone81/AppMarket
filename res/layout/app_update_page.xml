@@ -38,7 +38,7 @@
 	    	android:layout_height="wrap_content"
 	    	android:layout_toLeftOf="@id/app_update_right_bkgnd"
 	    	android:layout_marginRight="10dip"
-	    	android:layout_alignTop="@id/app_update_right_bkgnd"
+	    	android:layout_alignTop="@id/app_update_iv_title"
 			android:focusable="false" />
 		
 		<!-- summary -->
