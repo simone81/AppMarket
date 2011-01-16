@@ -11,10 +11,22 @@ public class ProtocolDownloadTask implements Runnable {
 		mHandler = handler;
 	}
 	
+	public void setHandler(Handler handler) {
+		synchronized (this) {
+			mHandler = handler;
+		}
+	}
+	
 	public void run() {
 		Message msg = new Message();
-		msg.what = doTask() ? DownloadConstants.MSG_PROTOCOL_SUCCEED : DownloadConstants.MSG_PROTOCOL_FAILURE;
-		mHandler.sendMessage(msg);
+		msg.what = 
+			doTask() ? DownloadConstants.MSG_PROTOCOL_SUCCEED : DownloadConstants.MSG_PROTOCOL_FAILURE;
+		
+		synchronized (this) {
+			if (null != mHandler) {
+				mHandler.sendMessage(msg);
+			}
+		}
 	}
 	
 	protected boolean doTask() {

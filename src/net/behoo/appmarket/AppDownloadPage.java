@@ -141,6 +141,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 				else {
 					mTextViewSize.setVisibility(View.GONE);
 				}
+				
 				tv = (TextView)findViewById(R.id.downloadpage_desc);
 				tv.setText(appInfo.mAppShortDesc);
 				
@@ -196,8 +197,9 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
     		String where = PackageDbHelper.COLUMN_CODE + "=?";
     		String [] whereArgs = {code};
     		ArrayList<AppInfo> appList = ServiceManager.inst().getDownloadHandler().getAppList(where, whereArgs);
-    		Assert.assertTrue(null != appList && appList.size() == 1);
-    		mCodeAppInfoMap.put(code, appList.get(0));
+    		if (null != appList && appList.size() == 1) {
+    			mCodeAppInfoMap.put(code, appList.get(0));
+    		}
     	}
 	}
 	

@@ -1,6 +1,9 @@
 package net.behoo.appmarket.http;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 public class UrlHelpers {
 	private static final String SERVER_URL = "http://www.behoo.net/behoo";
@@ -16,28 +19,27 @@ public class UrlHelpers {
 	}
 	
 	// make the update request string
-	public static String getUpdateRequestString(ArrayList<String> codeArr, ArrayList<String> versArr) {
-		if (codeArr == null || versArr == null)
-			throw new NullPointerException(codeArr == null ? "codeArr should not be null"
-					: "versArr should not be null");
-		if (codeArr.size() != versArr.size()) 
-			throw new IllegalArgumentException("codeArr.size() should equals to versArr.size()");
-		
-		if (codeArr.size() > 0) {
-			String reqStr = new String();
-			reqStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-			reqStr += "<BH_S_App_Code_List count=\""+Integer.toString(codeArr.size())+"\">";
-			for (int i = 0; i < codeArr.size(); ++i) {
-				reqStr += "<BH_S_App_Code_Version>";
-					reqStr += ("<BH_D_App_Code>"+codeArr.get(i)+"</BH_D_App_Code>");
-					
-					reqStr += "<BH_D_App_Version>"+versArr.get(i)+"</BH_D_App_Version>";
-				reqStr += "</BH_S_App_Code_Version>";
-			}
-			reqStr += "</BH_S_App_Code_List>";
-			return reqStr;
+	public static String getUpdateRequestString(Map<String, String> codeVersionMap) {
+		if (null == codeVersionMap) {
+			throw new NullPointerException("codeVersionMap should not be null");
 		}
-		return null;
+		
+		String reqStr = new String();
+		reqStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+		reqStr += "<BH_S_App_Code_List count=\""+Integer.toString(codeVersionMap.size())+"\">";
+		Set<String> keys = codeVersionMap.keySet();
+		Iterator<String> it = keys.iterator();
+		while (it.hasNext()) {
+			String code = it.next();
+			
+			reqStr += "<BH_S_App_Code_Version>";
+			reqStr += ("<BH_D_App_Code>"+code+"</BH_D_App_Code>");
+			
+			reqStr += "<BH_D_App_Version>"+codeVersionMap.get(code)+"</BH_D_App_Version>";
+			reqStr += "</BH_S_App_Code_Version>";
+		}
+		reqStr += "</BH_S_App_Code_List>";
+		return reqStr;
 	}
 	
 	// get the application list

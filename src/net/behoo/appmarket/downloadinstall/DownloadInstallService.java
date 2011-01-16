@@ -203,7 +203,8 @@ public class DownloadInstallService extends Service {
 		        // add/update values to local database
 		        if (null != uriInserted) {
 		        	Log.i(TAG, "downloadAndInstall, add task "+uriInserted.toString());
-			        ContentValues valuesLocal = new ContentValues();
+		        	Log.i(TAG, "downloadAndInstall "+appInfo.mAppShortDesc);
+			        ContentValues valuesLocal = new ContentValues(10);
 			        valuesLocal.put(PackageDbHelper.COLUMN_VERSION, appInfo.mAppVersion);
 			        valuesLocal.put(PackageDbHelper.COLUMN_APP_NAME, appInfo.mAppName);
 			        valuesLocal.put(PackageDbHelper.COLUMN_AUTHOR, appInfo.mAppAuthor);

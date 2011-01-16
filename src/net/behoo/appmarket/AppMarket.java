@@ -137,12 +137,18 @@ public class AppMarket extends AsyncTaskActivity
     	unbindService(mSyncServiceConn);
     }
     
+    public void onDestroy() {
+    	super.onDestroy();
+    	Log.i(TAG, "onDestroy*****************************************************");
+    }
+    
     protected void onTaskRetry() {
     	executeTask(mHttpTask);
     	showDialog(WAITING_DIALOG);
     }
     
     protected void onTaskCanceled(DialogInterface dlg) {
+    	mHttpTask.setHandler(null);
     	mHttpTask.cancel();
     }
     
@@ -154,7 +160,7 @@ public class AppMarket extends AsyncTaskActivity
 	};
 	
 	public void onClick(View v) {
-		if (v.getId() == R.id.main_btn_applist_page ) {
+		if (v.getId() == R.id.main_btn_applist_page) {
 			Intent intent = new Intent();
 			intent.setClass(this, AppListPage.class);
 			startActivity(intent);
@@ -229,7 +235,7 @@ public class AppMarket extends AsyncTaskActivity
 					iv.setFocusable(true);
 					iv.setOnFocusChangeListener(this);
 					iv.setTag(new Integer(i));
-					iv.setPadding(5, 5, 5, 5);
+					iv.setPadding(8, 8, 8, 8);
 					if (i == mCurrentSelection) {
 						iv.requestFocus();
 						
@@ -351,16 +357,13 @@ public class AppMarket extends AsyncTaskActivity
 	    				ServiceManager.inst().getSyncHandler().getToken());
 	    		Log.i(TAG, "doTask "+url);
 	    		
-	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url, APP_PROMOTION_NUM);
-				if (null != appLib) {
-					mAppLib = appLib;
-					return true;
-				}
+	    		ArrayList<AppInfo> appLib = mAppListProxy.getPromotionList(url, APP_PROMOTION_NUM);
+				mAppLib = appLib;
+				return (mAppLib.size() > 0);
 			} catch (RemoteException e) {
 				Log.w(TAG, "doTask "+e.getLocalizedMessage());
 				return false;
 			}
-			return false;
 		}
 	}
 }

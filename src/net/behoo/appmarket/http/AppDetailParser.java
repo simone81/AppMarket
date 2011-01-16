@@ -93,9 +93,6 @@ public class AppDetailParser {
                 	break;
                 case XmlPullParser.END_TAG:
                 	tagName = parser.getName();
-                	if (tagName.equalsIgnoreCase("BH_S_App_Detail") && bDataValid) {
-                		appInfo.setSummaryInit(true);
-                	}
                 	break;
                 case XmlPullParser.START_DOCUMENT:
                 case XmlPullParser.END_DOCUMENT:

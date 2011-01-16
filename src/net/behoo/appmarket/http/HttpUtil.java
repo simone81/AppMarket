@@ -19,48 +19,36 @@ public class HttpUtil {
 	
 	// reentrant not supported
     public InputStream httpGet(String urlStr) throws IOException {
-    	try {
-        	URL url = new URL(urlStr);
-    		mConnection = (HttpURLConnection)url.openConnection();
-    		mConnection.setConnectTimeout(CONN_TIMEOUT);
-    		mConnection.setReadTimeout(READ_TIMEOUT);
-    		mConnection.setRequestMethod("GET");
-        	mConnection.connect();
-    	    return mConnection.getInputStream();
-    	} catch (Throwable tr) {
-    		Log.w(TAG, "httpGet "+tr.getLocalizedMessage());
-    		tr.printStackTrace();
-    	} 
-    	return null;
+    	URL url = new URL(urlStr);
+		mConnection = (HttpURLConnection)url.openConnection();
+		mConnection.setConnectTimeout(CONN_TIMEOUT);
+		mConnection.setReadTimeout(READ_TIMEOUT);
+		mConnection.setRequestMethod("GET");
+    	mConnection.connect();
+	    return mConnection.getInputStream();
     }
     
     // reentrant not supported
     public InputStream httpPost(String urlStr, String requestStr) throws IOException {
-    	try { 
-    		URL url = new URL(urlStr);
-    		mConnection = (HttpURLConnection)url.openConnection();
-    		mConnection.setConnectTimeout(CONN_TIMEOUT);
-    		mConnection.setReadTimeout(READ_TIMEOUT);
-    		mConnection.setRequestMethod("POST");
-    		mConnection.setRequestProperty("Content-Type", "Application/xml; charset=utf-8");
-    		mConnection.setRequestProperty("Content-Length", 
-    				""+Integer.toString(requestStr.getBytes().length));
-    		
-    		mConnection.setDoInput(true);
-    		mConnection.setDoOutput(true);
-    		mConnection.setFixedLengthStreamingMode(requestStr.getBytes().length);
+		URL url = new URL(urlStr);
+		mConnection = (HttpURLConnection)url.openConnection();
+		mConnection.setConnectTimeout(CONN_TIMEOUT);
+		mConnection.setReadTimeout(READ_TIMEOUT);
+		mConnection.setRequestMethod("POST");
+		mConnection.setRequestProperty("Content-Type", "Application/xml; charset=utf-8");
+		mConnection.setRequestProperty("Content-Length", 
+				""+Integer.toString(requestStr.getBytes().length));
+		
+		mConnection.setDoInput(true);
+		mConnection.setDoOutput(true);
+		mConnection.setFixedLengthStreamingMode(requestStr.getBytes().length);
 
-    		DataOutputStream out = new DataOutputStream(mConnection.getOutputStream());
-    		out.writeBytes(requestStr);
-			out.flush();
-			out.close();
+		DataOutputStream out = new DataOutputStream(mConnection.getOutputStream());
+		out.writeBytes(requestStr);
+		out.flush();
+		out.close();
 
-    		return mConnection.getInputStream();
-    	} catch (Throwable tr) { 
-    		Log.w(TAG, "httpGet "+tr.getLocalizedMessage());
-    		tr.printStackTrace();
-    	}
-    	return null;
+		return mConnection.getInputStream();
     }
     
     public void disconnect() {

@@ -1,7 +1,8 @@
 package net.behoo.appmarket.downloadinstall;
 
-import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import behoo.sync.ISyncService;
 
@@ -9,7 +10,6 @@ import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.database.PackageDbHelper;
 import net.behoo.appmarket.downloadinstall.Constants.PackageState;
 import net.behoo.appmarket.http.AppListParser;
-import net.behoo.appmarket.http.HttpUtil;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.content.ContentValues;
 import android.content.Context;
@@ -35,75 +35,40 @@ public class AppUpdateDemonThread extends Thread {
 	
 	public void run() {
 		while (!mExit) {
-			// do the task
-			String [] columns = {PackageDbHelper.COLUMN_CODE, 
-					PackageDbHelper.COLUMN_VERSION,
-					PackageDbHelper.COLUMN_STATE,
-					PackageDbHelper.COLUMN_PKG_NAME};
+			Log.i(TAG, "wake up, begin to check update.");
 			
-			// get all the applications that need to be checked
-			Cursor c = mPkgDBHelper.select(columns, null, null, null);
-			Log.i(TAG, "begin to check update. packages installed by appmarket "+Integer.toString(c.getCount()));
-			int codeId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_CODE);
-			int versionId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_VERSION);
-			int stateId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_STATE);
-			int pkgNameId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_PKG_NAME);
-			String code = null;
-			String version = null;
-			String state = null;
-			String pkgName = null;
-			PackageManager pm = mContext.getPackageManager();
-			ArrayList<String> codes = new ArrayList<String>();
-			ArrayList<String> versions = new ArrayList<String>();
-			for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-				code = c.getString(codeId);
-				version = c.getString(versionId);
-				state = c.getString(stateId);
-				pkgName = c.getString(pkgNameId);
-				PackageState pkgstate = Constants.getStateByString(state);
-				if (pkgUninstalled(pm, pkgName, pkgstate)) {
-					mPkgDBHelper.delete(code);
-				}
-				else if (PackageState.install_succeeded == pkgstate){
-					codes.add(code);
-					versions.add(version);
-				}
-			}
-			c.close();
+			Map<String, String> codesVersionMap = shouldBeCheckedAppMap();
+			Log.i(TAG, "packages need to be checked "+Integer.toString(codesVersionMap.size()));
 			
-			Log.i(TAG, "packages need to be checked "+Integer.toString(codes.size()));
-			
-			// check
-			HttpUtil httpUtil = new HttpUtil();
-			try {
-				String reqStr = UrlHelpers.getUpdateRequestString(codes, versions);
+			// check update
+			if (0 < codesVersionMap.size()) {
+				AppListParser appListParser = new AppListParser();
+				String reqStr = UrlHelpers.getUpdateRequestString(codesVersionMap);
 				Log.i(TAG, "update request string "+reqStr);
-				
-				String url = UrlHelpers.getUpdateUrl(mSyncService.getToken());
-				Log.i(TAG, "update url "+url);
-				
-				InputStream stream = httpUtil.httpPost(url, reqStr);
-				ArrayList<AppInfo> appList = AppListParser.parse(stream, codes.size());
-				Log.i(TAG, "the app count need to upgrade "+Integer.toString(appList.size()));
-				
-				ContentValues cv = new ContentValues();
-				for (int i = 0; i < appList.size(); ++i) {
-					AppInfo appInfo = appList.get(i);
-					cv.put(PackageDbHelper.COLUMN_STATE, PackageState.need_update.name());
-					mPkgDBHelper.update(appInfo.mAppCode, cv);
+				try {
+					String url = UrlHelpers.getUpdateUrl(mSyncService.getToken());
+					ArrayList<AppInfo> appList =
+						appListParser.getUpdateList(url, reqStr, codesVersionMap.size());
+					Log.i(TAG, "number of apps should upgrade: "+Integer.toString(appList.size()));
+					
+					ContentValues cv = new ContentValues();
+					for (int i = 0; i < appList.size(); ++i) {
+						AppInfo appInfo = appList.get(i);
+						cv.put(PackageDbHelper.COLUMN_STATE, PackageState.need_update.name());
+						mPkgDBHelper.update(appInfo.mAppCode, cv);
+					}
+					
+					if (0 < appList.size()) {
+						Intent intent = new Intent(Constants.ACTION_UPDATE_STATE);
+						mContext.sendBroadcast(intent);
+					}
+				} catch(Throwable tr) {
+					Log.w(TAG, "check update failed "+tr.getMessage());
+				} finally {
+					appListParser.cancel();
 				}
-				
-				if (0 < appList.size()) {
-					Intent intent = new Intent(Constants.ACTION_UPDATE_STATE);
-					mContext.sendBroadcast(intent);
-				}
-				
-			} catch(Throwable tr) {
-				Log.w(TAG, "check update failed "+tr.getMessage());
-			} finally {
-				httpUtil.disconnect();
 			}
-			
+
 			// wake up after 30 minutes
 			synchronized (mSyncObject) {
 				try {
@@ -130,6 +95,48 @@ public class AppUpdateDemonThread extends Thread {
 			mExit = true;
 			mSyncObject.notify();
 		}
+	}
+	
+	private Map<String, String> shouldBeCheckedAppMap() {
+		
+		Map<String, String> codesVersionMap = new HashMap<String, String>();
+		
+		String [] columns = {PackageDbHelper.COLUMN_CODE, 
+				PackageDbHelper.COLUMN_VERSION,
+				PackageDbHelper.COLUMN_STATE,
+				PackageDbHelper.COLUMN_PKG_NAME};
+		
+		// get all the applications that need to be checked
+		Cursor c = mPkgDBHelper.select(columns, null, null, null);
+		if (null != c) {
+			Log.i(TAG, "packages installed by appmarket "+Integer.toString(c.getCount()));
+			
+			int codeId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_CODE);
+			int versionId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_VERSION);
+			int stateId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_STATE);
+			int pkgNameId = c.getColumnIndexOrThrow(PackageDbHelper.COLUMN_PKG_NAME);
+			String code = null;
+			String version = null;
+			String state = null;
+			String pkgName = null;
+			
+			PackageManager pm = mContext.getPackageManager();
+			for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+				code = c.getString(codeId);
+				version = c.getString(versionId);
+				state = c.getString(stateId);
+				pkgName = c.getString(pkgNameId);
+				PackageState pkgstate = Constants.getStateByString(state);
+				if (pkgUninstalled(pm, pkgName, pkgstate)) {
+					mPkgDBHelper.delete(code);
+				}
+				else if (PackageState.install_succeeded == pkgstate){
+					codesVersionMap.put(code, version);
+				}
+			}
+			c.close();
+		}
+		return codesVersionMap;
 	}
 	
 	private boolean pkgUninstalled(PackageManager pm, String pkgName, PackageState state) {

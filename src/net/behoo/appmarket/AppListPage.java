@@ -109,6 +109,7 @@ public class AppListPage extends AsyncTaskActivity
     }
 	
 	protected void onTaskCanceled(DialogInterface dlg) {
+		mHttpTask.setHandler(null);
     	mHttpTask.cancel();
     }
 	
@@ -190,13 +191,11 @@ public class AppListPage extends AsyncTaskActivity
 	    		Log.i(TAG, "doTask "+url);
 	    		
 	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url, PAGE_SIZE);
-				if (null != appLib) {
-					// merge if we get duplicated application tbd
-					// or the server MUST NOT give duplicated appcode
-					mAppList.addAll(appLib);
-					mContinueDownload = (appLib.size() > 0);
-					return true;
-				}
+				// merge if we get duplicated application tbd
+				// or the server MUST NOT give duplicated appcode
+				mAppList.addAll(appLib);
+				mContinueDownload = (mAppListProxy.getAppListTotal() > mAppList.size());
+				return (appLib.size() > 0);
 	    	} catch (Throwable tr) {
 	    		Log.w(TAG, "doTask "+tr.getLocalizedMessage());
 	    	} 

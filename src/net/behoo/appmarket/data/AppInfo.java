@@ -21,11 +21,7 @@ public class AppInfo {
 	public String mAppReview = "";
 	public String mAppChangelog = "";
 	
-	private boolean mSummaryInit = false;
-	private boolean mDetailsInit = false;
-	
 	public AppInfo() {
-		mSummaryInit = true;
 	}
 	
 	public AppInfo(String appName, 
@@ -57,21 +53,5 @@ public class AppInfo {
 		mAppScreenShorts = new String(source.mAppScreenShorts);
 		mAppReview = new String(source.mAppReview);
 		mAppChangelog = new String(source.mAppChangelog);
-	}
-	
-	public void setSummaryInit(boolean b) {
-		mSummaryInit = b;
-	}
-	
-	public boolean isSummaryInit() {
-		return mSummaryInit;
-	}
-	
-	public void setDetailsInit(boolean b) {
-		mDetailsInit = b;
-	}
-	
-	public boolean isDetailsInit() {
-		return mDetailsInit;
 	}
 }

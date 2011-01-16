@@ -5,7 +5,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class PausableThreadPoolExecutor extends ScheduledThreadPoolExecutor {
-	private boolean isPaused;
+	private boolean isPaused = false;
 	private ReentrantLock pauseLock = new ReentrantLock();
 	private Condition unpaused = pauseLock.newCondition();
 	   

@@ -23,36 +23,44 @@ abstract public class AsyncTaskActivity extends Activity
 	private static final String TAG = "AsyncTaskActivity";
 	
 	private PausableThreadPoolExecutor mThreadPool = new PausableThreadPoolExecutor(5);
+	private boolean mExiting = false;
 	
 	protected Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
+			Log.i(TAG, "handleMessage "+msg.what+" "+(AsyncTaskActivity.this.mExiting?"exiting":"running"));
         	switch (msg.what) {
         	case DownloadConstants.MSG_PROTOCOL_SUCCEED:
-        		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
-        		AsyncTaskActivity.this.onTaskCompleted(true);
+        		if (!mExiting) {
+	        		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
+	        		AsyncTaskActivity.this.onTaskCompleted(true);
+        		}
         		break;
         	case DownloadConstants.MSG_PROTOCOL_FAILURE:
-        		Log.w(TAG, "handleMessage "+"MSG_PROTOCOL_FAILURE");
-        		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
-        		AsyncTaskActivity.this.onTaskCompleted(false);
-        		showDialog(TASK_ERROR_DIALOG);
+        		if (!mExiting) {
+	        		Log.w(TAG, "handleMessage "+" MSG_PROTOCOL_FAILURE");
+	        		AsyncTaskActivity.this.dismissDialog(AsyncTaskActivity.WAITING_DIALOG);
+	        		AsyncTaskActivity.this.onTaskCompleted(false);
+	        		showDialog(TASK_ERROR_DIALOG);
+        		}
         		break;
-        	case DownloadConstants.MSG_IMG_SUCCEED: {
-        		Bundle data = msg.getData();
-        		AsyncTaskActivity.this.onImageCompleted(true, 
-        				data.getString(DownloadConstants.MSG_DATA_URL),
-        				data.getString(DownloadConstants.MSG_DATA_APPCODE)
-        				);
-        		break;
-        	}
-        	case DownloadConstants.MSG_IMG_FAILURE: {
-        		Bundle data = msg.getData();
-        		AsyncTaskActivity.this.onImageCompleted(false, 
-        				data.getString(DownloadConstants.MSG_DATA_URL),
-        				data.getString(DownloadConstants.MSG_DATA_APPCODE)
-        				);
-        		break;
-        	}
+        	case DownloadConstants.MSG_IMG_SUCCEED: 
+        		if (!mExiting) {
+	        		Bundle data = msg.getData();
+	        		AsyncTaskActivity.this.onImageCompleted(true, 
+	        				data.getString(DownloadConstants.MSG_DATA_URL),
+	        				data.getString(DownloadConstants.MSG_DATA_APPCODE)
+	        				);
+	        		break;
+        		}
+        	case DownloadConstants.MSG_IMG_FAILURE: 
+        		if (!mExiting) {
+	        		Bundle data = msg.getData();
+	        		AsyncTaskActivity.this.onImageCompleted(false, 
+	        				data.getString(DownloadConstants.MSG_DATA_URL),
+	        				data.getString(DownloadConstants.MSG_DATA_APPCODE)
+	        				);
+	        		break;
+	        	}
             default:
                 break;
         	}
@@ -72,7 +80,7 @@ abstract public class AsyncTaskActivity extends Activity
     
 	public void onDestroy() {
     	super.onDestroy();
-
+    	mExiting = true;
     	mThreadPool.resume();
     	mThreadPool.shutdown();
     }
