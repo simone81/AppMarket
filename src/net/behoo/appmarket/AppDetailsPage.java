@@ -131,7 +131,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		Log.i(TAG, "updateUIState size: "+mAppInfo.mAppSize);
 		if (mAppInfo.mAppSize.length() > 0 && null != mAppInfo.mAppSize) {
 			tv.setVisibility(View.VISIBLE);
-			int size = Integer.valueOf(mAppInfo.mAppSize).intValue()*1024;
+			int size = Integer.valueOf(mAppInfo.mAppSize).intValue();
 			tv.setText(Formatter.formatFileSize(this, size));
 		}
 		else {
