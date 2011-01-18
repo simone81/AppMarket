@@ -75,7 +75,7 @@ public class AppListPage extends AsyncTaskActivity
 					mAppList.get(pos).mAppCode,
 					mAppList.get(pos).mAppAuthor,
 					mAppList.get(pos).mAppImageUrl,
-					mAppList.get(pos).mAppDesc,
+					mAppList.get(pos).mAppShortDesc,
 				};
 				intent.putExtra(AppDetailsPage.EXTRA_KAY, value);
 				startActivity( intent );

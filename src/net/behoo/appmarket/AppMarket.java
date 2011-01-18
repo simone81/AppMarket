@@ -187,7 +187,7 @@ public class AppMarket extends AsyncTaskActivity
 						mAppLib.get(i).mAppCode,
 						mAppLib.get(i).mAppAuthor,
 						mAppLib.get(i).mAppImageUrl,
-						mAppLib.get(i).mAppDesc,
+						mAppLib.get(i).mAppShortDesc,
 					};
 					intent.putExtra(AppDetailsPage.EXTRA_KAY, value);
 					startActivity(intent);
