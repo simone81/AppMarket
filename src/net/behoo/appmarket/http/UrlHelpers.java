@@ -1,6 +1,5 @@
 package net.behoo.appmarket.http;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;

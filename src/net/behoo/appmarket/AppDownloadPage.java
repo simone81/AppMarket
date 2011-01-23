@@ -6,10 +6,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import behoo.providers.InstalledAppDb;
+
 import junit.framework.Assert;
 
 import net.behoo.appmarket.data.AppInfo;
-import net.behoo.appmarket.database.PackageDbHelper;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import android.content.BroadcastReceiver;
@@ -38,7 +39,6 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	
 	private ListAdapter mListApater = null;
 	private ListView mListView = null;
-	private PackageDbHelper mPkgDBHelper = null;
 	private InstallButtonGuard mInstallButtonGuard = null;
 	private Button mInstallButton = null;
 	private ImageView mAppImage = null;
@@ -194,7 +194,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	
 	private void addAppInfo(String code) {
 		if (!mCodeAppInfoMap.containsKey(code)) {
-    		String where = PackageDbHelper.COLUMN_CODE + "=?";
+    		String where = InstalledAppDb.COLUMN_CODE + "=?";
     		String [] whereArgs = {code};
     		ArrayList<AppInfo> appList = ServiceManager.inst().getDownloadHandler().getAppList(where, whereArgs);
     		if (null != appList && appList.size() == 1) {
@@ -221,49 +221,51 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		}
 		
 		AppInfo appInfo = mCodeAppInfoMap.get(code);
-		TextView titleView = (TextView)view.findViewById(R.id.applist_item_title);
-		titleView.setText(appInfo.mAppName);
-		
-		TextView subTitleView = (TextView)view.findViewById(R.id.applist_item_subtitle);
-		// update the item view of the list view
-		if (completed) {
-			// display string according to the state of the local database
-			Constants.PackageState state = 
-				ServiceManager.inst().getDownloadHandler().getAppState(code);
-			subTitleView.setText(getStateStringId(state));
+		if (null != appInfo) {
+			TextView titleView = (TextView)view.findViewById(R.id.applist_item_title);
+			titleView.setText(appInfo.mAppName);
 			
-			if (bIsSelected) {
-				mDownloadProgressBar.setVisibility(View.GONE);
-				mTextViewSize.setVisibility(View.VISIBLE);
-				mTextViewSize.setText(Formatter.formatFileSize(this, totalBytes));
+			TextView subTitleView = (TextView)view.findViewById(R.id.applist_item_subtitle);
+			// update the item view of the list view
+			if (completed) {
+				// display string according to the state of the local database
+				Constants.PackageState state = 
+					ServiceManager.inst().getDownloadHandler().getAppState(code);
+				subTitleView.setText(getStateStringId(state));
+				
+				if (bIsSelected) {
+					mDownloadProgressBar.setVisibility(View.GONE);
+					mTextViewSize.setVisibility(View.VISIBLE);
+					mTextViewSize.setText(Formatter.formatFileSize(this, totalBytes));
+				}
 			}
-		}
-		else if (0 < totalBytes) {
-			// 10% for installation
-			long progress = currentBytes*90/totalBytes;
-			StringBuilder sb = new StringBuilder();
-			sb.append(progress);
-			sb.append('%');
-			subTitleView.setText(sb.toString());
-        	
-        	if (bIsSelected) {
-        		mDownloadProgressBar.setVisibility(View.VISIBLE);
-        		mDownloadProgressBar.setIndeterminate(false);
-        		mDownloadProgressBar.setProgress((int)progress);
-        		
-        		mTextViewSize.setVisibility(View.VISIBLE);
-        		mTextViewSize.setText(Formatter.formatFileSize(this, totalBytes));
-        	}
-		}
-		else {
-			Log.w(TAG, "bindView: the apk's length is not known!");
-			subTitleView.setText(R.string.downloadpage_beginning);
-			if (bIsSelected) {
-        		mDownloadProgressBar.setVisibility(View.VISIBLE);
-        		mDownloadProgressBar.setIndeterminate(true);
-        		
-        		mTextViewSize.setVisibility(View.GONE);
-        	}
+			else if (0 < totalBytes) {
+				// 10% for installation
+				long progress = currentBytes*90/totalBytes;
+				StringBuilder sb = new StringBuilder();
+				sb.append(progress);
+				sb.append('%');
+				subTitleView.setText(sb.toString());
+	        	
+	        	if (bIsSelected) {
+	        		mDownloadProgressBar.setVisibility(View.VISIBLE);
+	        		mDownloadProgressBar.setIndeterminate(false);
+	        		mDownloadProgressBar.setProgress((int)progress);
+	        		
+	        		mTextViewSize.setVisibility(View.VISIBLE);
+	        		mTextViewSize.setText(Formatter.formatFileSize(this, totalBytes));
+	        	}
+			}
+			else {
+				Log.w(TAG, "bindView: the apk's length is not known!");
+				subTitleView.setText(R.string.downloadpage_beginning);
+				if (bIsSelected) {
+	        		mDownloadProgressBar.setVisibility(View.VISIBLE);
+	        		mDownloadProgressBar.setIndeterminate(true);
+	        		
+	        		mTextViewSize.setVisibility(View.GONE);
+	        	}
+			}
 		}
 	}
 	

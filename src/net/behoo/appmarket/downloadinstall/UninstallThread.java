@@ -1,6 +1,7 @@
 package net.behoo.appmarket.downloadinstall;
 
-import net.behoo.appmarket.database.PackageDbHelper;
+import behoo.providers.BehooProvider;
+import behoo.providers.InstalledAppDb;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
@@ -13,14 +14,12 @@ public class UninstallThread extends Thread {
 	private String mPkgCode = null;
 	private String mPkgName = null;
 	private String mDownloadUri = null;
-	private PackageDbHelper mPkgDBHelper = null;
 
 	public UninstallThread(Context context, String code, String pkgName, String downloadUri) {
 		mContext = context;
 		mPkgCode = code;
 		mPkgName = pkgName;
 		mDownloadUri = downloadUri;
-		mPkgDBHelper = new PackageDbHelper(context);
 	}
 	
 	public void run() {
@@ -28,7 +27,11 @@ public class UninstallThread extends Thread {
 			PackageInstaller installer = new PackageInstaller(mContext);
 			installer.uninstallPackage(mPkgName);
 			
-			mPkgDBHelper.delete(mPkgCode);
+			String where = InstalledAppDb.COLUMN_CODE+"=?";
+			String [] whereArgs = {mPkgCode};
+			mContext.getContentResolver().delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+					where, whereArgs);
+			
 			mContext.getContentResolver().delete(Uri.parse(mDownloadUri), null, null);
 			
 			// tbd add uninstalling state

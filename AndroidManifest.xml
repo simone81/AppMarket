@@ -47,6 +47,8 @@
 			</intent-filter>	
 		</receiver>
 		
+		<provider android:name=".database.InstalledPkgsProvider"
+			android:authorities="InstalledAppsProvider"/>
     </application>
 
 </manifest> 
