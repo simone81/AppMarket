@@ -9,7 +9,6 @@ import behoo.providers.InstalledAppDb;
 import behoo.sync.ISyncService;
 
 import net.behoo.appmarket.data.AppInfo;
-import net.behoo.appmarket.downloadinstall.Constants.PackageState;
 import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.content.ContentResolver;
@@ -54,7 +53,8 @@ public class AppUpdateDemonThread extends Thread {
 					ContentValues cv = new ContentValues();
 					for (int i = 0; i < appList.size(); ++i) {
 						AppInfo appInfo = appList.get(i);
-						cv.put(InstalledAppDb.COLUMN_STATE, PackageState.need_update.name());
+						cv.put(InstalledAppDb.COLUMN_STATE, 
+								InstalledAppDb.PackageState.need_update.name());
 						
 						String where = InstalledAppDb.COLUMN_CODE+"=?";
 						String [] selectionArgs = {appInfo.mAppCode};
@@ -134,14 +134,14 @@ public class AppUpdateDemonThread extends Thread {
 					version = c.getString(versionId);
 					state = c.getString(stateId);
 					pkgName = c.getString(pkgNameId);
-					PackageState pkgstate = Constants.getStateByString(state);
+					InstalledAppDb.PackageState pkgstate = Constants.getStateByString(state);
 					if (pkgUninstalled(pm, pkgName, pkgstate)) {
 						String where = InstalledAppDb.COLUMN_CODE+"=?";
 						String [] selectionArgs = {code};
 						cr.delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 								where, selectionArgs);
 					}
-					else if (PackageState.install_succeeded == pkgstate){
+					else if (InstalledAppDb.PackageState.install_succeeded == pkgstate){
 						codesVersionMap.put(code, version);
 					}
 				}
@@ -153,8 +153,8 @@ public class AppUpdateDemonThread extends Thread {
 		return codesVersionMap;
 	}
 	
-	private boolean pkgUninstalled(PackageManager pm, String pkgName, PackageState state) {
-		if (PackageState.install_succeeded == state) {
+	private boolean pkgUninstalled(PackageManager pm, String pkgName, InstalledAppDb.PackageState state) {
+		if (InstalledAppDb.PackageState.install_succeeded == state) {
 			try {
 				pm.getApplicationInfo(pkgName, PackageManager.GET_UNINSTALLED_PACKAGES);
 				return false;

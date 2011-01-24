@@ -161,10 +161,10 @@ public class InstalledPkgsProvider extends ContentProvider {
 		  	+ InstalledAppDb.COLUMN_APP_NAME + " text,"
 		  	+ InstalledAppDb.COLUMN_AUTHOR + " text,"
 		  	+ InstalledAppDb.COLUMN_DESC + " text,"
-		  	+ InstalledAppDb.COLUMN_SRC_PATH + " text,"
 		  	+ InstalledAppDb.COLUMN_STATE + " text,"
 		  	+ InstalledAppDb.COLUMN_IMAGE_URL + " text,"
-		  	+ InstalledAppDb.COLUMN_DOWNLOAD_URI + " text unique"
+		  	+ InstalledAppDb.COLUMN_DOWNLOAD_URI + " text unique,"
+		  	+ InstalledAppDb.COLUMN_INSTALL_DATE + " integer"
 			+ ");";
 	
 			db.execSQL(sql);

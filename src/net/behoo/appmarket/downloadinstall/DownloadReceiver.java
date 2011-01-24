@@ -16,13 +16,12 @@ public class DownloadReceiver extends BroadcastReceiver {
 	public static final String DOWNLOAD_DATA_URI = "data_uri";
 	
 	public void onReceive(Context context, Intent intent) {
-		Log.i(TAG, "onReceive ");
 		Intent i = new Intent(DownloadReceiver.DOWNLOAD_COMPLETED);
-		// data
+		i.setClass(context, DownloadInstallService.class);
 		Bundle bundle = intent.getExtras();
 		String extraData = bundle.getCharSequence(Downloads.COLUMN_NOTIFICATION_EXTRAS).toString();
 		String [] values = {intent.getData().toString(), extraData};
 		i.putExtra(DOWNLOAD_COMPLETED, values);
-		context.sendBroadcast( i );
+		context.startService(i);
 	}
 }

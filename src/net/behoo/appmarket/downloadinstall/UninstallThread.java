@@ -36,7 +36,7 @@ public class UninstallThread extends Thread {
 			
 			// tbd add uninstalling state
 			PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, 
-				Constants.PackageState.unknown.name());
+					InstalledAppDb.PackageState.unknown.name());
 		} catch (Throwable tr) {
 			Log.i(TAG, "run "+tr.getLocalizedMessage());
 		}

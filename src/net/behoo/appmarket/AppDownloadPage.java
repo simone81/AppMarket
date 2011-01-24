@@ -60,7 +60,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 			String code = bundle.getString(Constants.PACKAGE_CODE);
 			String state = bundle.getString(Constants.PACKAGE_STATE);
 			// update the progress bar
-			switch (Constants.PackageState.valueOf(state)) {
+			switch (InstalledAppDb.PackageState.valueOf(state)) {
 			case installing:
 			case install_failed:
 			case install_succeeded:
@@ -229,7 +229,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 			// update the item view of the list view
 			if (completed) {
 				// display string according to the state of the local database
-				Constants.PackageState state = 
+				InstalledAppDb.PackageState state = 
 					ServiceManager.inst().getDownloadHandler().getAppState(code);
 				subTitleView.setText(getStateStringId(state));
 				
@@ -269,7 +269,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		}
 	}
 	
-	private int getStateStringId(Constants.PackageState state) {
+	private int getStateStringId(InstalledAppDb.PackageState state) {
 		switch (state) {
 		case installing:
 			return R.string.downloadpage_installing;

@@ -1,9 +1,8 @@
 package net.behoo.appmarket;
 
+import behoo.providers.InstalledAppDb;
 import net.behoo.appmarket.data.AppInfo;
-import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
-import net.behoo.appmarket.downloadinstall.Constants.PackageState;
 import net.behoo.appmarket.http.UrlHelpers;
 import android.os.RemoteException;
 import android.util.Log;
@@ -17,7 +16,7 @@ public class InstallButtonGuard implements OnClickListener {
 	private Button mButton = null;
 	private AppInfo mAppInfo = null;
 	private DownloadInstallService mService = null;
-    private PackageState mAppState = Constants.PackageState.unknown;
+    private InstalledAppDb.PackageState mAppState = InstalledAppDb.PackageState.unknown;
     private OnInstallClickListener mListener = null;
     
 	public InstallButtonGuard(Button button, AppInfo appInfo, DownloadInstallService service) {
@@ -50,14 +49,13 @@ public class InstallButtonGuard implements OnClickListener {
 		return mAppInfo;
 	}
 	
-	public PackageState getPackageState() {
+	public InstalledAppDb.PackageState getPackageState() {
 		return mAppState;
 	}
 	
 	public void onClick(View v) {
 		switch (mAppState) {
-		case unknown:
-		case uninstalled:	
+		case unknown:	
 		case need_update:	
 		case install_failed:	
 		case download_failed:
@@ -74,9 +72,6 @@ public class InstallButtonGuard implements OnClickListener {
 			}
 			break;
 		case install_succeeded:	
-			// tbd uninstall
-			mService.uninstall(mAppInfo.mAppCode);
-			break;
 		case downloading:
 		case download_succeeded:
 		case installing:
@@ -100,7 +95,6 @@ public class InstallButtonGuard implements OnClickListener {
 	private void updateButtonState() {
 		switch(mAppState) {
 		case unknown:
-		case uninstalled:	
 			mButton.setText(R.string.downloadpage_to_install);
 			mButton.setEnabled(true);
 			break;

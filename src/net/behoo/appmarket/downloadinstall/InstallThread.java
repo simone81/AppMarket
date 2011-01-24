@@ -1,6 +1,7 @@
 package net.behoo.appmarket.downloadinstall;
 
 import java.io.File;
+import java.util.Date;
 
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
@@ -37,7 +38,7 @@ public class InstallThread extends Thread {
 				
 				// update application state
 				ContentValues cv = new ContentValues();
-				cv.put(InstalledAppDb.COLUMN_STATE, Constants.PackageState.installing.name());
+				cv.put(InstalledAppDb.COLUMN_STATE, InstalledAppDb.PackageState.installing.name());
 				
 				String where = InstalledAppDb.COLUMN_CODE+"=?";
 				String [] whereArgs = {mPkgCode};
@@ -45,7 +46,7 @@ public class InstallThread extends Thread {
 						cv, where, whereArgs);
 				
 				PackageStateSender.sendPackageStateBroadcast(mContext, 
-						mPkgCode, Constants.PackageState.installing.name());
+						mPkgCode, InstalledAppDb.PackageState.installing.name());
 				
 				// installing
 				PackageInstaller installer = new PackageInstaller(mContext);
@@ -56,10 +57,12 @@ public class InstallThread extends Thread {
 			
 			try {
 				// update the local data record
-				String status = ( ret ? Constants.PackageState.install_succeeded.name()
-						: Constants.PackageState.install_failed.name() );
+				String status = ( ret ? InstalledAppDb.PackageState.install_succeeded.name()
+						: InstalledAppDb.PackageState.install_failed.name() );
 				ContentValues cv2 = new ContentValues();
 				cv2.put(InstalledAppDb.COLUMN_STATE, status);
+				Date date = new Date();
+				cv2.put(InstalledAppDb.COLUMN_INSTALL_DATE, date.getTime());
 				if (ret) {
 					PackageParser.Package pkgInfo = PackageUtils.getPackageInfo(Uri.parse(mPkgSrcUri));
 					cv2.put(InstalledAppDb.COLUMN_PKG_NAME, pkgInfo.packageName);
