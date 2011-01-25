@@ -3,6 +3,7 @@ package net.behoo.appmarket.downloadinstall;
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 
@@ -34,11 +35,15 @@ public class UninstallThread extends Thread {
 			
 			mContext.getContentResolver().delete(Uri.parse(mDownloadUri), null, null);
 			
-			// tbd add uninstalling state
+			// intent for inner-process broadcast
 			PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, 
 					InstalledAppDb.PackageState.unknown.name());
+			
+			// intent for ipc broadcast
+			PackageStateSender.sendPackageUninstallBroadcast(mContext, mPkgCode, mPkgName, true);
 		} catch (Throwable tr) {
 			Log.i(TAG, "run "+tr.getLocalizedMessage());
+			PackageStateSender.sendPackageUninstallBroadcast(mContext, mPkgCode, mPkgName, false);
 		}
 	}
 }

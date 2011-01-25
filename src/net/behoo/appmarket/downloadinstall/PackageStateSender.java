@@ -11,4 +11,13 @@ public class PackageStateSender {
 		i.putExtra(Constants.PACKAGE_STATE, state);
 		c.sendBroadcast(i);
 	}
+	
+	static public void sendPackageUninstallBroadcast(Context c, String code,
+			String pkgName, boolean ret) {
+		Intent i = new Intent(behoo.content.Intent.ACTION_PACKAGE_UNINSTALLED);
+		i.putExtra(behoo.content.Intent.PKG_CODE, code);
+		i.putExtra(behoo.content.Intent.PKG_NAME, pkgName);
+		i.putExtra(behoo.content.Intent.PKG_RESULT, true);
+		c.sendBroadcast(i);
+	}
 }

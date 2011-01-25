@@ -38,7 +38,11 @@
 		
 		<activity android:name=".AppDetailsPage"/>
 		
-		<service android:name=".downloadinstall.DownloadInstallService"/>
+		<service android:name=".downloadinstall.DownloadInstallService">
+			<intent-filter>
+				<action android:name="behoo.intent.action.ToUninstallPkg" />
+			</intent-filter>
+		</service>
 		
 		<receiver android:name=".downloadinstall.DownloadReceiver"
 			android:exported="true" >

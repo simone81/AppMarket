@@ -71,14 +71,22 @@ public class DownloadInstallService extends Service {
 	}
 	
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		String action = intent.getAction();
-	    if (0 == action.compareTo(DownloadReceiver.DOWNLOAD_COMPLETED)) {
-	    	String [] values = intent.getStringArrayExtra(DownloadReceiver.DOWNLOAD_COMPLETED);
-			String uri = values[0];
-			String code = values[1];
-			Log.i(TAG, "onStartCommand downloaded completed: "+code+" uri: "+uri);
-			onPackageDownloaded(uri, code);
-	    }
+		if (null != intent) {
+			String action = intent.getAction();
+		    if (null != action
+		    	&& 0 == action.compareTo(DownloadReceiver.DOWNLOAD_COMPLETED)) {
+		    	String [] values = intent.getStringArrayExtra(DownloadReceiver.DOWNLOAD_COMPLETED);
+				String uri = values[0];
+				String code = values[1];
+				Log.i(TAG, "onStartCommand downloaded completed: "+code+" uri: "+uri);
+				onPackageDownloaded(uri, code);
+		    }
+		    else if (null != action
+		    		 && 0 == action.compareTo(behoo.content.Intent.ACTION_TO_UNINSTALL_PKG)) {
+		    	String code = intent.getStringExtra(behoo.content.Intent.PKG_TO_UNINSTALL_CODE);
+		    	this.uninstall(code);
+		    }
+		}
 	    return START_STICKY;
 	}
 	
@@ -195,12 +203,14 @@ public class DownloadInstallService extends Service {
 		String [] whereArgs = {code};
 		Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 				columns, where, whereArgs, null);
+		String pkgName = null;
+		String downloadUri = null;
 		if (null != c) {
 			c.moveToFirst();
 			int pkgNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_PKG_NAME);
 			int downloadUriId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
-			String pkgName = c.getString(pkgNameId);
-			String downloadUri = c.getString(downloadUriId);
+			pkgName = c.getString(pkgNameId);
+			downloadUri = c.getString(downloadUriId);
 			c.close();
 			
 			Log.i(TAG, "uninstall code: "+code+" uri: "+downloadUriId);
@@ -208,7 +218,8 @@ public class DownloadInstallService extends Service {
 			thrd.start();
 		}
 		else {
-			
+			String tempPkgName = (null != pkgName ? pkgName : "");
+			PackageStateSender.sendPackageUninstallBroadcast(this, code, tempPkgName, false);
 		}
 	}
 	
@@ -252,7 +263,6 @@ public class DownloadInstallService extends Service {
 	
 	public InstalledAppDb.PackageState getAppState(String code) {
 		try {
-			Log.i(TAG, "getAppState "+code);
 			InstalledAppDb.PackageState state = InstalledAppDb.PackageState.unknown;
 			String [] columns = {InstalledAppDb.COLUMN_STATE};
 			String where = InstalledAppDb.COLUMN_CODE + "=?";
@@ -265,7 +275,7 @@ public class DownloadInstallService extends Service {
 			c.close();
 			return state;
 		} catch (Throwable tr){
-			Log.i(TAG, "getAppState "+tr.getMessage());
+			Log.w(TAG, "getAppState "+tr.getMessage());
 			return InstalledAppDb.PackageState.unknown;
 		}
 	}
@@ -314,7 +324,6 @@ public class DownloadInstallService extends Service {
 	private void validatePackageState() {
 		// validate the package state if some extreme states happened, for example
 		// power off by user .
-		
 		String [] columns = {InstalledAppDb.COLUMN_DOWNLOAD_URI,
 				InstalledAppDb.COLUMN_CODE};
 		String where = "("+InstalledAppDb.COLUMN_STATE +"=?) OR (" 
