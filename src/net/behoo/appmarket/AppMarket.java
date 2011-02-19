@@ -137,11 +137,6 @@ public class AppMarket extends AsyncTaskActivity
     	unbindService(mSyncServiceConn);
     }
     
-    public void onDestroy() {
-    	super.onDestroy();
-    	Log.i(TAG, "onDestroy*****************************************************");
-    }
-    
     protected void onTaskRetry() {
     	executeTask(mHttpTask);
     	showDialog(WAITING_DIALOG);

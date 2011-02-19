@@ -34,8 +34,6 @@ public class AppUpdateDemonThread extends Thread {
 	
 	public void run() {
 		while (!mExit) {
-			Log.i(TAG, "wake up, begin to check update.");
-			
 			Map<String, String> codesVersionMap = shouldBeCheckedAppMap();
 			Log.i(TAG, "packages need to be checked "+Integer.toString(codesVersionMap.size()));
 			

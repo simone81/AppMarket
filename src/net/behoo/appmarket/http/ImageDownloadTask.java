@@ -2,6 +2,8 @@ package net.behoo.appmarket.http;
 
 import java.io.InputStream;
 
+import behoo.util.HttpUtil;
+
 import net.behoo.appmarket.ImageLib;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 
 import org.xmlpull.v1.XmlPullParser;
 
+import behoo.util.HttpUtil;
+
 import android.util.Log;
 import android.util.Xml;
 

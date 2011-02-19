@@ -3,7 +3,6 @@ package net.behoo.appmarket.downloadinstall;
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
 import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 

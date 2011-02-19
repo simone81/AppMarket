@@ -4,6 +4,8 @@ import java.io.InputStream;
 
 import org.xmlpull.v1.XmlPullParser;
 
+import behoo.util.HttpUtil;
+
 import android.util.Log;
 import android.util.Xml;
 
