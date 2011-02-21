@@ -228,7 +228,6 @@ public class AppListPage extends AsyncTaskActivity
         	View view = null;
         	if (convertView == null) {
         		view = mInflater.inflate(R.layout.applist_item_layout, parent, false);
-        		view.setFocusable(true);
         	}
         	else {
         		view = convertView;
