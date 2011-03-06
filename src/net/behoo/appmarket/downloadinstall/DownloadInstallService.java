@@ -7,6 +7,7 @@ import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
 import behoo.sync.ISyncService;
 
+import net.behoo.appmarket.ServiceManager;
 import net.behoo.appmarket.data.AppInfo;
 
 import junit.framework.Assert;
@@ -214,7 +215,12 @@ public class DownloadInstallService extends Service {
 			c.close();
 			
 			Log.i(TAG, "uninstall code: "+code+" uri: "+downloadUriId);
-			UninstallThread thrd = new UninstallThread(this, code, pkgName, downloadUri);
+			String token = null;
+			if (null != ServiceManager.inst().getSyncHandler()) {
+				token = ServiceManager.inst().getSyncHandler().getToken();
+			}
+			UninstallThread thrd = new UninstallThread(this, 
+					code, pkgName, downloadUri, token);
 			thrd.start();
 		}
 		else {
