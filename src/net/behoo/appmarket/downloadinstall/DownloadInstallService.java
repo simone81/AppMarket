@@ -216,8 +216,13 @@ public class DownloadInstallService extends Service {
 			
 			Log.i(TAG, "uninstall code: "+code+" uri: "+downloadUriId);
 			String token = null;
-			if (null != ServiceManager.inst().getSyncHandler()) {
-				token = ServiceManager.inst().getSyncHandler().getToken();
+			try {
+				if (null != ServiceManager.inst().getSyncHandler()) {
+					token = ServiceManager.inst().getSyncHandler().getToken();
+				}
+			}
+			catch (Throwable tr) {
+				Log.w(TAG, tr.getLocalizedMessage());
 			}
 			UninstallThread thrd = new UninstallThread(this, 
 					code, pkgName, downloadUri, token);
