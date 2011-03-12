@@ -40,7 +40,7 @@
 	<string name="downloadpage_download_success">下载成功</string>
 	<string name="downloadpage_download_failure">下载失败</string>
 	<string name="downloadpage_installing">正在安装</string>
-	<string name="downloadpage_install_success">已经安装</string>
+	<string name="downloadpage_install_success">立即打开</string>
 	<string name="downloadpage_install_failure">安装失败</string>
 	<string name="downloadpage_retry">重试</string>
 	<string name="downloadpage_update">立即升级</string>

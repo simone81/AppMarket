@@ -12,7 +12,8 @@ public class DownloadReceiver extends BroadcastReceiver {
 
 	private static final String TAG = "DownloadReceiver";
 
-	public static final String DOWNLOAD_COMPLETED = "net.behoo.appmarket.downloadinstall.DOWNLOAD_COMPLETED";
+	public static final String DOWNLOAD_COMPLETED = 
+		"net.behoo.appmarket.downloadinstall.DOWNLOAD_COMPLETED";
 	public static final String DOWNLOAD_DATA_URI = "data_uri";
 	
 	public void onReceive(Context context, Intent intent) {

@@ -1,9 +1,14 @@
 package net.behoo.appmarket.data;
 
+import android.net.Uri;
+
 
 public class AppInfo {
 	
 	public static final String MIMETYPE = "application/vnd.android.package-archive";
+	public static final String AppScheme = "acode";
+	public static final String AppAuthority = "behoo_apps";
+	public static final String AppPath = "code";
 	
 	// summary info
 	public String mAppName = "";
@@ -53,5 +58,24 @@ public class AppInfo {
 		mAppScreenShorts = new String(source.mAppScreenShorts);
 		mAppReview = new String(source.mAppReview);
 		mAppChangelog = new String(source.mAppChangelog);
+	}
+	
+	public boolean equalsAppCode(AppInfo appInfo) {
+		return (null != appInfo && appInfo.mAppCode.equals(mAppCode));
+	}
+	
+	public static final Uri makeUri(String appCode) {
+		if (null == appCode) {
+			throw new NullPointerException();
+		}
+		StringBuilder builder = new StringBuilder();
+		builder.append(AppScheme);
+		builder.append("://");
+		builder.append(AppAuthority);
+		builder.append('/');
+		builder.append(AppPath);
+		builder.append('/');
+		builder.append(appCode);
+		return Uri.parse(builder.toString());
 	}
 }

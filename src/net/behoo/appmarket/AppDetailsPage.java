@@ -2,15 +2,13 @@ package net.behoo.appmarket;
 
 import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import net.behoo.appmarket.data.AppInfo;
-import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.http.AppDetailParser;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
 import net.behoo.appmarket.http.UrlHelpers;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.UriMatcher;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.format.Formatter;
@@ -22,12 +20,8 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 
 public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickListener {
-	
-	public static final String EXTRA_KAY = "net.behoo.appmarket.AppDetailsPage";
-	
 	private static final String TAG = "DetailsPage";
 
-	private Button mInstallButton = null;
 	private InstallButtonGuard mInstallButtonGuard = null;
 
 	private AppInfo mAppInfo = new AppInfo();
@@ -41,32 +35,34 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		R.string.appdetails_rc_desc4,
 	};
     
-    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-		public void onReceive(Context context, Intent intent) {
-			if (null != mInstallButtonGuard) {
-				mInstallButtonGuard.updateAppState();
-			}
-		}
-	};
+	private static final int APP_CODE = 0;
+	private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+	static {
+        sURIMatcher.addURI(AppInfo.AppAuthority, AppInfo.AppPath+"/#", APP_CODE);
+    }
 	
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.app_details_page); 
         
-        // get the summary application information
-        String [] value = getIntent().getStringArrayExtra("net.behoo.appmarket.AppDetailsPage");
-        mAppInfo = new AppInfo(value[0], value[1], value[2], value[3], value[4], value[5]);
-        
-        mInstallButton = (Button)findViewById(R.id.detail_btn_install);
-        mInstallButtonGuard = new InstallButtonGuard(mInstallButton, mAppInfo,
-        		ServiceManager.inst().getDownloadHandler());
+        Button button = (Button)findViewById(R.id.detail_btn_install);
+        mInstallButtonGuard = new InstallButtonGuard(this, button, null);
         mInstallButtonGuard.setOnInstallClickListener(this);
         
-        mHttpTask = new HttpTask(mHandler);
-        executeTask(mHttpTask);
-        showDialog(WAITING_DIALOG);
+        Intent intent = getIntent();
+        Uri data = intent.getData();
+        int matchId = sURIMatcher.match(data);
+        if (APP_CODE == matchId) {
+	        String appCode = data.getPathSegments().get(1);
+	        mHttpTask = new HttpTask(mHandler, appCode);
+	        executeTask(mHttpTask);
+	        showDialog(WAITING_DIALOG);
+        }
+        else {
+        	// error dialog
+        }
     }
-    
+	
     public void onInstallClicked(AppInfo appInfo) {
 		// TODO Auto-generated method stub
 		Intent intent = new Intent();
@@ -74,15 +70,14 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		startActivity(intent);
 	};
     
-    public void onResume() {
-    	super.onResume();
-    	registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
-    	mInstallButtonGuard.updateAppState();
-    }
-    
+	public void onResume() {
+		super.onResume();
+		mInstallButtonGuard.enableGuard();
+	}
+	
     public void onPause() {
     	super.onPause();
-    	unregisterReceiver(mReceiver);
+    	mInstallButtonGuard.disableGuard();
     }
 	
     protected void onTaskCanceled(DialogInterface dlg) {
@@ -96,6 +91,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
     
 	protected void onTaskCompleted(boolean result) {
 		if (result) {
+	        mInstallButtonGuard.setAppInfo(mAppInfo);
 			updateUIState();
 			executeImageTask(mAppInfo.mAppImageUrl, mAppInfo.mAppCode);
 			executeImageTask(mAppInfo.mAppScreenShorts, mAppInfo.mAppCode);
@@ -164,11 +160,11 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	}
 	
 	private class HttpTask extends ProtocolDownloadTask {
-		
 		private AppDetailParser mDataProxy = new AppDetailParser();
-		
-		public HttpTask(Handler handler) {
+		private String mAppCode = null;
+		public HttpTask(Handler handler, String appCode) {
 			super(handler);
+			mAppCode = appCode;
 		}
 		
 		public void cancel() {
@@ -178,21 +174,16 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		protected boolean doTask() {
 			try {
 				String url = UrlHelpers.getAppDetailUrl(
-						ServiceManager.inst().getSyncHandler().getToken(), mAppInfo.mAppCode);
+						TokenWrapper.getToken(AppDetailsPage.this), mAppCode);
 				Log.i(TAG, "doTask "+url);
 				
 				AppInfo appInfo = mDataProxy.getAppInfo(url);
 				if (null != appInfo) {
-					mAppInfo.mAppChangelog = appInfo.mAppChangelog;
-					mAppInfo.mAppDesc = appInfo.mAppDesc;
-					mAppInfo.mAppRemoteCntlScore = appInfo.mAppRemoteCntlScore;
-					mAppInfo.mAppReview = appInfo.mAppReview;
-					mAppInfo.mAppSize = appInfo.mAppSize;
-					mAppInfo.mAppScreenShorts = appInfo.mAppScreenShorts;
+					mAppInfo = appInfo;
 					return true;
 				}
 	    	} catch (Throwable tr) {
-	    		Log.i(TAG, "doTask "+tr.getLocalizedMessage());
+	    		tr.printStackTrace();
 	    	} 
 	    	return false;
 		}

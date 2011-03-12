@@ -2,6 +2,8 @@ package net.behoo.appmarket;
 
 import java.util.ArrayList;
 
+import behoo.sync.ISyncService;
+
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
@@ -35,11 +37,10 @@ public class AppListPage extends AsyncTaskActivity
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
 	private HttpTask mHttpTask = null;
-	
+	private boolean mFirstDownload = true;
 	private ListView mListView = null;
 	private AppListAdapter mListAdapter = null;
 	private ImageView mAppImage = null;
-	
 	private boolean mContinueDownload = true;
 	
 	public void onCreate(Bundle savedInstanceState) {
@@ -58,33 +59,30 @@ public class AppListPage extends AsyncTaskActivity
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 			
 		mHttpTask = new HttpTask(mHandler);
-		executeTask(mHttpTask);
-		showDialog(WAITING_DIALOG);
+	}
+	
+	protected void onSyncServiceConnected(ISyncService syncService) {
+		if (mFirstDownload) {
+			executeTask(mHttpTask);
+			showDialog(WAITING_DIALOG);
+			mFirstDownload = false;
+		}
 	}
 	
 	public void onClick(View v) {
 		if (v.getId() == R.id.applist_btn_detail) {
 			int pos = mListView.getSelectedItemPosition();
-			Log.i(TAG, "onClick pos "+Integer.toString(pos));
 			if (ListView.INVALID_POSITION != pos) {
 				Intent intent = new Intent();
 				intent.setClass(AppListPage.this, AppDetailsPage.class);
-				String [] value = {
-					mAppList.get(pos).mAppName,
-					mAppList.get(pos).mAppVersion,
-					mAppList.get(pos).mAppCode,
-					mAppList.get(pos).mAppAuthor,
-					mAppList.get(pos).mAppImageUrl,
-					mAppList.get(pos).mAppShortDesc,
-				};
-				intent.putExtra(AppDetailsPage.EXTRA_KAY, value);
+				String appCode = mAppList.get(pos).mAppCode;
+				intent.setData(AppInfo.makeUri(appCode));
 				startActivity( intent );
 			}
 		}
 	}
 
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
-		// TODO Auto-generated method stub
 		if (KeyEvent.KEYCODE_DPAD_DOWN == keyCode 
 				&& mListView.getSelectedItemPosition() == mListView.getCount()-1) {
 			if (mContinueDownload && event.getAction() == KeyEvent.ACTION_DOWN) {
@@ -114,7 +112,6 @@ public class AppListPage extends AsyncTaskActivity
     }
 	
 	protected void onTaskCompleted(boolean result) {
-		Log.i(TAG, String.format("onTaskComplete ret: %d, count: %d", result?1:0, mAppList.size()));
 		if (result) {
 			mListAdapter.notifyDataSetChanged();
 			if (mListView.getCount() > 0) {
@@ -186,7 +183,7 @@ public class AppListPage extends AsyncTaskActivity
 		public boolean doTask() {
 	    	try {
 	    		String url = UrlHelpers.getAppListUrl(
-	    			ServiceManager.inst().getSyncHandler().getToken(), 
+	    			TokenWrapper.getToken(AppListPage.this), 
 	    			mAppList.size() + 1, PAGE_SIZE);
 	    		Log.i(TAG, "doTask "+url);
 	    		

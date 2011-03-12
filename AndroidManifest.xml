@@ -36,7 +36,13 @@
 		
 		<activity android:name=".AppDownloadPage"/>
 		
-		<activity android:name=".AppDetailsPage"/>
+		<activity android:name=".AppDetailsPage">
+			<intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="acode" />
+            </intent-filter>
+		</activity>
 		
 		<service android:name=".downloadinstall.DownloadInstallService">
 			<intent-filter>

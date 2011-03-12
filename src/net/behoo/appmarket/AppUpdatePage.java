@@ -1,41 +1,45 @@
 package net.behoo.appmarket;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import behoo.providers.BehooProvider;
+import behoo.providers.InstalledAppDb;
 
 import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
+import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 public class AppUpdatePage extends AsyncTaskActivity 
 						   implements OnItemSelectedListener, 
 						   			  OnInstallClickListener {
-	//private static final String TAG = "AppUpdatePage";
 	
-	private ArrayList<AppInfo> mAppLib = new ArrayList<AppInfo>();
+	private Cursor mCursor = null;
+	private Map<String, AppInfo> mAppLib = new HashMap<String, AppInfo>();
 	
 	private ImageView mAppImage = null;
 	private ListView mListView = null;
-	private UpdateListAdapter mListAdapter = null;
+	private ListAdapter mListAdapter = null;
     private InstallButtonGuard mButtonGuard = null;
     
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
-			updateListView();
+			dismissDialog(WAITING_DIALOG);
 		}
 	};
 	
@@ -43,33 +47,47 @@ public class AppUpdatePage extends AsyncTaskActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.app_update_page);
 		
+		String [] columns = {InstalledAppDb.COLUMN_ID, 
+    			InstalledAppDb.COLUMN_CODE, 
+    			InstalledAppDb.COLUMN_APP_NAME,
+    			InstalledAppDb.COLUMN_AUTHOR, 
+    			InstalledAppDb.COLUMN_VERSION, 
+    			InstalledAppDb.COLUMN_IMAGE_URL,
+    			InstalledAppDb.COLUMN_DOWNLOAD_URI, 
+    			InstalledAppDb.COLUMN_PKG_NAME};
+        String where = InstalledAppDb.COLUMN_STATE+"=?";
+        String [] whereArgs = {InstalledAppDb.PackageState.install_succeeded.name()};
+        mCursor = managedQuery(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+                columns, where, whereArgs, null);
 		mListView = (ListView)findViewById(R.id.app_update_list);
-		mListAdapter = new UpdateListAdapter(this);
+		mListAdapter = new ListAdapter(this, R.layout.applist_item_layout, mCursor);
 		mListView.setAdapter(mListAdapter);
 		mListView.setOnItemSelectedListener(this);
 		
-		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
-		
 		Button button = (Button)findViewById(R.id.appupdate_btn_update);
-		mButtonGuard = new InstallButtonGuard(button, 
-				null, ServiceManager.inst().getDownloadHandler());
+		mButtonGuard = new InstallButtonGuard(this, button, null);
 		mButtonGuard.setOnInstallClickListener(this);
 		
-		updateListView();
+		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
+		
+		Intent i = new Intent(this, DownloadInstallService.class);
+		startService(i);
+		showDialog(WAITING_DIALOG);
 	}
 	
 	public void onResume() {
 		super.onResume();
-		this.registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_UPDATE_STATE));
+		mButtonGuard.enableGuard();
+		registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_PKG_UPDATE_FINISHED));
 	}
 	
 	public void onPause() {
 		super.onStop();
-		this.unregisterReceiver(mReceiver);
+		unregisterReceiver(mReceiver);
+		mButtonGuard.disableGuard();
 	}
 	
 	public void onInstallClicked(AppInfo appInfo) {
-		// TODO Auto-generated method stub
 		Intent i = new Intent();
 		i.setClass(this, AppDownloadPage.class);
 		startActivity(i);
@@ -77,8 +95,16 @@ public class AppUpdatePage extends AsyncTaskActivity
 	
 	public void onItemSelected(AdapterView<?> arg0, View arg1, 
 			int position, long id) {
-		mButtonGuard.setAppInfo(mAppLib.get(position));
-		updateUIState();
+		String code = (String)mListView.getItemAtPosition(position);
+		if (null != code) {
+			AppInfo appInfo = mAppLib.get(code);
+			mButtonGuard.setAppInfo(appInfo);
+			updateUIState(appInfo);
+		}
+		else {
+			// retset all the ui
+			mButtonGuard.setAppInfo(null);
+		}
 	}
 
 	public void onNothingSelected(AdapterView<?> arg0) {
@@ -88,48 +114,27 @@ public class AppUpdatePage extends AsyncTaskActivity
 	protected void onImageCompleted(boolean result, String url, String appcode) {
 		if (result) {
 			int pos = mListView.getSelectedItemPosition();
-			if (ListView.INVALID_POSITION != pos) {
-				String code = (String)mListView.getItemAtPosition(pos);
-				if (0 == code.compareTo(appcode)) {
-					updateImage(mAppLib.get(pos));
-				}
+			String code = (String)mListView.getItemAtPosition(pos);
+			if (null != code && 0 == code.compareTo(appcode)) {
+				updateImage(mAppLib.get(code));
 			}
 		}
 	}
 	
-	public void updateListView() {
-		ArrayList<AppInfo> appLib = ServiceManager.inst().getDownloadHandler().getUpdateList();
-		if (null != appLib) {
-			mAppLib = appLib;
-			mListAdapter.notifyDataSetChanged();
-			if (ListView.INVALID_POSITION == mListView.getSelectedItemPosition() 
-				&& mListView.getCount() > 0) {
-				mListView.setSelection(0);
-			}
-			updateUIState();
-		}
-	}
-	
-	public void updateUIState() {
-		assert(mListView.getCount() == mAppLib.size());
-		int pos = mListView.getSelectedItemPosition();
-		if (ListView.INVALID_POSITION != pos && mListView.getCount() > 0) {
-			AppInfo appInfo = mAppLib.get(pos);
-			
-			TextView tv = (TextView)findViewById(R.id.main_app_title);
-			tv.setText(appInfo.mAppName);
-			
-			tv = (TextView)findViewById(R.id.main_app_author);
-			tv.setText(appInfo.mAppAuthor);
-			
-			tv = (TextView)findViewById(R.id.main_app_version);
-			tv.setText(appInfo.mAppVersion);
-			
-			tv = (TextView)findViewById(R.id.app_update_desc);
-			tv.setText(appInfo.mAppShortDesc);
-			
-			updateImage(appInfo);
-		}
+	private void updateUIState(AppInfo appInfo) {	
+		TextView tv = (TextView)findViewById(R.id.main_app_title);
+		tv.setText(appInfo.mAppName);
+		
+		tv = (TextView)findViewById(R.id.main_app_author);
+		tv.setText(appInfo.mAppAuthor);
+		
+		tv = (TextView)findViewById(R.id.main_app_version);
+		tv.setText(appInfo.mAppVersion);
+		
+		tv = (TextView)findViewById(R.id.app_update_desc);
+		tv.setText(appInfo.mAppShortDesc);
+		
+		updateImage(appInfo);
 	}
 	
 	private void updateImage(AppInfo appInfo) {
@@ -146,43 +151,54 @@ public class AppUpdatePage extends AsyncTaskActivity
 		}
 	}
 	
-	private class UpdateListAdapter extends BaseAdapter {
-		//private Context mContext = null;
-		private LayoutInflater mInflater = null;
+	private class ListAdapter extends ResourceCursorAdapter {
+		private Cursor mCursor = null;
+		private int mCodeId = -1;
+		private int mAppNameId = -1;
+		private int mAuthorId = -1;
+		private int mVersionId = -1;
+		private int mImageUrlId = -1;
+		private int mShortDescId = -1;
+		
+        public ListAdapter(Context context, int layout, Cursor c) {
+        	super(context, layout, c);
+        	mCursor = c;
+        	mCodeId = mCursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
+    		mAppNameId = mCursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_APP_NAME);
+    		mAuthorId = mCursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_AUTHOR);
+    		mVersionId = mCursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
+    		mImageUrlId = mCursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_IMAGE_URL);
+    		mShortDescId = mCursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DESC);
+        }
         
-        public UpdateListAdapter(Context context) {
-            //mContext = context;
-            mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        }
-
-        public int getCount() {
-            return mAppLib.size();
-        }
-
         public Object getItem(int position) {
-            return mAppLib.get(position).mAppCode;
+        	if (mCursor.moveToPosition(position)) {
+        		return mAppLib.get(position).mAppCode;
+        	}
+        	return null;
         }
-
-        public long getItemId(int position) {
-            return position;
-        }
-
-        public View getView(int position, View convertView, ViewGroup parent) {
-        	View view = null;
-        	if (convertView == null) {
-        		view = mInflater.inflate(R.layout.applist_item_layout, parent, false);
+        
+        public void bindView(View view, Context context, Cursor cursor) {
+        	AppInfo appInfo = null;
+        	
+        	String code = cursor.getString(mCodeId);
+        	if (!mAppLib.containsKey(code)) {
+        		appInfo = new AppInfo();
+        		appInfo.mAppCode = cursor.getString(mCodeId);
+        		appInfo.mAppName = cursor.getString(mAppNameId);
+        		appInfo.mAppAuthor = cursor.getString(mAuthorId);
+        		appInfo.mAppVersion = cursor.getString(mVersionId);
+        		appInfo.mAppImageUrl = cursor.getString(mImageUrlId);
+        		appInfo.mAppShortDesc = cursor.getString(mShortDescId);
+        		
+        		mAppLib.put(code, appInfo);
         	}
         	else {
-        		view = convertView;
+        		appInfo = mAppLib.get(code);
         	}
-
-        	// update state
-            AppInfo appInfo = mAppLib.get(position);
-            TextView titleView = (TextView)view.findViewById(R.id.applist_item_title);
-            titleView.setText(appInfo.mAppName);
-            TextView subTitleView = (TextView)view.findViewById(R.id.applist_item_subtitle);
-            subTitleView.setText(appInfo.mAppAuthor);
-            return view;
+        	
+        	TextView tv = (TextView)view.findViewById(R.id.applist_item_title);
+    		tv.setText(appInfo.mAppName);
         }
 	}
 }

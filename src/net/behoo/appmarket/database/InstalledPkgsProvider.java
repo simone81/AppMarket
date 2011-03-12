@@ -33,8 +33,8 @@ public class InstalledPkgsProvider extends ContentProvider {
 	private static final int APPS = 0;
 	private static final int APP_ID = 1;
 	static {
-		 sURIMatcher.addURI("InstalledAppsProvider", "apps", APPS);
-		 sURIMatcher.addURI("InstalledAppsProvider", "apps/#", APP_ID);
+		 sURIMatcher.addURI("installedapps", "apps", APPS);
+		 sURIMatcher.addURI("installedapps", "apps/#", APP_ID);
 	}
 	
 	private PackageDbHelper mDatabaseHelper = null;
@@ -183,7 +183,7 @@ public class InstalledPkgsProvider extends ContentProvider {
          }
      }
 
-	private class ReadOnlyCursorWrapper extends CursorWrapper implements CrossProcessCursor {
+	public class ReadOnlyCursorWrapper extends CursorWrapper implements CrossProcessCursor {
 		public ReadOnlyCursorWrapper(Cursor cursor) {
 		    super(cursor);
 		    mCursor = (CrossProcessCursor) cursor;

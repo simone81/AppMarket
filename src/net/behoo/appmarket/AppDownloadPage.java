@@ -6,10 +6,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
+import behoo.providers.InstalledAppDb.PackageState;
+import behoo.sync.ISyncService;
 
 import junit.framework.Assert;
 
+import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
@@ -34,7 +38,8 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.provider.Downloads;
 
-public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelectedListener {
+public class AppDownloadPage extends AsyncTaskActivity 
+							 implements OnItemSelectedListener, OnInstallClickListener {
 	private static final String TAG = "AppDownloadPage";
 	
 	private ListAdapter mListApater = null;
@@ -50,15 +55,9 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 	private Cursor mDownloadCursor = null;
 	
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-		public void onReceive(Context context, Intent intent) {
-			Log.i(TAG, "onReceive application state changed");
-			if (null != mInstallButtonGuard) {
-				mInstallButtonGuard.updateAppState();
-			}
-			
-			Bundle bundle = intent.getExtras();
-			String code = bundle.getString(Constants.PACKAGE_CODE);
-			String state = bundle.getString(Constants.PACKAGE_STATE);
+		public void onReceive(Context context, Intent intent) {			
+			String code = intent.getStringExtra(Constants.PACKAGE_CODE);
+			String state = intent.getStringExtra(Constants.PACKAGE_STATE);
 			// update the progress bar
 			switch (InstalledAppDb.PackageState.valueOf(state)) {
 			case installing:
@@ -85,69 +84,75 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
                 Downloads._DATA, Downloads.COLUMN_DESCRIPTION}, 
                 null, null, order);
 		
-		mInstallButton = (Button)findViewById(R.id.downloadpage_btn_to_install);
+		Button button = (Button)findViewById(R.id.downloadpage_btn_to_install);
+		mInstallButtonGuard = new InstallButtonGuard(this, button, null);
+		mInstallButtonGuard.setOnInstallClickListener(this);
+		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		mDownloadProgressBar = (ProgressBar)findViewById(R.id.downloadpage_progress);
 		
 		mDownloadProgressBar.setVisibility(View.GONE);
 		mTextViewSize = (TextView)findViewById(R.id.main_app_size);
 		
-		initList();
-		createInstallButtonGuard();
+		mListView = (ListView)findViewById(R.id.downloadpage_list);
+		mListApater = new ListAdapter(this, R.layout.applist_item_layout, mDownloadCursor);
+		mListView.setAdapter(mListApater);
+		mListView.setOnItemSelectedListener(this);
+		mListView.requestFocus();
+	}
+    
+	public void onResume() {
+		super.onResume();
+		mInstallButtonGuard.enableGuard();
+		IntentFilter filter = new IntentFilter(Constants.ACTION_PKG_STATE_CHANGED);
+		this.registerReceiver(mReceiver, filter);
 	}
 	
-	public void onResume() {
-    	super.onResume();
-    	registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_DWONLOAD_INSTALL_STATE));
-    }
-    
     public void onPause() {
     	super.onPause();
-    	unregisterReceiver(mReceiver);
+		mInstallButtonGuard.updateAppState();
+    	this.unregisterReceiver(mReceiver);
     }
+    
+    public void onInstallClicked(AppInfo appInfo) {
+		// TODO Auto-generated method stub
+		
+	}
     
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		// get the app code of the selected item
-		createInstallButtonGuard();
-		updateUIState();
+		String code = (String)mListView.getItemAtPosition(position);
+		if (null != code) {
+			mInstallButtonGuard.setAppInfo(mCodeAppInfoMap.get(code));
+			updateUIState(mCodeAppInfoMap.get(code));
+		}
 	}
 	
 	public void onNothingSelected(AdapterView<?> view) {
 	}
 	
-	private void updateUIState() {
-		int pos = mListView.getSelectedItemPosition();
-		if (0 == mListView.getChildCount()) {
-			
+	private void updateUIState(AppInfo appInfo) {
+		TextView tv = (TextView)findViewById(R.id.main_app_title);
+		tv.setText(appInfo.mAppName);
+		
+		tv = (TextView)findViewById(R.id.main_app_author);
+		tv.setText(appInfo.mAppAuthor);
+		
+		tv = (TextView)findViewById(R.id.main_app_version);
+		tv.setText(appInfo.mAppVersion);
+		
+		if (mCodeSizeMap.containsKey(appInfo.mAppCode)) {
+			mTextViewSize.setVisibility(View.VISIBLE);
+			mTextViewSize.setText(mCodeSizeMap.get(appInfo.mAppCode));
 		}
-		else if (ListView.INVALID_POSITION != pos) {
-			String code = (String)mListView.getItemAtPosition(pos);
-			if (null != code) {
-				AppInfo appInfo = mCodeAppInfoMap.get(code);
-				
-				TextView tv = (TextView)findViewById(R.id.main_app_title);
-				tv.setText(appInfo.mAppName);
-				
-				tv = (TextView)findViewById(R.id.main_app_author);
-				tv.setText(appInfo.mAppAuthor);
-				
-				tv = (TextView)findViewById(R.id.main_app_version);
-				tv.setText(appInfo.mAppVersion);
-				
-				if (mCodeSizeMap.containsKey(appInfo.mAppCode)) {
-					mTextViewSize.setVisibility(View.VISIBLE);
-					mTextViewSize.setText(mCodeSizeMap.get(appInfo.mAppCode));
-				}
-				else {
-					mTextViewSize.setVisibility(View.GONE);
-				}
-				
-				tv = (TextView)findViewById(R.id.downloadpage_desc);
-				tv.setText(appInfo.mAppShortDesc);
-				
-				updateImage(appInfo);
-			}
+		else {
+			mTextViewSize.setVisibility(View.GONE);
 		}
+		
+		tv = (TextView)findViewById(R.id.downloadpage_desc);
+		tv.setText(appInfo.mAppShortDesc);
+		
+		updateImage(appInfo);
 	}
 	
 	protected void onImageCompleted(boolean result, String url, String appcode) {
@@ -170,37 +175,56 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 		}
 	}
 	
-	private void initList() {
-		mListView = (ListView)findViewById(R.id.downloadpage_list);
-		mListApater = new ListAdapter(this, R.layout.applist_item_layout, mDownloadCursor);
-		mListView.setAdapter(mListApater);
-		mListView.setOnItemSelectedListener(this);
-		mListView.requestFocus();
+	private AppInfo getAppInfo(String code) {
+		String [] columns = {
+				InstalledAppDb.COLUMN_CODE, InstalledAppDb.COLUMN_VERSION,
+				InstalledAppDb.COLUMN_APP_NAME, InstalledAppDb.COLUMN_AUTHOR,
+				InstalledAppDb.COLUMN_DESC, InstalledAppDb.COLUMN_IMAGE_URL,
+		};
+		String where = InstalledAppDb.COLUMN_CODE + "=?";
+		String [] whereArgs = {code};
+
+		AppInfo appInfo = null;
+		Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+				columns, where, whereArgs, null);
+		if (c != null && c.moveToFirst()) {
+			int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
+			int appNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_APP_NAME);
+			int versionId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
+			int authorId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_AUTHOR);
+			int descId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DESC);
+			int imageId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_IMAGE_URL);
+		
+			appInfo = new AppInfo(c.getString(appNameId),
+					c.getString(versionId),
+					c.getString(codeId),
+					c.getString(authorId),
+					c.getString(imageId),
+					c.getString(descId));
+		}
+		if (null != c) {
+			c.close();
+		}
+		return appInfo;
 	}
 	
-	private void createInstallButtonGuard() {
-		int pos = mListView.getSelectedItemPosition();
-		if (ListView.INVALID_POSITION != pos) {
-			String code = (String)mListView.getItemAtPosition(pos);
-			if (null == mInstallButtonGuard) {
-				mInstallButtonGuard = new InstallButtonGuard(mInstallButton, 
-						mCodeAppInfoMap.get(code), ServiceManager.inst().getDownloadHandler());
-			}
-			else {
-				mInstallButtonGuard.setAppInfo(mCodeAppInfoMap.get(code));
-			}
-		}		
-	}
-	
-	private void addAppInfo(String code) {
-		if (!mCodeAppInfoMap.containsKey(code)) {
-    		String where = InstalledAppDb.COLUMN_CODE + "=?";
-    		String [] whereArgs = {code};
-    		ArrayList<AppInfo> appList = ServiceManager.inst().getDownloadHandler().getAppList(where, whereArgs);
-    		if (null != appList && appList.size() == 1) {
-    			mCodeAppInfoMap.put(code, appList.get(0));
-    		}
-    	}
+	private PackageState getAppState(String code) {
+		try {
+			PackageState state = PackageState.unknown;
+			String [] columns = {InstalledAppDb.COLUMN_STATE};
+			String where = InstalledAppDb.COLUMN_CODE + "=?";
+			String [] whereArgs = {code};
+			Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+					columns, where, whereArgs, null);
+			int index = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
+			if (c.moveToFirst())
+				state = PackageState.valueOf(c.getString(index));
+			c.close();
+			return state;
+		} catch (Throwable tr){
+			tr.printStackTrace();
+			return PackageState.unknown;
+		}
 	}
 	
 	private void updateAppStatesUIs(View view, String code,
@@ -229,8 +253,7 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
 			// update the item view of the list view
 			if (completed) {
 				// display string according to the state of the local database
-				InstalledAppDb.PackageState state = 
-					ServiceManager.inst().getDownloadHandler().getAppState(code);
+				InstalledAppDb.PackageState state = getAppState(code);
 				subTitleView.setText(getStateStringId(state));
 				
 				if (bIsSelected) {
@@ -320,7 +343,12 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
         
         public void bindView(View view, Context context, Cursor cursor) {
         	String code = cursor.getString(mDescId);
-        	addAppInfo(code);
+        	if (!mCodeAppInfoMap.containsKey(code)) {
+        		AppInfo appInfo = getAppInfo(code);
+        		if (null != appInfo) {
+        			mCodeAppInfoMap.put(code, appInfo);
+        		}
+        	}
         	
     		int status = cursor.getInt(mStatusId);
     		long totalBytes = cursor.getLong(mTotalBytesId);
@@ -333,5 +361,5 @@ public class AppDownloadPage extends AsyncTaskActivity implements OnItemSelected
     			updateAppStatesUIs(view, code, false, currentBytes, totalBytes);		
     		}
         }
-    }
+	}
 }

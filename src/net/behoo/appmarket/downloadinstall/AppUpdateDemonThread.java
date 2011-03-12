@@ -6,8 +6,9 @@ import java.util.Map;
 
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
-import behoo.sync.ISyncService;
+import behoo.providers.InstalledAppDb.PackageState;
 
+import net.behoo.appmarket.TokenWrapper;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.UrlHelpers;
@@ -26,7 +27,6 @@ public class AppUpdateDemonThread extends Thread {
 	private Context mContext = null;
 	private Object mSyncObject = new Object();
 	private boolean mExit = false;
-	private ISyncService mSyncService = null;
 	
 	public AppUpdateDemonThread(Context context) {	
 		mContext = context;
@@ -34,60 +34,18 @@ public class AppUpdateDemonThread extends Thread {
 	
 	public void run() {
 		while (!mExit) {
-			Map<String, String> codesVersionMap = shouldBeCheckedAppMap();
-			Log.i(TAG, "packages need to be checked "+Integer.toString(codesVersionMap.size()));
+			Log.i(TAG, "begin to check update");
 			
-			// check update
-			if (0 < codesVersionMap.size()) {
-				AppListParser appListParser = new AppListParser();
-				String reqStr = UrlHelpers.getUpdateRequestString(codesVersionMap);
-				Log.i(TAG, "update request string "+reqStr);
-				try {
-					String url = UrlHelpers.getUpdateUrl(mSyncService.getToken());
-					ArrayList<AppInfo> appList =
-						appListParser.getUpdateList(url, reqStr, codesVersionMap.size());
-					Log.i(TAG, "number of apps should upgrade: "+Integer.toString(appList.size()));
-					
-					ContentValues cv = new ContentValues();
-					for (int i = 0; i < appList.size(); ++i) {
-						AppInfo appInfo = appList.get(i);
-						cv.put(InstalledAppDb.COLUMN_STATE, 
-								InstalledAppDb.PackageState.need_update.name());
-						
-						String where = InstalledAppDb.COLUMN_CODE+"=?";
-						String [] selectionArgs = {appInfo.mAppCode};
-						
-						mContext.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-								cv, where, selectionArgs);
-					}
-					
-					if (0 < appList.size()) {
-						Intent intent = new Intent(Constants.ACTION_UPDATE_STATE);
-						mContext.sendBroadcast(intent);
-					}
-				} catch(Throwable tr) {
-					Log.w(TAG, "check update failed "+tr.getMessage());
-				} finally {
-					appListParser.cancel();
-				}
-			}
+			Map<String, String> codesVersionMap = shouldBeCheckedAppMap();
+			
+			checkUpdate(codesVersionMap);
 
-			// wake up after 30 minutes
-			synchronized (mSyncObject) {
-				try {
-					if (!mExit) {
-						mSyncObject.wait(1000 * 60 * 30); // 30minutes
-					}
-				} catch (InterruptedException e) {
-					// continue to wait ?
-				}
-			}
+			sleepAndWait();
 		}
 	}
 	
-	public void checkUpdate(ISyncService syncService) {
+	public void checkUpdate() {
 		synchronized (mSyncObject) {
-			mSyncService = syncService;
 			mSyncObject.notify();
 		}
 	}
@@ -98,6 +56,58 @@ public class AppUpdateDemonThread extends Thread {
 			mExit = true;
 			mSyncObject.notify();
 		}
+	}
+	
+	private void sleepAndWait() {
+		// wake up after 30 minutes
+		synchronized (mSyncObject) {
+			try {
+				if (!mExit) {
+					mSyncObject.wait(1000 * 60 * 30);
+				}
+			} catch (InterruptedException e) {
+			}
+		}
+	}
+	
+	private void checkUpdate(Map<String, String> codesVersionMap) {
+		// check update
+		if (0 == codesVersionMap.size()) {
+			return;
+		}
+		
+		AppListParser appListParser = new AppListParser();
+		String reqStr = UrlHelpers.getUpdateRequestString(codesVersionMap);
+		try {
+			String token = TokenWrapper.getToken(mContext);
+			String url = UrlHelpers.getUpdateUrl(token);
+			ArrayList<AppInfo> appList =
+				appListParser.getUpdateList(url, reqStr, codesVersionMap.size());
+			Log.i(TAG, "number of apps should be upgraded: "+Integer.toString(appList.size()));
+			
+			ContentValues cv = new ContentValues();
+			for (int i = 0; i < appList.size(); ++i) {
+				AppInfo appInfo = appList.get(i);
+				cv.put(InstalledAppDb.COLUMN_STATE, PackageState.need_update.name());
+				cv.put(InstalledAppDb.COLUMN_AUTHOR, appInfo.mAppAuthor);
+				cv.put(InstalledAppDb.COLUMN_DESC, appInfo.mAppShortDesc);
+				cv.put(InstalledAppDb.COLUMN_VERSION, appInfo.mAppVersion);
+				cv.put(InstalledAppDb.COLUMN_IMAGE_URL, appInfo.mAppImageUrl);
+				cv.put(InstalledAppDb.COLUMN_APP_NAME, appInfo.mAppName);
+				String where = InstalledAppDb.COLUMN_CODE+"=?";
+				String [] selectionArgs = {appInfo.mAppCode};
+				mContext.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+						cv, where, selectionArgs);
+			}
+			
+			Intent intent = new Intent(Constants.ACTION_PKG_UPDATE_FINISHED);
+			intent.putExtra(Constants.EXTRA_SIZE, appList.size());
+			mContext.sendBroadcast(intent);
+		} catch(Throwable tr) {
+			tr.printStackTrace();
+		} finally {
+			appListParser.cancel();
+		}	
 	}
 	
 	private Map<String, String> shouldBeCheckedAppMap() {
@@ -114,9 +124,7 @@ public class AppUpdateDemonThread extends Thread {
 			ContentResolver cr = mContext.getContentResolver();
 			Cursor c = cr.query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 					columns, null, null, null);
-			if (null != c) {
-				Log.i(TAG, "packages installed by appmarket "+Integer.toString(c.getCount()));
-				
+			if (null != c) {			
 				int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
 				int versionId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
 				int stateId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
@@ -146,8 +154,10 @@ public class AppUpdateDemonThread extends Thread {
 				c.close();
 			}
 		} catch (Throwable tr) {
-			
+			tr.printStackTrace();
 		}
+		Log.i(TAG, "packages should be checked "
+				+Integer.toString(codesVersionMap.size()));
 		return codesVersionMap;
 	}
 	

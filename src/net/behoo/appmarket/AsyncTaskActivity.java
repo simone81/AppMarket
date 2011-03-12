@@ -21,13 +21,12 @@ abstract public class AsyncTaskActivity extends Activity
 	public static final int TASK_ERROR_DIALOG = 1;
 	
 	private static final String TAG = "AsyncTaskActivity";
-	
+
 	private PausableThreadPoolExecutor mThreadPool = new PausableThreadPoolExecutor(5);
 	private boolean mExiting = false;
 	
 	protected Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
-			Log.i(TAG, "handleMessage "+msg.what+" "+(AsyncTaskActivity.this.mExiting?"exiting":"running"));
         	switch (msg.what) {
         	case DownloadConstants.MSG_PROTOCOL_SUCCEED:
         		if (!mExiting) {
@@ -67,7 +66,7 @@ abstract public class AsyncTaskActivity extends Activity
         	super.handleMessage(msg);
         }
 	};
-	
+    
 	public void onResume() {
     	super.onResume();
     	mThreadPool.resume();

@@ -8,6 +8,7 @@ import behoo.providers.InstalledAppDb;
 import behoo.sync.ISyncService;
 
 import net.behoo.appmarket.ServiceManager;
+import net.behoo.appmarket.TokenWrapper;
 import net.behoo.appmarket.data.AppInfo;
 
 import junit.framework.Assert;
@@ -86,6 +87,10 @@ public class DownloadInstallService extends Service {
 		    		 && 0 == action.compareTo(behoo.content.Intent.ACTION_TO_UNINSTALL_PKG)) {
 		    	String code = intent.getStringExtra(behoo.content.Intent.PKG_TO_UNINSTALL_CODE);
 		    	this.uninstall(code);
+		    }
+		    else if (null != action
+		    		 && 0 == action.compareTo(Constants.ACTION_START_CHECK_UPDATE)) {
+		    	mUpdateDaemonThread.checkUpdate();
 		    }
 		}
 	    return START_STICKY;
@@ -193,11 +198,7 @@ public class DownloadInstallService extends Service {
 		}
 	}
 	
-	public void checkUpdate(ISyncService syncService) {
-		mUpdateDaemonThread.checkUpdate(syncService);
-	}
-	
-	public void uninstall(String code) {
+	private void uninstall(String code) {
 		String [] columns = {InstalledAppDb.COLUMN_PKG_NAME,
 				InstalledAppDb.COLUMN_DOWNLOAD_URI};
 		String where = InstalledAppDb.COLUMN_CODE+"=?";
@@ -206,26 +207,16 @@ public class DownloadInstallService extends Service {
 				columns, where, whereArgs, null);
 		String pkgName = null;
 		String downloadUri = null;
-		if (null != c) {
-			c.moveToFirst();
+		if (null != c && c.moveToFirst()) {
 			int pkgNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_PKG_NAME);
 			int downloadUriId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
 			pkgName = c.getString(pkgNameId);
 			downloadUri = c.getString(downloadUriId);
 			c.close();
 			
-			Log.i(TAG, "uninstall code: "+code+" uri: "+downloadUriId);
-			String token = null;
-			try {
-				if (null != ServiceManager.inst().getSyncHandler()) {
-					token = ServiceManager.inst().getSyncHandler().getToken();
-				}
-			}
-			catch (Throwable tr) {
-				Log.w(TAG, tr.getLocalizedMessage());
-			}
+			Log.i(TAG, "uninstall, code: "+code+" download uri: "+downloadUriId);
 			UninstallThread thrd = new UninstallThread(this, 
-					code, pkgName, downloadUri, token);
+					code, pkgName, downloadUri);
 			thrd.start();
 		}
 		else {

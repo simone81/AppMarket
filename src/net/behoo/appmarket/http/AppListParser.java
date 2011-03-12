@@ -30,7 +30,7 @@ public class AppListParser {
 			InputStream is = mHttpUtil.httpGet(url);
 			return parse(is, maxCount);
 		} catch (Throwable tr) {
-			Log.w(TAG, "getPromotionList "+tr.getLocalizedMessage());
+			tr.printStackTrace();
 		} finally {
 			cancel();
 		}
@@ -140,6 +140,9 @@ public class AppListParser {
                     	else if(tagName.equalsIgnoreCase("BH_D_App_Code")) {
                     		appInfo.mAppCode = parser.nextText();
                     	}
+                    	else {
+                    		parser.nextText();
+                    	}
                 	}
                 	break;
                 case XmlPullParser.END_TAG:
@@ -158,9 +161,10 @@ public class AppListParser {
 	        	eventType = parser.next();
 	        }
     	} catch (Throwable tr) {
-    		Log.i(TAG, "parse "+tr.getMessage());
+    		tr.printStackTrace();
     	}
-    	Log.i(TAG, "app count by protocol "+numOfApp+" and real count is "+Integer.toString(mAppList.size()));
+    	Log.i(TAG, "app count by protocol "+numOfApp+
+    			" and real count is "+Integer.toString(mAppList.size()));
     	return mAppList;
 	}
 }
