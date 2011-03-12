@@ -71,6 +71,7 @@ public class AppUpdatePage extends AsyncTaskActivity
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		
 		Intent i = new Intent(this, DownloadInstallService.class);
+		i.setAction(Constants.ACTION_START_CHECK_UPDATE);
 		startService(i);
 		showDialog(WAITING_DIALOG);
 	}

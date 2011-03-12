@@ -2,8 +2,6 @@ package net.behoo.appmarket;
 
 import java.util.ArrayList;
 
-import behoo.sync.ISyncService;
-
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.AppListParser;
 import net.behoo.appmarket.http.ProtocolDownloadTask;
@@ -37,7 +35,6 @@ public class AppListPage extends AsyncTaskActivity
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
 	private HttpTask mHttpTask = null;
-	private boolean mFirstDownload = true;
 	private ListView mListView = null;
 	private AppListAdapter mListAdapter = null;
 	private ImageView mAppImage = null;
@@ -59,14 +56,8 @@ public class AppListPage extends AsyncTaskActivity
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 			
 		mHttpTask = new HttpTask(mHandler);
-	}
-	
-	protected void onSyncServiceConnected(ISyncService syncService) {
-		if (mFirstDownload) {
-			executeTask(mHttpTask);
-			showDialog(WAITING_DIALOG);
-			mFirstDownload = false;
-		}
+		executeTask(mHttpTask);
+		showDialog(WAITING_DIALOG);
 	}
 	
 	public void onClick(View v) {

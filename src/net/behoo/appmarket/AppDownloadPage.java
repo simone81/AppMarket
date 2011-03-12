@@ -123,8 +123,11 @@ public class AppDownloadPage extends AsyncTaskActivity
 		// get the app code of the selected item
 		String code = (String)mListView.getItemAtPosition(position);
 		if (null != code) {
-			mInstallButtonGuard.setAppInfo(mCodeAppInfoMap.get(code));
-			updateUIState(mCodeAppInfoMap.get(code));
+			AppInfo appInfo = mCodeAppInfoMap.get(code);
+			if (null != appInfo) {
+				mInstallButtonGuard.setAppInfo(appInfo);
+				updateUIState(appInfo);
+			}
 		}
 	}
 	
