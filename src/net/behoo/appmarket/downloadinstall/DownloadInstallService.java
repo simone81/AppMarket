@@ -7,7 +7,6 @@ import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
 import behoo.sync.ISyncService;
 
-import net.behoo.appmarket.ServiceManager;
 import net.behoo.appmarket.TokenWrapper;
 import net.behoo.appmarket.data.AppInfo;
 
@@ -309,7 +308,7 @@ public class DownloadInstallService extends Service {
                     query, frag);
             return uri;
         } catch (Exception e) {
-            Log.e(TAG, "Could not parse url for download: " + url, e);
+            e.printStackTrace();
             throw new IllegalArgumentException();
         }
 	}
@@ -326,36 +325,37 @@ public class DownloadInstallService extends Service {
 	private void validatePackageState() {
 		// validate the package state if some extreme states happened, for example
 		// power off by user .
-		String [] columns = {InstalledAppDb.COLUMN_DOWNLOAD_URI,
-				InstalledAppDb.COLUMN_CODE};
-		String where = "("+InstalledAppDb.COLUMN_STATE +"=?) OR (" 
-			+ InstalledAppDb.COLUMN_STATE + "=?) OR ("
-			+ InstalledAppDb.COLUMN_STATE + "=?)";
-		String [] whereArgs = {InstalledAppDb.PackageState.downloading.name(),
-				InstalledAppDb.PackageState.download_succeeded.name(),
-				InstalledAppDb.PackageState.installing.name()};
-		Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-				columns, where, whereArgs, null);
-		if (null != c) {
-			int uriId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
-			int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
-			for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-				try {
+		try {
+			String [] columns = {InstalledAppDb.COLUMN_DOWNLOAD_URI,
+					InstalledAppDb.COLUMN_CODE};
+			String where = "("+InstalledAppDb.COLUMN_STATE +"=?) OR (" 
+				+ InstalledAppDb.COLUMN_STATE + "=?) OR ("
+				+ InstalledAppDb.COLUMN_STATE + "=?)";
+			String [] whereArgs = {InstalledAppDb.PackageState.downloading.name(),
+					InstalledAppDb.PackageState.download_succeeded.name(),
+					InstalledAppDb.PackageState.installing.name()};
+			Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+					columns, where, whereArgs, null);
+			if (null != c) {
+				int uriId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
+				int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
+				for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+					
 					String uri = c.getString(uriId);
 					String code = c.getString(codeId);
 					Log.i(TAG, "validatePackageState code:"+code+ " uri: "+uri);
-					
+						
 					getContentResolver().delete(Uri.parse(uri), null, null);
-					
+						
 					String localwhere = InstalledAppDb.COLUMN_CODE + "=?";
 					String[] whereValue = {code};
 					this.getContentResolver().delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-							localwhere, whereValue);
-				}catch (Throwable tr) {
-					Log.w(TAG, "validatePackageState "+tr.getLocalizedMessage());
+						localwhere, whereValue);
 				}
+				c.close();
 			}
-			c.close();
+		}catch (Throwable tr) {
+			tr.printStackTrace();
 		}
 	}
 	
