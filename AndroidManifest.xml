@@ -58,7 +58,7 @@
 		</receiver>
 		
 		<provider android:name=".database.InstalledPkgsProvider"
-			android:authorities="InstalledAppsProvider"/>
+			android:authorities="installedapps"/>
     </application>
 
 </manifest> 

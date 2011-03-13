@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
+import behoo.providers.InstalledAppDb.PackageState;
 import behoo.sync.ISyncService;
 
 import net.behoo.appmarket.TokenWrapper;
@@ -85,7 +86,7 @@ public class DownloadInstallService extends Service {
 		    else if (null != action
 		    		 && 0 == action.compareTo(behoo.content.Intent.ACTION_TO_UNINSTALL_PKG)) {
 		    	String code = intent.getStringExtra(behoo.content.Intent.PKG_TO_UNINSTALL_CODE);
-		    	this.uninstall(code);
+		    	uninstall(code);
 		    }
 		    else if (null != action
 		    		 && 0 == action.compareTo(Constants.ACTION_START_CHECK_UPDATE)) {
@@ -110,7 +111,7 @@ public class DownloadInstallService extends Service {
 		// check the application state
 		boolean bExists = false;
 		String statusStr = null;
-		InstalledAppDb.PackageState state = InstalledAppDb.PackageState.unknown;
+		PackageState state = PackageState.unknown;
 		String downloadUri = null;
 		
 		String [] columns = {InstalledAppDb.COLUMN_CODE, 
@@ -127,7 +128,7 @@ public class DownloadInstallService extends Service {
 			if (bExists) {
 				int index = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
 				statusStr = c.getString(index);
-				state = InstalledAppDb.PackageState.valueOf(statusStr);
+				state = PackageState.valueOf(statusStr);
 				
 				index = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
 				downloadUri = c.getString(index);	
@@ -192,7 +193,7 @@ public class DownloadInstallService extends Service {
 		        			InstalledAppDb.PackageState.download_failed.name()); 
 		        }
 			} catch (Throwable tr) {
-				Log.w(TAG, "downloadAndInstall "+tr.getLocalizedMessage());
+				tr.printStackTrace();
 			}
 		}
 	}
@@ -408,7 +409,7 @@ public class DownloadInstallService extends Service {
 		cv.put(InstalledAppDb.COLUMN_STATE, statusStr);
 		String where = InstalledAppDb.COLUMN_CODE+"=?";
 		String [] selectionArgs = {code};
-		DownloadInstallService.this.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+		getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 				cv, where, selectionArgs);	
 		PackageStateSender.sendPackageStateBroadcast(this, 
 				code, statusStr);

@@ -59,7 +59,7 @@ public class AppDownloadPage extends AsyncTaskActivity
 			String code = intent.getStringExtra(Constants.PACKAGE_CODE);
 			String state = intent.getStringExtra(Constants.PACKAGE_STATE);
 			// update the progress bar
-			switch (InstalledAppDb.PackageState.valueOf(state)) {
+			switch (PackageState.valueOf(state)) {
 			case installing:
 			case install_failed:
 			case install_succeeded:

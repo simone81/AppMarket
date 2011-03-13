@@ -25,9 +25,9 @@ public class InstalledPkgsProvider extends ContentProvider {
 	private static final String DOWNLOAD_LIST_TYPE = "vnd.android.cursor.dir/apps";
 	private static final String DOWNLOAD_TYPE = "vnd.android.cursor.item/apps";
 	
-	public static final String DATABASE_NAME = "packages_db";
+	public static final String DATABASE_NAME = "installedapps.db";
 	public static final int DATABASE_VERSION = 1;
-	public static final String TABLE_NAME = "packages_table";
+	public static final String TABLE_NAME = "installedapps";
 	
 	private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 	private static final int APPS = 0;
