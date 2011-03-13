@@ -27,13 +27,15 @@ public class UninstallThread extends Thread {
 			PackageInstaller installer = new PackageInstaller(mContext);
 			installer.uninstallPackage(mPkgName);
 			
+			// delete the application record from local database
 			String where = InstalledAppDb.COLUMN_CODE+"=?";
 			String [] whereArgs = {mPkgCode};
 			mContext.getContentResolver().delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 					where, whereArgs);
-			
+			// delete the application record from download provider
 			mContext.getContentResolver().delete(Uri.parse(mDownloadUri), null, null);
 			
+			// report it to the server
 			reportPkgUnintalled();
 			
 			// intent for inner-process broadcast

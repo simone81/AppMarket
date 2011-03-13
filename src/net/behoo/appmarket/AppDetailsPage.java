@@ -23,7 +23,6 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	private static final String TAG = "DetailsPage";
 
 	private InstallButtonGuard mInstallButtonGuard = null;
-
 	private AppInfo mAppInfo = new AppInfo();
 	private HttpTask mHttpTask = null;
 	
@@ -60,6 +59,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
         }
         else {
         	// error dialog
+        	Log.w(TAG, "unresolved data received.");
         }
     }
 	
@@ -155,7 +155,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		    RatingBar rb = (RatingBar)findViewById(R.id.detail_ratingbar);
 		    rb.setRating(score%5);
 		} catch(NumberFormatException nfe) {
-		   Log.w(TAG, "Could not parse " + nfe);
+		   nfe.printStackTrace();
 		} 	
 	}
 	
@@ -175,7 +175,6 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 			try {
 				String url = UrlHelpers.getAppDetailUrl(
 						TokenWrapper.getToken(AppDetailsPage.this), mAppCode);
-				Log.i(TAG, "doTask "+url);
 				
 				AppInfo appInfo = mDataProxy.getAppInfo(url);
 				if (null != appInfo) {

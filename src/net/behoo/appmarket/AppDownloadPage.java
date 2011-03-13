@@ -10,6 +10,7 @@ import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
 import behoo.providers.InstalledAppDb.PackageState;
 import behoo.sync.ISyncService;
+import net.behoo.appmarket.database.PkgsProviderWrapper;
 
 import junit.framework.Assert;
 
@@ -105,13 +106,13 @@ public class AppDownloadPage extends AsyncTaskActivity
 		super.onResume();
 		mInstallButtonGuard.enableGuard();
 		IntentFilter filter = new IntentFilter(Constants.ACTION_PKG_STATE_CHANGED);
-		this.registerReceiver(mReceiver, filter);
+		registerReceiver(mReceiver, filter);
 	}
 	
     public void onPause() {
     	super.onPause();
-		mInstallButtonGuard.updateAppState();
-    	this.unregisterReceiver(mReceiver);
+    	unregisterReceiver(mReceiver);
+    	mInstallButtonGuard.disableGuard();
     }
     
     public void onInstallClicked(AppInfo appInfo) {
@@ -178,58 +179,6 @@ public class AppDownloadPage extends AsyncTaskActivity
 		}
 	}
 	
-	private AppInfo getAppInfo(String code) {
-		String [] columns = {
-				InstalledAppDb.COLUMN_CODE, InstalledAppDb.COLUMN_VERSION,
-				InstalledAppDb.COLUMN_APP_NAME, InstalledAppDb.COLUMN_AUTHOR,
-				InstalledAppDb.COLUMN_DESC, InstalledAppDb.COLUMN_IMAGE_URL,
-		};
-		String where = InstalledAppDb.COLUMN_CODE + "=?";
-		String [] whereArgs = {code};
-
-		AppInfo appInfo = null;
-		Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-				columns, where, whereArgs, null);
-		if (c != null && c.moveToFirst()) {
-			int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
-			int appNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_APP_NAME);
-			int versionId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
-			int authorId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_AUTHOR);
-			int descId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DESC);
-			int imageId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_IMAGE_URL);
-		
-			appInfo = new AppInfo(c.getString(appNameId),
-					c.getString(versionId),
-					c.getString(codeId),
-					c.getString(authorId),
-					c.getString(imageId),
-					c.getString(descId));
-		}
-		if (null != c) {
-			c.close();
-		}
-		return appInfo;
-	}
-	
-	private PackageState getAppState(String code) {
-		try {
-			PackageState state = PackageState.unknown;
-			String [] columns = {InstalledAppDb.COLUMN_STATE};
-			String where = InstalledAppDb.COLUMN_CODE + "=?";
-			String [] whereArgs = {code};
-			Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-					columns, where, whereArgs, null);
-			int index = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
-			if (c.moveToFirst())
-				state = PackageState.valueOf(c.getString(index));
-			c.close();
-			return state;
-		} catch (Throwable tr){
-			tr.printStackTrace();
-			return PackageState.unknown;
-		}
-	}
-	
 	private void updateAppStatesUIs(View view, String code,
 			boolean completed, long currentBytes, long totalBytes) {
 
@@ -256,7 +205,7 @@ public class AppDownloadPage extends AsyncTaskActivity
 			// update the item view of the list view
 			if (completed) {
 				// display string according to the state of the local database
-				InstalledAppDb.PackageState state = getAppState(code);
+				InstalledAppDb.PackageState state = PkgsProviderWrapper.getAppState(this, code);
 				subTitleView.setText(getStateStringId(state));
 				
 				if (bIsSelected) {
@@ -347,7 +296,7 @@ public class AppDownloadPage extends AsyncTaskActivity
         public void bindView(View view, Context context, Cursor cursor) {
         	String code = cursor.getString(mDescId);
         	if (!mCodeAppInfoMap.containsKey(code)) {
-        		AppInfo appInfo = getAppInfo(code);
+        		AppInfo appInfo = PkgsProviderWrapper.getAppInfo(AppDownloadPage.this, code);
         		if (null != appInfo) {
         			mCodeAppInfoMap.put(code, appInfo);
         		}

@@ -8,6 +8,7 @@ import net.behoo.appmarket.data.AppInfo;
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
 import behoo.providers.MessageDb;
+import behoo.providers.InstalledAppDb.PackageState;
 
 import junit.framework.Assert;
 import android.content.ContentValues;
@@ -36,6 +37,7 @@ public class InstallThread extends Thread {
 	
 	public void run() {
 		synchronized( SYNC_OBJ ) {
+			// installation
 			boolean ret = false;
 			try {
 				// update application state
@@ -45,21 +47,21 @@ public class InstallThread extends Thread {
 				String [] whereArgs = {mPkgCode};
 				mContext.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 						cv, where, whereArgs);
-				
+				// broadcast the action of application state changed
 				PackageStateSender.sendPackageStateBroadcast(mContext, 
 						mPkgCode, InstalledAppDb.PackageState.installing.name());
 				
-				// installing
+				// install it
 				PackageInstaller installer = new PackageInstaller(mContext);
 				ret = installer.installPackage(Uri.parse(mPkgSrcUri));
 			} catch ( Throwable tr ) {
 				ret = false;
 			}
 			
+			// update the record of the local database due to the result of installation
 			try {
-				// update the local data record
-				String status = (ret ? InstalledAppDb.PackageState.install_succeeded.name()
-						: InstalledAppDb.PackageState.install_failed.name());
+				String status = (ret ? PackageState.install_succeeded.name()
+						: PackageState.install_failed.name());
 				ContentValues cv2 = new ContentValues();
 				cv2.put(InstalledAppDb.COLUMN_STATE, status);
 				Date date = new Date();

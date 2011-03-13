@@ -130,15 +130,17 @@ public class AppMarket extends AsyncTaskActivity
 			// redraw
 			if (hasFocus) {
 				mCurrentSelection = index;
-				updateUIState();
-				// the default picture
-				v.setBackgroundResource(R.drawable.focus);
-				v.setOnClickListener(this);
+				
 				mButtonInstall.setNextFocusDownId(v.getId());
 				mButtonAppList.setNextFocusUpId(v.getId());
 				mButtonUpdate.setNextFocusUpId(v.getId());
 				mButtonDownloadMgr.setNextFocusUpId(v.getId());
 				
+				// update the backgournd image, say, the selector
+				v.setBackgroundResource(R.drawable.focus);
+				v.setOnClickListener(this);
+				// 
+				updateUIState();
 				updateInstallButtonGuard();
 			}
 			else {
@@ -148,11 +150,7 @@ public class AppMarket extends AsyncTaskActivity
 	}
 	
 	protected void onTaskCompleted(boolean result) {
-		if (result) {
-			if (mAppLib.size() > 0) {
-				mCurrentSelection = 0;
-			}
-			
+		if (result) {		
 			for (int i = 0; i < mImageViewIds.length; ++i) {
 				ImageView iv = (ImageView)findViewById(mImageViewIds[i]);
 				if (i < mAppLib.size()) {
@@ -163,10 +161,8 @@ public class AppMarket extends AsyncTaskActivity
 					iv.setOnFocusChangeListener(this);
 					iv.setTag(new Integer(i));
 					iv.setPadding(8, 8, 8, 8);
-					if (i == mCurrentSelection) {
-						iv.requestFocus();
-						
-						updateInstallButtonGuard();
+					if (i == 0) {
+						onFocusChange(iv, true);
 					}
 					
 					executeImageTask(mAppLib.get(i).mAppImageUrl, mAppLib.get(i).mAppCode);

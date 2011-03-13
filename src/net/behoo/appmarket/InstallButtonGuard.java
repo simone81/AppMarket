@@ -2,17 +2,18 @@ package net.behoo.appmarket;
 
 import behoo.providers.InstalledAppDb;
 import behoo.providers.InstalledAppDb.PackageState;
+
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.downloadinstall.Constants;
 import net.behoo.appmarket.downloadinstall.DownloadInstallService;
 import net.behoo.appmarket.http.UrlHelpers;
+import net.behoo.appmarket.database.PkgsProviderWrapper;
+
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.os.IBinder;
+import android.content.pm.PackageManager;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -24,21 +25,8 @@ public class InstallButtonGuard implements OnClickListener {
 	private Context mContext = null;
 	private Button mButton = null;
 	private AppInfo mAppInfo = null;
-	private DownloadInstallService mInstallService = null;
     private PackageState mAppState = PackageState.unknown;
     private OnInstallClickListener mListener = null;
-    
-    private ServiceConnection mServiceConn = new ServiceConnection() {
-    	public void onServiceConnected(ComponentName cname, IBinder binder){
-    		mInstallService =
-    				((DownloadInstallService.LocalServiceBinder)binder).getService();
-    		updateAppState();
-    	}
-    	
-    	public void onServiceDisconnected(ComponentName cname){
-    		mInstallService = null;
-    	}
-    };
     
     private BroadcastReceiver mDownloadReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
@@ -66,17 +54,14 @@ public class InstallButtonGuard implements OnClickListener {
 		mButton = button;
 		mAppInfo = appInfo;
 		mButton.setOnClickListener(this);
+		updateAppState();
 	}
 	
 	public void disableGuard() {
 		mContext.unregisterReceiver(mDownloadReceiver);
-		mContext.unbindService(mServiceConn);
 	}
 	
-	public void enableGuard() {
-		Intent intent = new Intent(mContext, DownloadInstallService.class);
-		mContext.bindService(intent, mServiceConn, Context.BIND_AUTO_CREATE);
-		
+	public void enableGuard() {	
 		IntentFilter filter = new IntentFilter(Constants.ACTION_PKG_STATE_CHANGED);
 		mContext.registerReceiver(mDownloadReceiver, filter);
 	}
@@ -102,10 +87,6 @@ public class InstallButtonGuard implements OnClickListener {
 	}
 	
 	public void onClick(View v) {
-		if (null == mInstallService) {
-			return ;
-		}
-		
 		switch (mAppState) {
 		case unknown:	
 		case need_update:	
@@ -133,9 +114,14 @@ public class InstallButtonGuard implements OnClickListener {
 			}
 			break;
 		case install_succeeded:	
-			// get the package name
-			// get the launch intent
-			// start the activity
+			try {
+				String pkgName = PkgsProviderWrapper.getAppPkgName(mContext, mAppInfo.mAppCode);
+				PackageManager pm = mContext.getPackageManager();
+				Intent intent = pm.getLaunchIntentForPackage(pkgName);
+				mContext.startActivity(intent);
+			} catch (Throwable tr) {
+				tr.printStackTrace();
+			}
 			break;
 		case downloading:
 		case download_succeeded:
@@ -147,12 +133,8 @@ public class InstallButtonGuard implements OnClickListener {
 	}
 	
 	public void updateAppState() {
-		if (null == mInstallService) {
-			return ;
-		}
-		
 		if (null != mAppInfo) {
-			mAppState = mInstallService.getAppState(mAppInfo.mAppCode);
+			mAppState = PkgsProviderWrapper.getAppState(mContext, mAppInfo.mAppCode);
 			mButton.setVisibility(View.VISIBLE);
 			updateButtonState();
 		}

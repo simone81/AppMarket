@@ -23,12 +23,14 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.view.View.OnKeyListener;
 
 public class AppListPage extends AsyncTaskActivity 
 						 implements OnClickListener, 
-						 OnItemSelectedListener, OnKeyListener {
+						 OnItemSelectedListener, OnKeyListener,
+						 OnItemClickListener {
 	
 	private static final String TAG = "AppListPage";
 	private static final int PAGE_SIZE = 5;
@@ -48,6 +50,7 @@ public class AppListPage extends AsyncTaskActivity
 		mListView = (ListView)findViewById(R.id.app_list);
 		mListView.setAdapter(mListAdapter);
 		mListView.setOnItemSelectedListener(this);
+		mListView.setOnItemClickListener(this);
 		mListView.setOnKeyListener(this);
 		
 		Button button = (Button)findViewById(R.id.applist_btn_detail);
@@ -64,11 +67,7 @@ public class AppListPage extends AsyncTaskActivity
 		if (v.getId() == R.id.applist_btn_detail) {
 			int pos = mListView.getSelectedItemPosition();
 			if (ListView.INVALID_POSITION != pos) {
-				Intent intent = new Intent();
-				intent.setClass(AppListPage.this, AppDetailsPage.class);
-				String appCode = mAppList.get(pos).mAppCode;
-				intent.setData(AppInfo.makeUri(appCode));
-				startActivity( intent );
+				startDetailsActivity(pos);
 			}
 		}
 	}
@@ -84,6 +83,10 @@ public class AppListPage extends AsyncTaskActivity
 		}
 		return false;
 	} 
+	
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		startDetailsActivity(position);
+	}
 	
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		updateUIState();
@@ -125,8 +128,15 @@ public class AppListPage extends AsyncTaskActivity
 		}
 	}
 	
+	private void startDetailsActivity(int pos) {
+		Intent intent = new Intent();
+		intent.setClass(this, AppDetailsPage.class);
+		String appCode = mAppList.get(pos).mAppCode;
+		intent.setData(AppInfo.makeUri(appCode));
+		startActivity( intent );
+	}
+	
 	private void updateUIState() {
-		assert(mListView.getCount() == mAppList.size());
 		int pos = mListView.getSelectedItemPosition();
 		if (ListView.INVALID_POSITION != pos && mListView.getCount() > 0) {
 			AppInfo appInfo = mAppList.get(pos);

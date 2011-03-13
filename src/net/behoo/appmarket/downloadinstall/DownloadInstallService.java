@@ -10,6 +10,7 @@ import behoo.sync.ISyncService;
 
 import net.behoo.appmarket.TokenWrapper;
 import net.behoo.appmarket.data.AppInfo;
+import net.behoo.appmarket.database.PkgsProviderWrapper;
 
 import junit.framework.Assert;
 
@@ -74,8 +75,6 @@ public class DownloadInstallService extends Service {
 	
 	public void onDestroy() {
 		super.onDestroy();
-		
-		// stop the update daemon thread
 		mUpdateDaemonThread.exit();
 	}
 	
@@ -106,7 +105,7 @@ public class DownloadInstallService extends Service {
 		    	}
 		    	else if (action.equals(behoo.content.Intent.ACTION_TO_UNINSTALL_PKG)) {
 		    		String code = intent.getStringExtra(behoo.content.Intent.PKG_TO_UNINSTALL_CODE);
-		    		uninstall(code);
+		    		uninstallApp(code);
 		    	}
 		    	else if (action.equals(Constants.ACTION_START_CHECK_UPDATE)) {
 		    		mUpdateDaemonThread.checkUpdate();
@@ -127,46 +126,47 @@ public class DownloadInstallService extends Service {
 			throw new IllegalArgumentException();
 		}
 		
-		// check the application state
-		boolean bExists = false;
-		String statusStr = null;
-		PackageState state = PackageState.unknown;
+		// get the application state
+		boolean bAppExistsInDb = false;
+		PackageState pkgState = PackageState.unknown;
 		String downloadUri = null;
-		
-		String [] columns = {InstalledAppDb.COLUMN_CODE, 
-				InstalledAppDb.COLUMN_STATE,
-				InstalledAppDb.COLUMN_DOWNLOAD_URI};
-		String where = InstalledAppDb.COLUMN_CODE + "=?";
-		String[] whereValue = {appInfo.mAppCode};
-		Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-				columns, where, whereValue, null);
-		if (null != c) {
-			// make sure there is only one record for every application in the local database
-			Assert.assertTrue(c.getCount() >= 0 && c.getCount() <= 1);
-			bExists = (c.getCount() == 1 && c.moveToFirst());
-			if (bExists) {
-				int index = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
-				statusStr = c.getString(index);
-				state = PackageState.valueOf(statusStr);
-				
-				index = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
-				downloadUri = c.getString(index);	
+		Cursor cursor = null;
+		try {
+			String [] columns = {InstalledAppDb.COLUMN_CODE, 
+					InstalledAppDb.COLUMN_STATE,
+					InstalledAppDb.COLUMN_DOWNLOAD_URI};
+			String where = InstalledAppDb.COLUMN_CODE + "=?";
+			String[] whereValue = {appInfo.mAppCode};
+			
+			cursor = getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+					columns, where, whereValue, null);
+			bAppExistsInDb = (cursor.getCount() == 1);
+			cursor.moveToFirst();
+			
+			int index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
+			pkgState = PackageState.valueOf(cursor.getString(index));
+			
+			index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
+			downloadUri = cursor.getString(index);	
+		} catch (Throwable tr) {
+			tr.printStackTrace();
+		} finally {
+			if (null != cursor) {
+				cursor.close();
 			}
-			c.close();
 		}
 		
-		if (bExists && isDownloadingOrInstalling(state)) {
-			// the application is donwloading, just send a broadcast
-			Log.i(TAG, "downloading or installing now, code "+appInfo.mAppCode);
-			PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, state.name());
+		if (bAppExistsInDb && isDownloadingOrInstalling(pkgState)) {
+			Log.i(TAG, "the request application is being downloaded now, code "+appInfo.mAppCode);
+			PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, pkgState.name());
 		}
 		else {
-			// validate the downlaod uri
+			// validate the download uri
 			try {
 				URI uri = getURI(url);
-				Log.i(TAG, "downloadAndInstall "+uri.toString());
+				Log.i(TAG, "the url requested to download application is "+uri.toString());
 				
-				// insert values to download provider database and start the download
+				// insert values to download provider and trigger the downloading
 		        ContentValues values = new ContentValues();
 		        values.put(Downloads.COLUMN_URI, uri.toString());
 		        values.put(Downloads.COLUMN_NOTIFICATION_PACKAGE, this.getPackageName());
@@ -178,26 +178,26 @@ public class DownloadInstallService extends Service {
 		        values.put(Downloads.COLUMN_DESTINATION, Downloads.DESTINATION_CACHE_PARTITION_PURGEABLE);
 		        values.put(Downloads.COLUMN_TOTAL_BYTES, -1);
 		        Uri uriInserted = getContentResolver().insert(Downloads.CONTENT_URI, values);
-		        
-		        // add/update values to local database
 		        if (null != uriInserted) {
-		        	Log.i(TAG, "downloadAndInstall, add task "+uriInserted.toString());
+		        	Log.i(TAG, "the added downloading task is "+uriInserted.toString());
 			        ContentValues valuesLocal = new ContentValues(10);
 			        valuesLocal.put(InstalledAppDb.COLUMN_VERSION, appInfo.mAppVersion);
 			        valuesLocal.put(InstalledAppDb.COLUMN_APP_NAME, appInfo.mAppName);
 			        valuesLocal.put(InstalledAppDb.COLUMN_AUTHOR, appInfo.mAppAuthor);
 			        valuesLocal.put(InstalledAppDb.COLUMN_DESC, appInfo.mAppShortDesc);
 			        valuesLocal.put(InstalledAppDb.COLUMN_STATE, PackageState.downloading.name());
-			        valuesLocal.put(InstalledAppDb.COLUMN_DOWNLOAD_URI, uriInserted.toString());
 			        valuesLocal.put(InstalledAppDb.COLUMN_IMAGE_URL, appInfo.mAppImageUrl);
-			        if (bExists) {
+			        valuesLocal.put(InstalledAppDb.COLUMN_DOWNLOAD_URI, uriInserted.toString());
+			        if (bAppExistsInDb) {
 			        	try {
 			        		// we hope there is only one record for one application in the DownloadProvider database,
 			        		// so delete the existing record and add a new one
 			        		getContentResolver().delete(Uri.parse(downloadUri), null, null);
 			        	} catch (Throwable tr) {
 			        	}
-			        	this.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+			        	String where = InstalledAppDb.COLUMN_CODE + "=?";
+						String[] whereValue = {appInfo.mAppCode};
+			        	getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 			        			valuesLocal, where, whereValue);
 			        }
 			        else {
@@ -217,7 +217,55 @@ public class DownloadInstallService extends Service {
 		}
 	}
 	
-	private void uninstall(String code) {
+	private void installApp(String uri, String code) {
+		// get the downloaded file state
+		boolean bDownloadRet = false;
+		String filename = "";
+		if (PkgsProviderWrapper.isAppExists(this, code)) {
+			// get the file name from database. tbd how to determine the record of table
+			// if duplicated, maybe the uri should be used, but I don't know its meaning
+			String [] projects = {Downloads._DATA, Downloads.COLUMN_STATUS};
+			Cursor c = this.getContentResolver().query(Uri.parse(uri), 
+					projects, null, null, null);
+			if (null != c && c.moveToFirst()) {
+				int filenameId = c.getColumnIndexOrThrow(Downloads._DATA);
+				int statusId = c.getColumnIndexOrThrow(Downloads.COLUMN_STATUS);
+				int status = c.getInt(statusId);
+				if (Downloads.isStatusSuccess(status)) {
+					bDownloadRet = true;
+					filename = "file://"+c.getString(filenameId);
+				}			
+			}
+			if (null != c) {
+				c.close();
+			}
+		}	
+		
+		// update the installed applications database
+		ContentValues cv = new ContentValues();
+		String statusStr = null;
+		if (bDownloadRet) {
+			statusStr = PackageState.download_succeeded.name();
+		}
+		else {
+			statusStr = PackageState.download_failed.name();
+		}
+		cv.put(InstalledAppDb.COLUMN_STATE, statusStr);
+		String where = InstalledAppDb.COLUMN_CODE+"=?";
+		String [] selectionArgs = {code};
+		getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+				cv, where, selectionArgs);	
+		PackageStateSender.sendPackageStateBroadcast(this, 
+				code, statusStr);
+		
+		// the download has completed successfully!
+		if (bDownloadRet) {
+			InstallThread thrd = new InstallThread(this, code, filename);
+			thrd.start();
+		}
+	}
+	
+	private void uninstallApp(String code) {
 		String [] columns = {InstalledAppDb.COLUMN_PKG_NAME,
 				InstalledAppDb.COLUMN_DOWNLOAD_URI};
 		String where = InstalledAppDb.COLUMN_CODE+"=?";
@@ -226,81 +274,26 @@ public class DownloadInstallService extends Service {
 				columns, where, whereArgs, null);
 		String pkgName = null;
 		String downloadUri = null;
-		if (null != c && c.moveToFirst()) {
-			int pkgNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_PKG_NAME);
-			int downloadUriId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
-			pkgName = c.getString(pkgNameId);
-			downloadUri = c.getString(downloadUriId);
+		if (null != c) {
+			if (c.moveToFirst()) {
+				int pkgNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_PKG_NAME);
+				int downloadUriId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
+				pkgName = c.getString(pkgNameId);
+				downloadUri = c.getString(downloadUriId);
+				Log.i(TAG, "uninstall, code: "+code+" download uri: "+downloadUriId);
+				
+				UninstallThread thrd = new UninstallThread(this, 
+						code, pkgName, downloadUri);
+				thrd.start();
+			}
 			c.close();
-			
-			Log.i(TAG, "uninstall, code: "+code+" download uri: "+downloadUriId);
-			UninstallThread thrd = new UninstallThread(this, 
-					code, pkgName, downloadUri);
-			thrd.start();
 		}
 		else {
 			String tempPkgName = (null != pkgName ? pkgName : "");
 			PackageStateSender.sendPackageUninstallBroadcast(this, code, tempPkgName, false);
 		}
 	}
-	
-	public ArrayList<AppInfo> getUpdateList() {
-		String where = InstalledAppDb.COLUMN_STATE + "=?";
-		String [] whereArgs = {InstalledAppDb.PackageState.need_update.name()};
-		return getAppList(where, whereArgs);
-	}
-	
-	public ArrayList<AppInfo> getAppList(String where, String [] whereArgs) {
-		String [] columns = {
-				InstalledAppDb.COLUMN_CODE, InstalledAppDb.COLUMN_VERSION,
-				InstalledAppDb.COLUMN_APP_NAME, InstalledAppDb.COLUMN_AUTHOR,
-				InstalledAppDb.COLUMN_DESC, InstalledAppDb.COLUMN_IMAGE_URL,
-		};
-		
-		ArrayList<AppInfo> appList = null;
-		Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-				columns, where, whereArgs, null);
-		if (c != null) {
-			int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
-			int appNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_APP_NAME);
-			int versionId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
-			int authorId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_AUTHOR);
-			int descId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DESC);
-			int imageId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_IMAGE_URL);
-			appList = new ArrayList<AppInfo>();
-			for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-				AppInfo appInfo = new AppInfo(c.getString(appNameId),
-					c.getString(versionId),
-					c.getString(codeId),
-					c.getString(authorId),
-					c.getString(imageId),
-					c.getString(descId));
-				appList.add(appInfo);
-			}
-			c.close();
-		}	
-		return appList;
-	}
-	
-	public InstalledAppDb.PackageState getAppState(String code) {
-		try {
-			InstalledAppDb.PackageState state = InstalledAppDb.PackageState.unknown;
-			String [] columns = {InstalledAppDb.COLUMN_STATE};
-			String where = InstalledAppDb.COLUMN_CODE + "=?";
-			String [] whereArgs = {code};
-			Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-					columns, where, whereArgs, null);
-			int index = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
-			if (c.moveToFirst())
-				state = InstalledAppDb.PackageState.valueOf(c.getString(index));
-			c.close();
-			return state;
-		} catch (Throwable tr){
-			Log.w(TAG, "getAppState "+tr.getMessage());
-			return InstalledAppDb.PackageState.unknown;
-		}
-	}
-	
+
 	private URI getURI(String url) {
 		try {
             // Undo the percent-encoding that KURL may have done.
@@ -351,92 +344,31 @@ public class DownloadInstallService extends Service {
 			String where = "("+InstalledAppDb.COLUMN_STATE +"=?) OR (" 
 				+ InstalledAppDb.COLUMN_STATE + "=?) OR ("
 				+ InstalledAppDb.COLUMN_STATE + "=?)";
-			String [] whereArgs = {InstalledAppDb.PackageState.downloading.name(),
-					InstalledAppDb.PackageState.download_succeeded.name(),
-					InstalledAppDb.PackageState.installing.name()};
+			String [] whereArgs = {PackageState.downloading.name(),
+					PackageState.download_succeeded.name(),
+					PackageState.installing.name()};
 			Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 					columns, where, whereArgs, null);
 			if (null != c) {
 				int uriId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
 				int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
 				for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-					
 					String uri = c.getString(uriId);
 					String code = c.getString(codeId);
 					Log.i(TAG, "validatePackageState code:"+code+ " uri: "+uri);
-						
+					
+					// delete from download provider
 					getContentResolver().delete(Uri.parse(uri), null, null);
-						
+					// delete from local database	
 					String localwhere = InstalledAppDb.COLUMN_CODE + "=?";
 					String[] whereValue = {code};
-					this.getContentResolver().delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
+					getContentResolver().delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 						localwhere, whereValue);
 				}
 				c.close();
 			}
 		}catch (Throwable tr) {
 			tr.printStackTrace();
-		}
-	}
-	
-	private boolean isPackageExistInDb(String code) {
-		String [] columns = {InstalledAppDb.COLUMN_ID};
-		String where = InstalledAppDb.COLUMN_CODE + "=?";
-		String[] whereValue = {code};
-		Cursor c = this.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-				columns, where, whereValue, null);
-		boolean ret = (null != c && c.getCount() > 0);
-		if (null != c) {
-			c.close();
-		}
-		return ret;
-	}
-	
-	private void installApp(String uri, String code) {
-		// get the downloaded file state
-		boolean bDownloadRet = false;
-		String filename = "";
-		if (isPackageExistInDb(code)) {
-			// get the file name from database. tbd how to determine the record of table
-			// if duplicated, maybe the uri should be used, but I don't know its meaning
-			String [] projects = {Downloads._DATA, Downloads.COLUMN_STATUS};
-			Cursor c = this.getContentResolver().query(Uri.parse(uri), 
-					projects, null, null, null);
-			if (null != c && c.getCount() > 0 && c.moveToFirst()) {
-				int filenameId = c.getColumnIndexOrThrow(Downloads._DATA);
-				int statusId = c.getColumnIndexOrThrow(Downloads.COLUMN_STATUS);
-				int status = c.getInt(statusId);
-				if (Downloads.isStatusSuccess(status)) {
-					bDownloadRet = true;
-					filename = "file://"+c.getString(filenameId);
-				}			
-			}
-			if (null != c) {
-				c.close();
-			}
-		}	
-		
-		// update the installed applications database
-		ContentValues cv = new ContentValues();
-		String statusStr = null;
-		if (bDownloadRet) {
-			statusStr = InstalledAppDb.PackageState.download_succeeded.name();
-		}
-		else {
-			statusStr = InstalledAppDb.PackageState.download_failed.name();
-		}
-		cv.put(InstalledAppDb.COLUMN_STATE, statusStr);
-		String where = InstalledAppDb.COLUMN_CODE+"=?";
-		String [] selectionArgs = {code};
-		getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
-				cv, where, selectionArgs);	
-		PackageStateSender.sendPackageStateBroadcast(this, 
-				code, statusStr);
-		
-		// the download has completed successfully!
-		if (bDownloadRet) {
-			InstallThread thrd = new InstallThread(this, code, filename);
-			thrd.start();
 		}
 	}
 }
