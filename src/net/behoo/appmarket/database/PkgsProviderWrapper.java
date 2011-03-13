@@ -18,8 +18,9 @@ public class PkgsProviderWrapper {
 			cursor = context.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 					columns, where, whereArgs, null);
 			int index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
-			cursor.moveToFirst();
-			state = PackageState.valueOf(cursor.getString(index));
+			if (cursor.moveToFirst()) {
+				state = PackageState.valueOf(cursor.getString(index));
+			}
 		} catch (Throwable tr){
 			tr.printStackTrace();
 		} finally {
@@ -40,8 +41,9 @@ public class PkgsProviderWrapper {
 			cursor = context.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 					columns, where, whereArgs, null);
 			int index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_PKG_NAME);
-			cursor.moveToFirst();
-			pkgName = cursor.getString(index);
+			if (cursor.moveToFirst()) {
+				pkgName = cursor.getString(index);
+			}
 		} catch (Throwable tr) {
 			
 		} finally {
@@ -85,21 +87,22 @@ public class PkgsProviderWrapper {
 		try {
 			cursor = context.getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 				columns, where, whereArgs, null);
-			cursor.moveToFirst();
-		
-			int codeId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
-			int appNameId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_APP_NAME);
-			int versionId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
-			int authorId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_AUTHOR);
-			int descId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DESC);
-			int imageId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_IMAGE_URL);
-		
-			appInfo = new AppInfo(cursor.getString(appNameId),
-					cursor.getString(versionId),
-					cursor.getString(codeId),
-					cursor.getString(authorId),
-					cursor.getString(imageId),
-					cursor.getString(descId));
+			
+			if (cursor.moveToFirst()) {
+				int codeId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
+				int appNameId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_APP_NAME);
+				int versionId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
+				int authorId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_AUTHOR);
+				int descId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DESC);
+				int imageId = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_IMAGE_URL);
+			
+				appInfo = new AppInfo(cursor.getString(appNameId),
+						cursor.getString(versionId),
+						cursor.getString(codeId),
+						cursor.getString(authorId),
+						cursor.getString(imageId),
+						cursor.getString(descId));
+			}
 		} catch (Throwable tr) {
 			tr.printStackTrace();
 		} finally {
