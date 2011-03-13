@@ -141,13 +141,13 @@ public class DownloadInstallService extends Service {
 			cursor = getContentResolver().query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 					columns, where, whereValue, null);
 			bAppExistsInDb = (cursor.getCount() == 1);
-			cursor.moveToFirst();
+			if (cursor.moveToFirst()) {
+				int index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
+				pkgState = PackageState.valueOf(cursor.getString(index));
 			
-			int index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
-			pkgState = PackageState.valueOf(cursor.getString(index));
-			
-			index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
-			downloadUri = cursor.getString(index);	
+				index = cursor.getColumnIndexOrThrow(InstalledAppDb.COLUMN_DOWNLOAD_URI);
+				downloadUri = cursor.getString(index);	
+			}
 		} catch (Throwable tr) {
 			tr.printStackTrace();
 		} finally {

@@ -64,6 +64,7 @@ public class InstallButtonGuard implements OnClickListener {
 	public void enableGuard() {	
 		IntentFilter filter = new IntentFilter(Constants.ACTION_PKG_STATE_CHANGED);
 		mContext.registerReceiver(mDownloadReceiver, filter);
+		updateAppState();
 	}
 	
 	public void setOnInstallClickListener(OnInstallClickListener listener ) {
