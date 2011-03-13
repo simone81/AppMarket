@@ -35,11 +35,21 @@ import android.provider.Downloads;
 
 public class DownloadInstallService extends Service {
 	
+	public static final String ACTION_INSTALL_APP = 
+		"net.behoo.appmarket.downloadinstall.INSTALL_APP";
+	public static final String EXTRA_HTTP_URL = "http_url";
+	public static final String EXTRA_MIME = "mime";
+	public static final String EXTRA_APP_CODE = "app_code";
+	public static final String EXTRA_APP_VERSION = "app_version";
+	public static final String EXTRA_APP_AUTHOR = "app_author";
+	public static final String EXTRA_APP_NAME = "app_name";
+	public static final String EXTRA_APP_SHORTDESC = "desc";
+	public static final String EXTRA_APP_IMAGE_URL = "image_url";
+	
 	private static final String TAG = "DownloadInstallService";
 	private static final String BEHOO_APP_MARKET = "behoo_app_market";
 	
 	private final IBinder mBinder = new LocalServiceBinder();
-
 	private AppUpdateDemonThread mUpdateDaemonThread = null;
 	
 	public class LocalServiceBinder extends Binder {
@@ -52,9 +62,6 @@ public class DownloadInstallService extends Service {
 		super.onCreate();
 		// validate the application state of the local database
 		validatePackageState();
-		
-		// receiver for state from download provider
-		IntentFilter filter = new IntentFilter(DownloadReceiver.DOWNLOAD_COMPLETED);
 		
 		// the update daemon thread
 		mUpdateDaemonThread = new AppUpdateDemonThread(this);
@@ -75,29 +82,41 @@ public class DownloadInstallService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		if (null != intent) {
 			String action = intent.getAction();
-		    if (null != action
-		    	&& 0 == action.compareTo(DownloadReceiver.DOWNLOAD_COMPLETED)) {
-		    	String [] values = intent.getStringArrayExtra(DownloadReceiver.DOWNLOAD_COMPLETED);
-				String uri = values[0];
-				String code = values[1];
-				Log.i(TAG, "onStartCommand downloaded completed: "+code+" uri: "+uri);
-				onPackageDownloaded(uri, code);
-		    }
-		    else if (null != action
-		    		 && 0 == action.compareTo(behoo.content.Intent.ACTION_TO_UNINSTALL_PKG)) {
-		    	String code = intent.getStringExtra(behoo.content.Intent.PKG_TO_UNINSTALL_CODE);
-		    	uninstall(code);
-		    }
-		    else if (null != action
-		    		 && 0 == action.compareTo(Constants.ACTION_START_CHECK_UPDATE)) {
-		    	mUpdateDaemonThread.checkUpdate();
+		    if (null != action) {
+		    	if (action.equals(ACTION_INSTALL_APP)) {
+		    		AppInfo appInfo = new AppInfo(
+		    				intent.getStringExtra(EXTRA_APP_NAME),
+		    				intent.getStringExtra(EXTRA_APP_VERSION),
+		    				intent.getStringExtra(EXTRA_APP_CODE),
+		    				intent.getStringExtra(EXTRA_APP_AUTHOR),
+		    				intent.getStringExtra(EXTRA_APP_IMAGE_URL),
+		    				intent.getStringExtra(EXTRA_APP_SHORTDESC));
+		    		try {
+		    			downloadApp(intent.getStringExtra(EXTRA_HTTP_URL),
+		    				intent.getStringExtra(EXTRA_MIME), appInfo);
+		    		} catch (Throwable tr) {
+		    			tr.printStackTrace();
+		    		}
+		    	}
+		    	else if (action.equals(DownloadReceiver.DOWNLOAD_COMPLETED)) {
+		    		String uri = intent.getStringExtra(DownloadReceiver.EXTRA_DOWNLOAD_URI);
+		    		String appCode = intent.getStringExtra(DownloadReceiver.EXTRA_APP_CODE);
+		    		Log.i(TAG, "onStartCommand downloaded completed: "+appCode+" uri: "+uri);
+		    		installApp(uri, appCode);
+		    	}
+		    	else if (action.equals(behoo.content.Intent.ACTION_TO_UNINSTALL_PKG)) {
+		    		String code = intent.getStringExtra(behoo.content.Intent.PKG_TO_UNINSTALL_CODE);
+		    		uninstall(code);
+		    	}
+		    	else if (action.equals(Constants.ACTION_START_CHECK_UPDATE)) {
+		    		mUpdateDaemonThread.checkUpdate();
+		    	}
 		    }
 		}
 	    return START_STICKY;
 	}
 	
-	public void downloadAndInstall(String url, String mimetype,
-            AppInfo appInfo) {
+	private void downloadApp(String url, String mimetype, AppInfo appInfo) {
 		// check the argument
 		if (null == url || null == mimetype || null == appInfo) {
 			throw new NullPointerException();
@@ -168,7 +187,7 @@ public class DownloadInstallService extends Service {
 			        valuesLocal.put(InstalledAppDb.COLUMN_APP_NAME, appInfo.mAppName);
 			        valuesLocal.put(InstalledAppDb.COLUMN_AUTHOR, appInfo.mAppAuthor);
 			        valuesLocal.put(InstalledAppDb.COLUMN_DESC, appInfo.mAppShortDesc);
-			        valuesLocal.put(InstalledAppDb.COLUMN_STATE, InstalledAppDb.PackageState.downloading.name());
+			        valuesLocal.put(InstalledAppDb.COLUMN_STATE, PackageState.downloading.name());
 			        valuesLocal.put(InstalledAppDb.COLUMN_DOWNLOAD_URI, uriInserted.toString());
 			        valuesLocal.put(InstalledAppDb.COLUMN_IMAGE_URL, appInfo.mAppImageUrl);
 			        if (bExists) {
@@ -183,7 +202,7 @@ public class DownloadInstallService extends Service {
 			        }
 			        else {
 			        	valuesLocal.put(InstalledAppDb.COLUMN_CODE, appInfo.mAppCode);
-			        	this.getContentResolver().insert(BehooProvider.INSTALLED_APP_CONTENT_URI, valuesLocal);
+			        	getContentResolver().insert(BehooProvider.INSTALLED_APP_CONTENT_URI, valuesLocal);
 			        }
 			        PackageStateSender.sendPackageStateBroadcast(this, appInfo.mAppCode, 
 			        		InstalledAppDb.PackageState.downloading.name()); 
@@ -373,7 +392,7 @@ public class DownloadInstallService extends Service {
 		return ret;
 	}
 	
-	private void onPackageDownloaded(String uri, String code) {
+	private void installApp(String uri, String code) {
 		// get the downloaded file state
 		boolean bDownloadRet = false;
 		String filename = "";

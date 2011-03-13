@@ -113,13 +113,23 @@ public class InstallButtonGuard implements OnClickListener {
 		case download_failed:
 			try {
 				String url = UrlHelpers.getDownloadUrl(
-					TokenWrapper.getToken(mContext), mAppInfo.mAppCode);
-				mInstallService.downloadAndInstall(url, AppInfo.MIMETYPE, mAppInfo);
-				if (null != mListener) {
-					mListener.onInstallClicked(mAppInfo);
-				}
-			} catch (Throwable e) {
-				e.printStackTrace();
+						TokenWrapper.getToken(mContext), mAppInfo.mAppCode);
+				
+				Intent i = new Intent();
+				i.setClass(mContext, DownloadInstallService.class);
+				i.setAction(DownloadInstallService.ACTION_INSTALL_APP);
+				i.putExtra(DownloadInstallService.EXTRA_HTTP_URL, url);
+				i.putExtra(DownloadInstallService.EXTRA_MIME, AppInfo.MIMETYPE);
+				i.putExtra(DownloadInstallService.EXTRA_APP_CODE, mAppInfo.mAppCode);
+				i.putExtra(DownloadInstallService.EXTRA_APP_VERSION, mAppInfo.mAppVersion);
+				i.putExtra(DownloadInstallService.EXTRA_APP_NAME, mAppInfo.mAppName);
+				i.putExtra(DownloadInstallService.EXTRA_APP_IMAGE_URL, mAppInfo.mAppImageUrl);
+				i.putExtra(DownloadInstallService.EXTRA_APP_AUTHOR, mAppInfo.mAppAuthor);
+				i.putExtra(DownloadInstallService.EXTRA_APP_SHORTDESC, mAppInfo.mAppShortDesc);
+				mContext.startService(i);
+				mListener.onInstallClicked(mAppInfo);
+			} catch (Throwable tr) {
+				tr.printStackTrace();
 			}
 			break;
 		case install_succeeded:	
