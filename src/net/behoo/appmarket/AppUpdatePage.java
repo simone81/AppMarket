@@ -53,8 +53,7 @@ public class AppUpdatePage extends AsyncTaskActivity
     			InstalledAppDb.COLUMN_AUTHOR, 
     			InstalledAppDb.COLUMN_VERSION, 
     			InstalledAppDb.COLUMN_IMAGE_URL,
-    			InstalledAppDb.COLUMN_DOWNLOAD_URI, 
-    			InstalledAppDb.COLUMN_PKG_NAME};
+    			InstalledAppDb.COLUMN_DESC};
         String where = InstalledAppDb.COLUMN_STATE+"=?";
         String [] whereArgs = {InstalledAppDb.PackageState.install_succeeded.name()};
         mCursor = managedQuery(BehooProvider.INSTALLED_APP_CONTENT_URI, 
