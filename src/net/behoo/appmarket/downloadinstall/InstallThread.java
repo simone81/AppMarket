@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Date;
 
 import net.behoo.appmarket.data.AppInfo;
+import net.behoo.appmarket.http.UrlHelpers;
 
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
@@ -26,12 +27,12 @@ public class InstallThread extends Thread {
 	private static final Object SYNC_OBJ = new Object();
 	
 	private Context mContext = null;
-	private String mPkgCode = null;
+	private AppInfo mAppInfo = null;
 	private String mPkgSrcUri = null;
 	
-	public InstallThread(Context context, String code, String uri) {
+	public InstallThread(Context context, AppInfo appInfo, String uri) {
 		mContext = context;
-		mPkgCode = code;
+		mAppInfo = appInfo;
 		mPkgSrcUri = uri;
 	}
 	
@@ -44,12 +45,12 @@ public class InstallThread extends Thread {
 				ContentValues cv = new ContentValues();
 				cv.put(InstalledAppDb.COLUMN_STATE, InstalledAppDb.PackageState.installing.name());
 				String where = InstalledAppDb.COLUMN_CODE+"=?";
-				String [] whereArgs = {mPkgCode};
+				String [] whereArgs = {mAppInfo.mAppCode};
 				mContext.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 						cv, where, whereArgs);
 				// broadcast the action of application state changed
 				PackageStateSender.sendPackageStateBroadcast(mContext, 
-						mPkgCode, InstalledAppDb.PackageState.installing.name());
+						mAppInfo.mAppCode, InstalledAppDb.PackageState.installing.name());
 				
 				// install it
 				PackageInstaller installer = new PackageInstaller(mContext);
@@ -72,12 +73,12 @@ public class InstallThread extends Thread {
 				}
 				
 				String where = InstalledAppDb.COLUMN_CODE+"=?";
-				String [] whereArgs = {mPkgCode};
+				String [] whereArgs = {mAppInfo.mAppCode};
 				mContext.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 						cv2, where, whereArgs);
 				
 				// send broadcast
-				PackageStateSender.sendPackageStateBroadcast(mContext, mPkgCode, status);
+				PackageStateSender.sendPackageStateBroadcast(mContext, mAppInfo.mAppCode, status);
 	
 				// delete the source apk file
 				File srcFile = new File(Uri.parse(mPkgSrcUri).getPath());
@@ -91,15 +92,15 @@ public class InstallThread extends Thread {
 			// report to message spot
 			if (ret) {
 				try {
+					String appCode = mAppInfo.mAppCode;
 					ContentValues values = new ContentValues();
 					Date now = new Date();
-					values.put(MessageDb.COLUMN_FEEDBACK_SN, -1);
 					values.put(MessageDb.COLUMN_INTENT_ACTION, Intent.ACTION_VIEW);
-					values.put(MessageDb.COLUMN_INTENT_DATA, AppInfo.makeUri(mPkgCode).toString());
+					values.put(MessageDb.COLUMN_INTENT_DATA, AppInfo.makeUri(appCode).toString());
 					values.put(MessageDb.COLUMN_DATE, (int)(now.getTime()/1000)); // seconds
 					values.put(MessageDb.COLUMN_MSG_BODY, "software installed");
 					values.put(MessageDb.COLUMN_MSG_TITLE, "software installed description");
-					values.put(MessageDb.COLUMN_MSG_PIC_URL, "");
+					values.put(MessageDb.COLUMN_MSG_PIC_URL, UrlHelpers.getImageUrl(mAppInfo.mAppImageUrl));
 					mContext.getContentResolver().insert(BehooProvider.MESSAGE_CONTENT_URI, values);
 				} catch (Throwable tr) {
 					tr.printStackTrace();

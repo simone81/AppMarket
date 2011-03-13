@@ -78,9 +78,11 @@ public class AppUpdateDemonThread extends Thread {
 		
 		AppListParser appListParser = new AppListParser();
 		String reqStr = UrlHelpers.getUpdateRequestString(codesVersionMap);
+		Log.d(TAG, "update request string "+reqStr);
 		try {
 			String token = TokenWrapper.getToken(mContext);
 			String url = UrlHelpers.getUpdateUrl(token);
+			Log.d(TAG, "checkUpdate url "+url);
 			ArrayList<AppInfo> appList =
 				appListParser.getUpdateList(url, reqStr, codesVersionMap.size());
 			Log.i(TAG, "number of apps should be upgraded: "+Integer.toString(appList.size()));

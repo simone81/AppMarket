@@ -5,6 +5,7 @@ import java.util.Map;
 
 import behoo.providers.BehooProvider;
 import behoo.providers.InstalledAppDb;
+import behoo.providers.InstalledAppDb.PackageState;
 
 import net.behoo.appmarket.InstallButtonGuard.OnInstallClickListener;
 import net.behoo.appmarket.data.AppInfo;
@@ -55,7 +56,7 @@ public class AppUpdatePage extends AsyncTaskActivity
     			InstalledAppDb.COLUMN_IMAGE_URL,
     			InstalledAppDb.COLUMN_DESC};
         String where = InstalledAppDb.COLUMN_STATE+"=?";
-        String [] whereArgs = {InstalledAppDb.PackageState.install_succeeded.name()};
+        String [] whereArgs = {PackageState.need_update.name()};
         mCursor = managedQuery(BehooProvider.INSTALLED_APP_CONTENT_URI, 
                 columns, where, whereArgs, null);
 		mListView = (ListView)findViewById(R.id.app_update_list);
@@ -79,6 +80,9 @@ public class AppUpdatePage extends AsyncTaskActivity
 		super.onResume();
 		mButtonGuard.enableGuard();
 		registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_PKG_UPDATE_FINISHED));
+		
+		String code = (String)mListView.getSelectedItem();
+		updateButtonAndUIs(code);
 	}
 	
 	public void onPause() {
@@ -95,15 +99,7 @@ public class AppUpdatePage extends AsyncTaskActivity
 	
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		String code = (String)mListView.getItemAtPosition(position);
-		if (null != code) {
-			AppInfo appInfo = mAppLib.get(code);
-			mButtonGuard.setAppInfo(appInfo);
-			updateUIState(appInfo);
-		}
-		else {
-			// retset all the ui
-			mButtonGuard.setAppInfo(null);
-		}
+		updateButtonAndUIs(code);
 	}
 
 	public void onNothingSelected(AdapterView<?> arg0) {
@@ -117,6 +113,18 @@ public class AppUpdatePage extends AsyncTaskActivity
 			if (null != code && 0 == code.compareTo(appcode)) {
 				updateImage(mAppLib.get(code));
 			}
+		}
+	}
+	
+	private void updateButtonAndUIs(String code) {
+		updateButtonAndUIs(code);
+		if (null != code) {
+			AppInfo appInfo = mAppLib.get(code);
+			mButtonGuard.setAppInfo(appInfo);
+			updateUIState(appInfo);
+		}
+		else {
+			mButtonGuard.setAppInfo(null);
 		}
 	}
 	

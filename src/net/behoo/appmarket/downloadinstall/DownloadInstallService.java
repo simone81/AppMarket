@@ -260,7 +260,8 @@ public class DownloadInstallService extends Service {
 		
 		// the download has completed successfully!
 		if (bDownloadRet) {
-			InstallThread thrd = new InstallThread(this, code, filename);
+			AppInfo appInfo = PkgsProviderWrapper.getAppInfo(this, code);
+			InstallThread thrd = new InstallThread(this, appInfo, filename);
 			thrd.start();
 		}
 	}

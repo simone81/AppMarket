@@ -107,6 +107,9 @@ public class AppDownloadPage extends AsyncTaskActivity
 		mInstallButtonGuard.enableGuard();
 		IntentFilter filter = new IntentFilter(Constants.ACTION_PKG_STATE_CHANGED);
 		registerReceiver(mReceiver, filter);
+		
+		String code = (String)mListView.getSelectedItem();
+		updateButtonAndUIs(code);
 	}
 	
     public void onPause() {
@@ -123,39 +126,55 @@ public class AppDownloadPage extends AsyncTaskActivity
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		// get the app code of the selected item
 		String code = (String)mListView.getItemAtPosition(position);
+		updateButtonAndUIs(code);
+	}
+	
+	public void onNothingSelected(AdapterView<?> view) {
+	}
+	
+	private void updateButtonAndUIs(String code) {
 		if (null != code) {
 			AppInfo appInfo = mCodeAppInfoMap.get(code);
 			if (null != appInfo) {
 				mInstallButtonGuard.setAppInfo(appInfo);
 				updateUIState(appInfo);
 			}
+			else {
+				mInstallButtonGuard.setAppInfo(null);
+				updateUIState(null);
+			}
 		}
-	}
-	
-	public void onNothingSelected(AdapterView<?> view) {
+		else {
+			mInstallButtonGuard.setAppInfo(null);
+			updateUIState(null);
+		}
 	}
 	
 	private void updateUIState(AppInfo appInfo) {
-		TextView tv = (TextView)findViewById(R.id.main_app_title);
-		tv.setText(appInfo.mAppName);
-		
-		tv = (TextView)findViewById(R.id.main_app_author);
-		tv.setText(appInfo.mAppAuthor);
-		
-		tv = (TextView)findViewById(R.id.main_app_version);
-		tv.setText(appInfo.mAppVersion);
-		
-		if (mCodeSizeMap.containsKey(appInfo.mAppCode)) {
-			mTextViewSize.setVisibility(View.VISIBLE);
-			mTextViewSize.setText(mCodeSizeMap.get(appInfo.mAppCode));
+		TextView tvTitle = (TextView)findViewById(R.id.main_app_title);
+		TextView tvAuthor = (TextView)findViewById(R.id.main_app_author);
+		TextView tvVersion = (TextView)findViewById(R.id.main_app_version);
+		TextView tvDesc = (TextView)findViewById(R.id.downloadpage_desc);
+		if (null != appInfo) {
+			tvTitle.setText(appInfo.mAppName);
+			tvAuthor.setText(appInfo.mAppAuthor);
+			tvVersion.setText(appInfo.mAppVersion);
+			if (mCodeSizeMap.containsKey(appInfo.mAppCode)) {
+				mTextViewSize.setVisibility(View.VISIBLE);
+				mTextViewSize.setText(mCodeSizeMap.get(appInfo.mAppCode));
+			}
+			else {
+				mTextViewSize.setVisibility(View.GONE);
+			}
+			tvDesc.setText(appInfo.mAppShortDesc);
 		}
 		else {
+			tvTitle.setText("");
+			tvAuthor.setText("");
+			tvVersion.setText("");
 			mTextViewSize.setVisibility(View.GONE);
+			tvDesc.setText("");
 		}
-		
-		tv = (TextView)findViewById(R.id.downloadpage_desc);
-		tv.setText(appInfo.mAppShortDesc);
-		
 		updateImage(appInfo);
 	}
 	
@@ -166,16 +185,22 @@ public class AppDownloadPage extends AsyncTaskActivity
 	}
 	
 	private void updateImage(AppInfo appInfo) {
-		if (null == ImageLib.inst().getBitmap(appInfo.mAppImageUrl)) {
-			if (false == ImageLib.inst().isImageDownloading(appInfo.mAppImageUrl)) {
-				executeImageTask(appInfo.mAppImageUrl, appInfo.mAppCode);
+		if (null != appInfo) {
+			mAppImage.setVisibility(View.VISIBLE);
+			if (null == ImageLib.inst().getBitmap(appInfo.mAppImageUrl)) {
+				if (false == ImageLib.inst().isImageDownloading(appInfo.mAppImageUrl)) {
+					executeImageTask(appInfo.mAppImageUrl, appInfo.mAppCode);
+				}
+				else {
+					mAppImage.setImageResource(R.drawable.appicon_default);
+				}
 			}
 			else {
-				mAppImage.setImageResource(R.drawable.appicon_default);
+				mAppImage.setImageBitmap(ImageLib.inst().getBitmap(appInfo.mAppImageUrl));
 			}
 		}
 		else {
-			mAppImage.setImageBitmap(ImageLib.inst().getBitmap(appInfo.mAppImageUrl));
+			mAppImage.setVisibility(View.INVISIBLE);
 		}
 	}
 	
