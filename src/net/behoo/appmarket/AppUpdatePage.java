@@ -93,8 +93,7 @@ public class AppUpdatePage extends AsyncTaskActivity
 		startActivity(i);
 	}
 	
-	public void onItemSelected(AdapterView<?> arg0, View arg1, 
-			int position, long id) {
+	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		String code = (String)mListView.getItemAtPosition(position);
 		if (null != code) {
 			AppInfo appInfo = mAppLib.get(code);
@@ -173,7 +172,7 @@ public class AppUpdatePage extends AsyncTaskActivity
         
         public Object getItem(int position) {
         	if (mCursor.moveToPosition(position)) {
-        		return mAppLib.get(position).mAppCode;
+        		return mCursor.getString(mCodeId);
         	}
         	return null;
         }
