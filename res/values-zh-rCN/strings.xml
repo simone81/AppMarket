@@ -50,4 +50,7 @@
 	<string name="dlg_httptask_error_hint">数据获取失败</string>
 	<string name="dlg_httptask_retry">重试</string>
 	<string name="dlg_httptask_exit">取消</string>
+	
+	<string name="message_provider_title">软件安装成功</string>
+	<string name="message_provider_body"> 已经安装完成。</string>
 </resources>

@@ -12,6 +12,7 @@ import behoo.providers.MessageDb;
 import behoo.providers.InstalledAppDb.PackageState;
 
 import junit.framework.Assert;
+import android.R;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -43,7 +44,7 @@ public class InstallThread extends Thread {
 			try {
 				// update application state
 				ContentValues cv = new ContentValues();
-				cv.put(InstalledAppDb.COLUMN_STATE, InstalledAppDb.PackageState.installing.name());
+				cv.put(InstalledAppDb.COLUMN_STATE, PackageState.installing.name());
 				String where = InstalledAppDb.COLUMN_CODE+"=?";
 				String [] whereArgs = {mAppInfo.mAppCode};
 				mContext.getContentResolver().update(BehooProvider.INSTALLED_APP_CONTENT_URI, 
@@ -93,13 +94,16 @@ public class InstallThread extends Thread {
 			if (ret) {
 				try {
 					String appCode = mAppInfo.mAppCode;
+					String messageBody = mAppInfo.mAppName+" "
+						+mContext.getString(R.string.message_provider_body);
+					
 					ContentValues values = new ContentValues();
 					Date now = new Date();
 					values.put(MessageDb.COLUMN_INTENT_ACTION, Intent.ACTION_VIEW);
 					values.put(MessageDb.COLUMN_INTENT_DATA, AppInfo.makeUri(appCode).toString());
 					values.put(MessageDb.COLUMN_DATE, (int)(now.getTime()/1000)); // seconds
-					values.put(MessageDb.COLUMN_MSG_BODY, "software installed");
-					values.put(MessageDb.COLUMN_MSG_TITLE, "software installed description");
+					values.put(MessageDb.COLUMN_MSG_TITLE, mContext.getString(R.string.message_provider_title));
+					values.put(MessageDb.COLUMN_MSG_BODY, messageBody);
 					values.put(MessageDb.COLUMN_MSG_PIC_URL, UrlHelpers.getImageUrl(mAppInfo.mAppImageUrl));
 					mContext.getContentResolver().insert(BehooProvider.MESSAGE_CONTENT_URI, values);
 				} catch (Throwable tr) {
