@@ -129,7 +129,6 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 		tv.setText(mAppInfo.mAppVersion);
 		
 		tv = (TextView)findViewById(R.id.main_app_size);
-		Log.i(TAG, "updateUIState size: "+mAppInfo.mAppSize);
 		if (mAppInfo.mAppSize.length() > 0 && null != mAppInfo.mAppSize) {
 			tv.setVisibility(View.VISIBLE);
 			int size = Integer.valueOf(mAppInfo.mAppSize).intValue();
@@ -144,9 +143,6 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 			iv = (ImageView)findViewById(R.id.main_app_logo);
 			iv.setImageBitmap(ImageLib.inst().getBitmap(mAppInfo.mAppImageUrl));
 		}
-		
-		iv = (ImageView)findViewById(R.id.detail_screenshort_1);
-		iv.setImageResource(R.drawable.appicon_default);
 		
 		tv = (TextView)findViewById(R.id.detail_review_desc);
 		tv.setText(mAppInfo.mAppReview);
