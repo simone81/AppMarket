@@ -23,22 +23,28 @@ public class UrlHelpers {
 			throw new NullPointerException("codeVersionMap should not be null");
 		}
 		
-		String reqStr = new String();
-		reqStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-		reqStr += "<BH_S_App_Code_List count=\""+Integer.toString(codeVersionMap.size())+"\">";
+		StringBuilder sb = new StringBuilder();
+		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+		sb.append("<BH_S_App_Code_List count=\"");
+		sb.append(codeVersionMap.size());
+		sb.append("\">");
 		Set<String> keys = codeVersionMap.keySet();
 		Iterator<String> it = keys.iterator();
 		while (it.hasNext()) {
 			String code = it.next();
 			
-			reqStr += "<BH_S_App_Code_Version>";
-			reqStr += ("<BH_D_App_Code>"+code+"</BH_D_App_Code>");
+			sb.append("<BH_S_App_Code_Version>");
+			sb.append("<BH_D_App_Code>");
+			sb.append(code);
+			sb.append("</BH_D_App_Code>");
 			
-			reqStr += "<BH_D_App_Version>"+codeVersionMap.get(code)+"</BH_D_App_Version>";
-			reqStr += "</BH_S_App_Code_Version>";
+			sb.append("<BH_D_App_Version_Code>");
+			sb.append(codeVersionMap.get(code));
+			sb.append("</BH_D_App_Version_Code>");
+			sb.append("</BH_S_App_Code_Version>");
 		}
-		reqStr += "</BH_S_App_Code_List>";
-		return reqStr;
+		sb.append("</BH_S_App_Code_List>");
+		return sb.toString();
 	}
 	
 	// get the application list
