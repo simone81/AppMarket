@@ -78,12 +78,6 @@ public class AppDetailParser {
 						else if(tagName.equalsIgnoreCase("BH_I_App_Remoter_Score")) {
 							appInfo.mAppRemoteCntlScore = parser.nextText();
 						}
-						else if(tagName.equalsIgnoreCase("BH_D_App_Screenshots")) {
-							appInfo.mAppScreenShorts1 = parser.nextText();
-						}
-						else if(tagName.equalsIgnoreCase("BH_D_App_Screenshots2")) {
-							appInfo.mAppScreenShorts2 = parser.nextText();
-						}
 						else if(tagName.equalsIgnoreCase("BH_D_App_Review")) {
 							appInfo.mAppReview = parser.nextText();
 						}
