@@ -3,6 +3,7 @@ package net.behoo.appmarket.downloadinstall;
 import java.io.File;
 import java.util.Date;
 
+import net.behoo.appmarket.R;
 import net.behoo.appmarket.data.AppInfo;
 import net.behoo.appmarket.http.UrlHelpers;
 
@@ -12,7 +13,6 @@ import behoo.providers.MessageDb;
 import behoo.providers.InstalledAppDb.PackageState;
 
 import junit.framework.Assert;
-import android.R;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
