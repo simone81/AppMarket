@@ -16,6 +16,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
@@ -122,7 +123,7 @@ public class AppUpdateDemonThread extends Thread {
 				InstalledAppDb.COLUMN_PKG_NAME};
 		
 		// get all the applications that need to be checked
-		try {
+		try {		
 			ContentResolver cr = mContext.getContentResolver();
 			Cursor c = cr.query(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 					columns, null, null, null);
@@ -142,14 +143,15 @@ public class AppUpdateDemonThread extends Thread {
 					version = c.getString(versionId);
 					state = c.getString(stateId);
 					pkgName = c.getString(pkgNameId);
-					InstalledAppDb.PackageState pkgstate = Constants.getStateByString(state);
+					PackageState pkgstate = Constants.getStateByString(state);
 					if (pkgUninstalled(pm, pkgName, pkgstate)) {
 						String where = InstalledAppDb.COLUMN_CODE+"=?";
 						String [] selectionArgs = {code};
 						cr.delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 								where, selectionArgs);
 					}
-					else if (InstalledAppDb.PackageState.install_succeeded == pkgstate){
+					else if (PackageState.install_succeeded == pkgstate
+							 && -1 != getPkgVersionCode(pm, pkgName)) {
 						codesVersionMap.put(code, version);
 					}
 				}
@@ -163,8 +165,8 @@ public class AppUpdateDemonThread extends Thread {
 		return codesVersionMap;
 	}
 	
-	private boolean pkgUninstalled(PackageManager pm, String pkgName, InstalledAppDb.PackageState state) {
-		if (InstalledAppDb.PackageState.install_succeeded == state) {
+	private boolean pkgUninstalled(PackageManager pm, String pkgName, PackageState state) {
+		if (PackageState.install_succeeded == state) {
 			try {
 				pm.getApplicationInfo(pkgName, PackageManager.GET_UNINSTALLED_PACKAGES);
 				return false;
@@ -173,5 +175,15 @@ public class AppUpdateDemonThread extends Thread {
 	        }
 		}
 		return false;
+	}
+	
+	private int getPkgVersionCode(PackageManager pm, String pkgName) {
+		int versionCode = -1;
+		try {
+			PackageInfo info = pm.getPackageInfo(pkgName, PackageManager.GET_UNINSTALLED_PACKAGES);
+			versionCode = info.versionCode;
+		} catch (Throwable tr) {
+		}
+		return versionCode;
 	}
 }
