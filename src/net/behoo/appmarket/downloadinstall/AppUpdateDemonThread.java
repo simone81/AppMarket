@@ -129,18 +129,15 @@ public class AppUpdateDemonThread extends Thread {
 					columns, null, null, null);
 			if (null != c) {			
 				int codeId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_CODE);
-				int versionId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_VERSION);
 				int stateId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_STATE);
 				int pkgNameId = c.getColumnIndexOrThrow(InstalledAppDb.COLUMN_PKG_NAME);
 				String code = null;
-				String version = null;
 				String state = null;
 				String pkgName = null;
 				
 				PackageManager pm = mContext.getPackageManager();
 				for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
 					code = c.getString(codeId);
-					version = c.getString(versionId);
 					state = c.getString(stateId);
 					pkgName = c.getString(pkgNameId);
 					PackageState pkgstate = Constants.getStateByString(state);
@@ -150,9 +147,11 @@ public class AppUpdateDemonThread extends Thread {
 						cr.delete(BehooProvider.INSTALLED_APP_CONTENT_URI, 
 								where, selectionArgs);
 					}
-					else if (PackageState.install_succeeded == pkgstate
-							 && -1 != getPkgVersionCode(pm, pkgName)) {
-						codesVersionMap.put(code, version);
+					else if (PackageState.install_succeeded == pkgstate) {
+						int versionCode = getPkgVersionCode(pm, pkgName);
+						if (-1 != versionCode) {
+							codesVersionMap.put(code, Integer.toString(versionCode));
+						}
 					}
 				}
 				c.close();
