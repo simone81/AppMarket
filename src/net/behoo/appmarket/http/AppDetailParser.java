@@ -79,17 +79,26 @@ public class AppDetailParser {
 							appInfo.mAppRemoteCntlScore = parser.nextText();
 						}
 						else if(tagName.equalsIgnoreCase("BH_D_App_Screenshots")) {
-							appInfo.mAppScreenShorts = parser.nextText();
+							appInfo.mAppScreenShorts1 = parser.nextText();
+						}
+						else if(tagName.equalsIgnoreCase("BH_D_App_Screenshots2")) {
+							appInfo.mAppScreenShorts2 = parser.nextText();
 						}
 						else if(tagName.equalsIgnoreCase("BH_D_App_Review")) {
 							appInfo.mAppReview = parser.nextText();
+						}
+						else if(tagName.equalsIgnoreCase("BH_D_App_Screenshots_1")) {
+							appInfo.mAppScreenShorts1 = parser.nextText();
+						}
+						else if(tagName.equalsIgnoreCase("BH_D_App_Screenshots_2")) {
+							appInfo.mAppScreenShorts2 = parser.nextText();
 						}
 						else if(tagName.equalsIgnoreCase("BH_D_App_Change_Log")) {
 							appInfo.mAppChangelog = parser.nextText();
 						}
 						else {
 							// some error occurred. maybe the data contains invalid data field
-							done = true;
+							parser.nextText();
 						}
                 	}
                 	break;

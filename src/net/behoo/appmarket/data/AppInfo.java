@@ -22,7 +22,8 @@ public class AppInfo {
 	public String mAppDesc = "";
 	public String mAppSize = "";
 	public String mAppRemoteCntlScore = "";// remote control score
-	public String mAppScreenShorts = "";
+	public String mAppScreenShorts1 = "";
+	public String mAppScreenShorts2 = "";
 	public String mAppReview = "";
 	public String mAppChangelog = "";
 	
@@ -55,7 +56,8 @@ public class AppInfo {
 		mAppDesc = new String(source.mAppDesc);
 		mAppSize = new String(source.mAppSize);
 		mAppRemoteCntlScore = new String(source.mAppRemoteCntlScore);// remote control score
-		mAppScreenShorts = new String(source.mAppScreenShorts);
+		mAppScreenShorts1 = new String(source.mAppScreenShorts1);
+		mAppScreenShorts2 = new String(source.mAppScreenShorts2);
 		mAppReview = new String(source.mAppReview);
 		mAppChangelog = new String(source.mAppChangelog);
 	}

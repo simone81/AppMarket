@@ -94,7 +94,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	        mInstallButtonGuard.setAppInfo(mAppInfo);
 			updateUIState();
 			executeImageTask(mAppInfo.mAppImageUrl, mAppInfo.mAppCode);
-			executeImageTask(mAppInfo.mAppScreenShorts, mAppInfo.mAppCode);
+			executeImageTask(mAppInfo.mAppScreenShorts1, mAppInfo.mAppCode);
 		}
 	}
 	
@@ -105,7 +105,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 					ImageView iv = (ImageView)findViewById(R.id.main_app_logo);
 					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
 				}
-				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts)) {
+				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts1)) {
 					ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_1);
 					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
 				}
