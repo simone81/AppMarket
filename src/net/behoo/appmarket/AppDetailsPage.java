@@ -95,6 +95,7 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 			updateUIState();
 			executeImageTask(mAppInfo.mAppImageUrl, mAppInfo.mAppCode);
 			executeImageTask(mAppInfo.mAppScreenShorts1, mAppInfo.mAppCode);
+			executeImageTask(mAppInfo.mAppScreenShorts2, mAppInfo.mAppCode);
 		}
 	}
 	
@@ -107,6 +108,10 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 				}
 				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts1)) {
 					ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_1);
+					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
+				}
+				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts2)) {
+					ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_2);
 					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
 				}
 			}

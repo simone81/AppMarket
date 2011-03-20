@@ -89,12 +89,19 @@
 	    	android:layout_below="@id/the_summary_layout" />
 	    
 	    <ImageView android:id="@+id/detail_screenshort_1" 
-	    	android:layout_width="80dip"
-	    	android:layout_height="60dip"
+	    	android:layout_width="150dip"
+	    	android:layout_height="90dip"
 	    	android:layout_alignLeft="@id/detail_tv_screenshot"
 	    	android:layout_below="@id/detail_tv_screenshot"
 	    	android:layout_marginTop="2dip"/>
     	
+    	<ImageView android:id="@+id/detail_screenshort_2" 
+	    	android:layout_width="150dip"
+	    	android:layout_height="90dip"
+	    	android:layout_alignTop="@id/detail_screenshort_1"
+	    	android:layout_toRightOf="@id/detail_screenshort_1"
+	    	android:layout_marginLeft="5dip"/>
+	    	
     	<!-- remote control -->
 	    <TextView android:id="@+id/detail_remotecntl_title" 
 	    	style="@style/TextStyleSmall"
