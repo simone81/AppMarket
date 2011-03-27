@@ -80,9 +80,6 @@ public class AppUpdatePage extends AsyncTaskActivity
 		super.onResume();
 		mButtonGuard.enableGuard();
 		registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_PKG_UPDATE_FINISHED));
-		
-		String code = (String)mListView.getSelectedItem();
-		updateButtonAndUIs(code);
 	}
 	
 	public void onPause() {
@@ -99,7 +96,9 @@ public class AppUpdatePage extends AsyncTaskActivity
 	
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 		String code = (String)mListView.getItemAtPosition(position);
-		updateButtonAndUIs(code);
+		AppInfo appInfo = mAppLib.get(code);
+		mButtonGuard.setAppInfo(appInfo);
+		updateUIState(appInfo);
 	}
 
 	public void onNothingSelected(AdapterView<?> arg0) {
@@ -113,20 +112,6 @@ public class AppUpdatePage extends AsyncTaskActivity
 			if (null != code && 0 == code.compareTo(appcode)) {
 				updateImage(mAppLib.get(code));
 			}
-		}
-	}
-	
-	private void updateButtonAndUIs(String code) {
-		if (null != code) {
-			AppInfo appInfo = mAppLib.get(code);
-			if (null != appInfo) {
-				mButtonGuard.setAppInfo(appInfo);
-				updateUIState(appInfo);
-			} else {
-				mButtonGuard.setAppInfo(null);
-			}
-		} else {
-			mButtonGuard.setAppInfo(null);
 		}
 	}
 	
