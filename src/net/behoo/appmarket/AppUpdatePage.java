@@ -119,10 +119,13 @@ public class AppUpdatePage extends AsyncTaskActivity
 	private void updateButtonAndUIs(String code) {
 		if (null != code) {
 			AppInfo appInfo = mAppLib.get(code);
-			mButtonGuard.setAppInfo(appInfo);
-			updateUIState(appInfo);
-		}
-		else {
+			if (null != appInfo) {
+				mButtonGuard.setAppInfo(appInfo);
+				updateUIState(appInfo);
+			} else {
+				mButtonGuard.setAppInfo(null);
+			}
+		} else {
 			mButtonGuard.setAppInfo(null);
 		}
 	}
