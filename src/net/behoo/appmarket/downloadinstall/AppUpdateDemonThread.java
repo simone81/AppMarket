@@ -71,15 +71,25 @@ public class AppUpdateDemonThread extends Thread {
 		}
 	}
 	
+	private void notifyCheckUpdateCompleted(ArrayList<AppInfo> appList) {
+		Intent intent = new Intent(Constants.ACTION_PKG_UPDATE_FINISHED);
+		if (null == appList) {
+			intent.putExtra(Constants.EXTRA_SIZE, 0);
+		} else {
+			intent.putExtra(Constants.EXTRA_SIZE, appList.size());
+		}
+		mContext.sendBroadcast(intent);
+	}
+	
 	private void checkUpdate(Map<String, String> codesVersionMap) {
 		// check update
 		if (0 == codesVersionMap.size()) {
+			notifyCheckUpdateCompleted(null);
 			return;
 		}
 		
 		AppListParser appListParser = new AppListParser();
 		String reqStr = UrlHelpers.getUpdateRequestString(codesVersionMap);
-		Log.d(TAG, "update request string "+reqStr);
 		try {
 			String token = TokenWrapper.getToken(mContext);
 			String url = UrlHelpers.getUpdateUrl(token);
@@ -103,11 +113,9 @@ public class AppUpdateDemonThread extends Thread {
 						cv, where, selectionArgs);
 			}
 			
-			Intent intent = new Intent(Constants.ACTION_PKG_UPDATE_FINISHED);
-			intent.putExtra(Constants.EXTRA_SIZE, appList.size());
-			mContext.sendBroadcast(intent);
+			notifyCheckUpdateCompleted(appList);
 		} catch(Throwable tr) {
-			tr.printStackTrace();
+			notifyCheckUpdateCompleted(null);
 		} finally {
 			appListParser.cancel();
 		}	
