@@ -33,7 +33,7 @@ public class AppListPage extends AsyncTaskActivity
 						 OnItemClickListener {
 	
 	private static final String TAG = "AppListPage";
-	private static final int PAGE_SIZE = 5;
+	private static final int PAGE_SIZE = 20;
 	
 	private ArrayList<AppInfo> mAppList = new ArrayList<AppInfo>();
 	private HttpTask mHttpTask = null;
@@ -235,8 +235,6 @@ public class AppListPage extends AsyncTaskActivity
             AppInfo appInfo = mAppList.get(position);
             TextView titleView = (TextView)view.findViewById(R.id.applist_item_title);
             titleView.setText(appInfo.mAppName);
-            TextView subTitleView = (TextView)view.findViewById(R.id.applist_item_subtitle);
-            subTitleView.setText(appInfo.mAppAuthor);
             
             return view;
         }
