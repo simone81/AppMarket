@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-
+<resources>  
     <!-- market layout -->
-    <string name="app_name">Market</string>
+    <string name="app_name">应用商店</string>
     
-    <string name="market_title">AppMarket</string>
-    <string name="market_promotion">Promotions</string>
-    <string name="market_all_app">All applications</string>
-    <string name="market_update">Upgrading</string>
-    <string name="market_detail">Details</string>
-    <string name="market_downloadinstall">Download and install</string>
+    <string name="market_title">应用商店</string>
+    <string name="market_promotion">推荐应用</string>
+    <string name="market_all_app">所有应用</string>
+    <string name="market_update">应用升级</string>
+    <string name="market_detail">应用详情</string>
+    <string name="market_downloadinstall">下载安装</string>
     
     <!-- main page -->
     <string name="main_btn_install">立即安装</string>
@@ -53,5 +52,5 @@
 	<string name="dlg_httptask_exit">取消</string>
 	
 	<string name="message_provider_title">软件安装成功</string>
-	<string name="message_provider_body"> 已经安装完成。</string>
+	<string name="message_provider_body">已经安装完成。</string>
 </resources>
