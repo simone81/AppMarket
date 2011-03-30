@@ -106,6 +106,12 @@ public class InstallThread extends Thread {
 					values.put(MessageDb.COLUMN_MSG_BODY, messageBody);
 					values.put(MessageDb.COLUMN_MSG_PIC_URL, UrlHelpers.getImageUrl(mAppInfo.mAppImageUrl));
 					mContext.getContentResolver().insert(BehooProvider.MESSAGE_CONTENT_URI, values);
+					
+					// broadcast
+					Intent intentBroadcast = new Intent();
+					intentBroadcast.setAction(behoo.content.Intent.ACTION_MESSAGE);
+					intentBroadcast.putExtra("title", mContext.getString(R.string.message_provider_title));
+					mContext.sendBroadcast(intentBroadcast);
 				} catch (Throwable tr) {
 					tr.printStackTrace();
 				}
