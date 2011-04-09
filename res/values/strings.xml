@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>  
     <!-- market layout -->
-    <string name="app_name">应用商店</string>
+    <string name="app_name">*应用商店</string>
     
     <string name="market_title">应用商店</string>
     <string name="market_promotion">推荐应用</string>
