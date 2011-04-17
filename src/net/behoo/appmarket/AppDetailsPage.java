@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
@@ -25,6 +26,8 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 	private InstallButtonGuard mInstallButtonGuard = null;
 	private AppInfo mAppInfo = new AppInfo();
 	private HttpTask mHttpTask = null;
+	private ProgressBar mProgressBar1 = null;
+	private ProgressBar mProgressBar2 = null;
 	
 	private Integer[] mRemoteCntl = {
 		R.string.appdetails_rc_desc1,
@@ -48,6 +51,9 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
         mInstallButtonGuard = new InstallButtonGuard(this, button, null);
         mInstallButtonGuard.setOnInstallClickListener(this);
         
+        mProgressBar1 = (ProgressBar)findViewById(R.id.detail_pb_1);
+    	mProgressBar2 = (ProgressBar)findViewById(R.id.detail_pb_2);
+    	
         Intent intent = getIntent();
         Uri data = intent.getData();
         int matchId = sURIMatcher.match(data);
@@ -95,9 +101,10 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 			updateUIState();
 			executeImageTask(mAppInfo.mAppImageUrl, mAppInfo.mAppCode);
 			
-			addScreenShotsDownloadingTask(findViewById(R.id.detail_screenshort_1), 
+			addScreenShotsDownloadingTask(mProgressBar1, 
 					mAppInfo.mAppScreenShorts1, mAppInfo.mAppCode);
-			addScreenShotsDownloadingTask(findViewById(R.id.detail_screenshort_2),
+			
+			addScreenShotsDownloadingTask(mProgressBar2,
 					mAppInfo.mAppScreenShorts2, mAppInfo.mAppCode);
 		}
 	}
@@ -112,21 +119,23 @@ public class AppDetailsPage extends AsyncTaskActivity implements OnInstallClickL
 				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts1)) {
 					ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_1);
 					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
+					mProgressBar1.setVisibility(View.GONE);
 				}
 				else if (0 == url.compareTo(mAppInfo.mAppScreenShorts2)) {
 					ImageView iv = (ImageView)findViewById(R.id.detail_screenshort_2);
 					iv.setImageBitmap(ImageLib.inst().getBitmap(url));
+					mProgressBar2.setVisibility(View.GONE);
 				}
 			}
 		}
 	}
 	
-	private void addScreenShotsDownloadingTask(View view, String url, String appCode) {
+	private void addScreenShotsDownloadingTask(ProgressBar pb, String url, String appCode) {
 		if (null != url && url.length() > 0) {
-			view.setVisibility(View.VISIBLE);
+			pb.setVisibility(View.VISIBLE);
 			executeImageTask(url, appCode);
 		} else {
-			view.setVisibility(View.INVISIBLE);
+			pb.setVisibility(View.INVISIBLE);
 		}
 	}
 	

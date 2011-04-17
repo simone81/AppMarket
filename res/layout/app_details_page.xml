@@ -89,7 +89,6 @@
 	    	android:layout_below="@id/the_summary_layout" />
 	    
 	    <ImageView android:id="@+id/detail_screenshort_1" 
-	    	android:src="@drawable/screenshot_loading"
 	    	android:layout_width="120dip"
 	    	android:layout_height="72dip"
 	    	android:layout_alignLeft="@id/detail_left_bkgnd"
@@ -97,14 +96,33 @@
 	    	android:layout_below="@id/detail_tv_screenshot"
 	    	android:layout_marginTop="10dip"/>
     	
+    	<ProgressBar android:id="@+id/detail_pb_1"
+    		android:visibility="invisible"
+    		android:indeterminateOnly="true"
+    		android:layout_width="20dip"
+    		android:layout_height="20dip"
+    		android:layout_alignLeft="@id/detail_screenshort_1"
+    		android:layout_alignTop="@id/detail_screenshort_1"
+    		android:layout_marginLeft="50dip"
+			android:layout_marginTop="26dip" />
+    		
     	<ImageView android:id="@+id/detail_screenshort_2" 
-    		android:src="@drawable/screenshot_loading"
 	    	android:layout_width="120dip"
 	    	android:layout_height="72dip"
 	    	android:layout_alignTop="@id/detail_screenshort_1"
 	    	android:layout_toRightOf="@id/detail_screenshort_1"
 	    	android:layout_marginLeft="5dip"/>
-	    	
+	    
+	    <ProgressBar android:id="@+id/detail_pb_2"
+	    	android:visibility="invisible"
+	    	android:indeterminateOnly="true"
+    		android:layout_width="20dip"
+    		android:layout_height="20dip"
+    		android:layout_alignLeft="@id/detail_screenshort_2"
+    		android:layout_alignTop="@id/detail_screenshort_2"
+    		android:layout_marginLeft="50dip"
+			android:layout_marginTop="26dip" />
+				
     	<!-- remote control -->
 	    <TextView android:id="@+id/detail_remotecntl_title" 
 	    	style="@style/TextStyleSmall"
