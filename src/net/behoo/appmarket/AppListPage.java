@@ -108,9 +108,6 @@ public class AppListPage extends AsyncTaskActivity
 	protected void onTaskCompleted(boolean result) {
 		if (result) {
 			mListAdapter.notifyDataSetChanged();
-			if (mListView.getCount() > 0) {
-				mListView.setSelection(0);
-			}
 			mListView.requestFocus();
 			updateUIState();
 		}
@@ -189,8 +186,6 @@ public class AppListPage extends AsyncTaskActivity
 	    		Log.i(TAG, "doTask "+url);
 	    		
 	    		ArrayList<AppInfo> appLib = mAppListProxy.getAppList(url, PAGE_SIZE);
-				// merge if we get duplicated application tbd
-				// or the server MUST NOT give duplicated appcode
 				mAppList.addAll(appLib);
 				mContinueDownload = (mAppListProxy.getAppListTotal() > mAppList.size());
 				return (appLib.size() > 0);

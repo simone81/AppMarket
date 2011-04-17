@@ -36,11 +36,13 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.provider.Downloads;
 
 public class AppDownloadPage extends AsyncTaskActivity 
-							 implements OnItemSelectedListener, OnInstallClickListener {
+							 implements OnItemSelectedListener, 
+							 			OnItemClickListener {
 	private static final String TAG = "AppDownloadPage";
 	
 	private ListAdapter mListApater = null;
@@ -87,7 +89,6 @@ public class AppDownloadPage extends AsyncTaskActivity
 		
 		Button button = (Button)findViewById(R.id.downloadpage_btn_to_install);
 		mInstallButtonGuard = new InstallButtonGuard(this, button, null);
-		mInstallButtonGuard.setOnInstallClickListener(this);
 		
 		mAppImage = (ImageView)findViewById(R.id.main_app_logo);
 		mDownloadProgressBar = (ProgressBar)findViewById(R.id.downloadpage_progress);
@@ -99,6 +100,7 @@ public class AppDownloadPage extends AsyncTaskActivity
 		mListApater = new ListAdapter(this, R.layout.applist_item_layout, mDownloadCursor);
 		mListView.setAdapter(mListApater);
 		mListView.setOnItemSelectedListener(this);
+		mListView.setOnItemClickListener(this);
 		mListView.requestFocus();
 	}
     
@@ -118,9 +120,8 @@ public class AppDownloadPage extends AsyncTaskActivity
     	mInstallButtonGuard.disableGuard();
     }
     
-    public void onInstallClicked(AppInfo appInfo) {
-		// TODO Auto-generated method stub
-		
+    public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+    	mInstallButtonGuard.openApp();
 	}
     
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {

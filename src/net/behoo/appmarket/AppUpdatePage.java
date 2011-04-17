@@ -24,11 +24,13 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 public class AppUpdatePage extends AsyncTaskActivity 
 						   implements OnItemSelectedListener, 
-						   			  OnInstallClickListener {
+						   			  OnInstallClickListener,
+						   			  OnItemClickListener {
 	
 	private Cursor mCursor = null;
 	private Map<String, AppInfo> mAppLib = new HashMap<String, AppInfo>();
@@ -63,6 +65,7 @@ public class AppUpdatePage extends AsyncTaskActivity
 		mListAdapter = new ListAdapter(this, R.layout.applist_item_layout, mCursor);
 		mListView.setAdapter(mListAdapter);
 		mListView.setOnItemSelectedListener(this);
+		mListView.setOnItemClickListener(this);
 		
 		Button button = (Button)findViewById(R.id.appupdate_btn_update);
 		mButtonGuard = new InstallButtonGuard(this, button, null);
@@ -92,6 +95,10 @@ public class AppUpdatePage extends AsyncTaskActivity
 		Intent i = new Intent();
 		i.setClass(this, AppDownloadPage.class);
 		startActivity(i);
+	}
+	
+	public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+		mButtonGuard.installApp();
 	}
 	
 	public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {

@@ -93,6 +93,33 @@ public class InstallButtonGuard implements OnClickListener {
 		case need_update:	
 		case install_failed:	
 		case download_failed:
+			installApp();
+			break;
+		case install_succeeded:	
+			openApp();
+			break;
+		case downloading:
+		case download_succeeded:
+		case installing:
+		default:
+			Log.e(TAG, "the button under these states should not be clicked");
+			break;
+		}
+	}
+	
+	public void updateAppState() {
+		if (null != mAppInfo) {
+			mAppState = PkgsProviderWrapper.getAppState(mContext, mAppInfo.mAppCode);
+			mButton.setVisibility(View.VISIBLE);
+			updateButtonState();
+		}
+		else {
+			mButton.setVisibility(View.INVISIBLE);
+		}
+	}
+	
+	public void installApp() {
+		if (null != mAppInfo) {
 			try {
 				String url = UrlHelpers.getDownloadUrl(
 						TokenWrapper.getToken(mContext), mAppInfo.mAppCode);
@@ -113,8 +140,13 @@ public class InstallButtonGuard implements OnClickListener {
 			} catch (Throwable tr) {
 				tr.printStackTrace();
 			}
-			break;
-		case install_succeeded:	
+		} else {
+			Log.d(TAG, "No application is being guarded, and you can't install it");
+		}
+	}
+	
+	public void openApp() {
+		if (null != mAppInfo) {
 			try {
 				String pkgName = PkgsProviderWrapper.getAppPkgName(mContext, mAppInfo.mAppCode);
 				PackageManager pm = mContext.getPackageManager();
@@ -123,24 +155,8 @@ public class InstallButtonGuard implements OnClickListener {
 			} catch (Throwable tr) {
 				tr.printStackTrace();
 			}
-			break;
-		case downloading:
-		case download_succeeded:
-		case installing:
-		default:
-			Log.e(TAG, "the button under these states should not be clicked");
-			break;
-		}
-	}
-	
-	public void updateAppState() {
-		if (null != mAppInfo) {
-			mAppState = PkgsProviderWrapper.getAppState(mContext, mAppInfo.mAppCode);
-			mButton.setVisibility(View.VISIBLE);
-			updateButtonState();
-		}
-		else {
-			mButton.setVisibility(View.INVISIBLE);
+		} else {
+			Log.d(TAG, "No application is being guarded, and you can't open it");
 		}
 	}
 	
