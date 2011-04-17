@@ -89,6 +89,7 @@
 	    	android:layout_below="@id/the_summary_layout" />
 	    
 	    <ImageView android:id="@+id/detail_screenshort_1" 
+	    	android:src="@drawable/screenshot_loading"
 	    	android:layout_width="120dip"
 	    	android:layout_height="72dip"
 	    	android:layout_alignLeft="@id/detail_left_bkgnd"
@@ -97,6 +98,7 @@
 	    	android:layout_marginTop="10dip"/>
     	
     	<ImageView android:id="@+id/detail_screenshort_2" 
+    		android:src="@drawable/screenshot_loading"
 	    	android:layout_width="120dip"
 	    	android:layout_height="72dip"
 	    	android:layout_alignTop="@id/detail_screenshort_1"
